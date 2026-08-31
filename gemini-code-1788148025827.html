@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proctored Assessment</title>
+    <style>
+        /* Prevent text selection across the page */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Screen styles for system check and timeout */
+        .info-screen {
+            text-align: center;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            max-width: 500px;
+        }
+
+        #timeout-screen {
+            display: none;
+            color: #d93025;
+        }
+
+        /* Hide the form container initially */
+        #test-container {
+            display: none;
+            width: 100%;
+            height: 100vh;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .error {
+            color: #d93025;
+            font-weight: bold;
+        }
+
+        /* Timer UI at the top right of the screen */
+        #timer-display {
+            display: none;
+            position: fixed;
+            top: 15px;
+            right: 20px;
+            background: #d93025;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 18px;
+            z-index: 1000;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Timer Overlay -->
+    <div id="timer-display">Time Left: <span id="time">02:00:00</span></div>
+
+    <!-- Status Screen (Permissions) -->
+    <div id="status-screen" class="info-screen">
+        <h2>System Check</h2>
+        <p id="message">Requesting Camera and Microphone permissions...</p>
+    </div>
+
+    <!-- Timeout Screen -->
+    <div id="timeout-screen" class="info-screen">
+        <h2>Time is up!</h2>
+        <p>Your 2-hour assessment period has ended. You can no longer access the form.</p>
+    </div>
+
+    <!-- The Google Form -->
+    <div id="test-container">
+        <iframe src="https://docs.google.com/forms/d/e/1FAIpQLScD6_70QJJtFsF8zYDvJQVMpGwvaZpPj055PDqmwn0KZRYYtw/viewform?embedded=true" allow="camera; microphone"></iframe>
+    </div>
+
+    <script>
+        // --- 1. DISABLE RIGHT-CLICK & COPY/PASTE ---
+        document.addEventListener('contextmenu', event => event.preventDefault());
+        document.addEventListener('copy', event => event.preventDefault());
+        document.addEventListener('cut', event => event.preventDefault());
+        document.addEventListener('paste', event => event.preventDefault());
+
+        // --- 2. TAB SWITCHING WARNING ---
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                alert("WARNING: You have switched tabs or minimized the window. This action is recorded.");
+            }
+        });
+
+        // --- 3. TIMER LOGIC (Resistant to Page Refreshes) ---
+        let timerInterval;
+
+        function startTimer() {
+            document.getElementById('timer-display').style.display = 'block';
+
+            // Check if an end time is already saved in the browser
+            let endTime = localStorage.getItem('assessmentEndTime');
+
+            if (!endTime) {
+                // If no end time exists, set it for 2 hours from RIGHT NOW
+                // 2 hours = 2 * 60 minutes * 60 seconds * 1000 milliseconds
+                endTime = Date.now() + (2 * 60 * 60 * 1000);
+                localStorage.setItem('assessmentEndTime', endTime);
+            }
+
+            function updateTimer() {
+                const now = Date.now();
+                const timeLeft = endTime - now;
+
+                if (timeLeft <= 0) {
+                    // Time is up
+                    clearInterval(timerInterval);
+                    document.getElementById('time').innerText = "00:00:00";
+                    triggerTimeout();
+                } else {
+                    // Calculate hours, minutes, and seconds remaining
+                    const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+                    // Pad numbers with leading zeros (e.g., 09 instead of 9)
+                    const formattedTime = 
+                        String(hours).padStart(2, '0') + ":" + 
+                        String(minutes).padStart(2, '0') + ":" + 
+                        String(seconds).padStart(2, '0');
+
+                    document.getElementById('time').innerText = formattedTime;
+                }
+            }
+
+            // Run immediately so we don't wait 1 second for the first update
+            updateTimer(); 
+            // Update the clock every 1 second
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function triggerTimeout() {
+            // Hide everything except the timeout message
+            document.getElementById('test-container').style.display = 'none';
+            document.getElementById('timer-display').style.display = 'none';
+            document.getElementById('timeout-screen').style.display = 'block';
+        }
+
+        // --- 4. REQUIRE CAMERA & MIC PERMISSIONS ---
+        const statusScreen = document.getElementById('status-screen');
+        const message = document.getElementById('message');
+        const testContainer = document.getElementById('test-container');
+
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+            .then((stream) => {
+                // PERMISSION GRANTED: Reveal form and start the countdown
+                statusScreen.style.display = 'none';
+                
+                // If they previously ran out of time and refreshed, the timer logic 
+                // will instantly hide the container and show the timeout screen.
+                testContainer.style.display = 'block'; 
+                startTimer();
+            })
+            .catch((error) => {
+                // PERMISSION DENIED
+                message.classList.add("error");
+                message.innerHTML = "Camera and Microphone permissions were denied.<br><br>You cannot attempt this test without granting permissions. Please update your browser settings and refresh the page.";
+            });
+    </script>
+</body>
+</html>
