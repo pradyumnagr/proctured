@@ -158,6 +158,7 @@
 
             // --- STATE VARIABLES ---
             let isExamActive = false; 
+            let isTransitioning = false; // NEW: The Shield for exiting fullscreen
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             
             let tabSwitchCount = parseInt(localStorage.getItem('gf_tabSwitches') || '0');
@@ -187,17 +188,12 @@
             const container = document.getElementById('exam-container');
 
             // --- MOBILE UI ADAPTATION ---
-            if (isMobile) {
-                grantPermBtn.innerText = "📸 Grant Camera & Mic Access (Mobile)";
-            }
+            if (isMobile) grantPermBtn.innerText = "📸 Grant Camera & Mic Access (Mobile)";
 
             // --- SCREEN WAKE LOCK API (Prevents Android Sleep) ---
             async function requestWakeLock() {
-                try {
-                    if ('wakeLock' in navigator) {
-                        wakeLock = await navigator.wakeLock.request('screen');
-                    }
-                } catch (err) { console.log("Wake Lock not supported."); }
+                try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } 
+                catch (err) { console.log("Wake Lock not supported."); }
             }
             document.addEventListener('visibilitychange', () => {
                 if (wakeLock !== null && document.visibilityState === 'visible') requestWakeLock();
@@ -257,7 +253,7 @@
             }
 
             const observer = new MutationObserver((mutations) => {
-                if (!isExamActive) return;
+                if (!isExamActive || isTransitioning) return;
                 mutations.forEach((mutation) => {
                     mutation.removedNodes.forEach((node) => {
                         if (node.id === 'warning-overlay' || node.id === 'timeout-screen' || node.id === 'exam-container') {
@@ -294,11 +290,14 @@
                     triggerTamperProtocol("LocalStorage Manipulation Attempted");
                 }
 
-                // Window Math only on Desktop (Mobile URLs resizing causes false positives)
-                if (!isMobile && window.outerWidth > 0 && window.innerHeight > 0) {
+                // NEW: Increased pixel threshold & Transition Shield check
+                if (!isMobile && !isTransitioning && window.outerWidth > 0 && window.innerHeight > 0) {
                     const widthDiff = window.outerWidth - window.innerWidth;
                     const heightDiff = window.outerHeight - window.innerHeight;
-                    if (widthDiff > 200 || heightDiff > 200) triggerTamperProtocol("Developer Tools Docked Panel Detected");
+                    // Standard browser UI + Taskbar = ~150-250px. DevTools > 330px.
+                    if (widthDiff > 330 || heightDiff > 330) {
+                        triggerTamperProtocol("Developer Tools Docked Panel Detected");
+                    }
                 }
             }, 2500);
 
@@ -524,17 +523,35 @@
                 } catch (e) { alert("Camera, Mic & Screen Share are mandatory to resume."); }
             });
 
-            // --- BASIC SENSORS ---
-            document.addEventListener('visibilitychange', () => { if (document.hidden) triggerExactWarning("Switched browser tabs or minimized window."); });
-            window.addEventListener('blur', () => { if (document.activeElement && document.activeElement.tagName.toLowerCase() === 'iframe') return; triggerExactWarning("Window lost focus. Clicked outside the exam window."); });
-            document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) triggerExactWarning("Exited Fullscreen mode."); });
+            // --- BASIC SENSORS WITH TRANSITION SHIELD ---
+            document.addEventListener('visibilitychange', () => { 
+                // Don't trigger tab-switch if they are just transitioning out of fullscreen
+                if (document.hidden && !isTransitioning) triggerExactWarning("Switched browser tabs or minimized window."); 
+            });
+            
+            window.addEventListener('blur', () => { 
+                if (isTransitioning) return; // Prevent focus-loss bug when exiting fullscreen
+                if (document.activeElement && document.activeElement.tagName.toLowerCase() === 'iframe') return; 
+                triggerExactWarning("Window lost focus. Clicked outside the exam window."); 
+            });
+
+            // The Fullscreen Exit Shield
+            document.addEventListener('fullscreenchange', () => { 
+                if (!document.fullscreenElement) {
+                    isTransitioning = true; // Activate the shield
+                    triggerExactWarning("Exited Fullscreen mode."); 
+                    setTimeout(() => { isTransitioning = false; }, 2500); // Drop shield after 2.5 seconds
+                }
+            });
+
             window.addEventListener('resize', () => {
-                if (document.fullscreenElement) return;
+                if (document.fullscreenElement || isTransitioning) return; // Ignore resize during transition
                 if (window.innerWidth < (initialWindowWidth * 0.85) || window.innerHeight < (initialWindowHeight * 0.85)) {
                     triggerExactWarning("Split-screen mode or window resizing detected.");
                     initialWindowWidth = window.innerWidth; initialWindowHeight = window.innerHeight;
                 }
             });
+
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) || (e.ctrlKey && ['u', 'p', 's'].includes(e.key.toLowerCase()))) {
                     e.preventDefault(); triggerExactWarning("Prohibited keyboard shortcut used.");
@@ -556,7 +573,7 @@
 
                 try {
                     if (document.documentElement.requestFullscreen) { try { await document.documentElement.requestFullscreen(); } catch (e) {} }
-                    requestWakeLock(); // Start screen lock for mobile
+                    requestWakeLock(); 
                     
                     document.getElementById('instruction-screen').style.display = 'none';
                     document.getElementById('exam-container').style.display = 'block';
