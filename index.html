@@ -5,26 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Proctored Exam</title>
     <style>
-        /* Anti-Copy and Anti-Selection */
-        * { -webkit-touch-callout: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
-        input[type="text"] { user-select: text; -webkit-user-select: text; }
-
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: #f4f6f9; margin: 0; padding: 20px;
-            display: flex; justify-content: center; min-height: 100vh; box-sizing: border-box;
+            background: #f4f6f9; margin: 0; padding: 0;
+            display: flex; justify-content: center; align-items: center; min-height: 100vh;
+            user-select: none; -webkit-user-select: none;
         }
 
         .card {
             background: white; padding: 30px; border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 100%; max-width: 650px; align-self: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 90%; max-width: 600px; text-align: center;
         }
 
         /* Top Bar Indicators */
         #status-bar-container {
             display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
             justify-content: space-between; background: #202124; color: white;
-            padding: 10px 20px; font-weight: bold; font-size: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            padding: 10px 20px; font-weight: bold; font-size: 15px;
         }
         #timer-pill { background: #d93025; padding: 4px 12px; border-radius: 4px; }
         #violations-pill { background: #ea8600; padding: 4px 12px; border-radius: 4px; }
@@ -37,36 +34,19 @@
         }
         .warning-box {
             background: #ffffff; border-top: 8px solid #d93025; padding: 30px; border-radius: 10px;
-            max-width: 480px; width: 90%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-width: 480px; width: 90%; text-align: center;
         }
         .warning-box h3 { color: #d93025; margin-top: 0; font-size: 22px; }
-        .warning-box p.infraction-text { font-size: 16px; color: #333; margin: 15px 0; line-height: 1.5; }
-        .warning-box .strike-count { font-size: 13px; color: #777; margin-bottom: 20px; font-weight: bold; }
-
-        .btn-ack { background: #d93025; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; width: 100%; }
-        .btn-ack:hover { background: #b3261e; }
-
-        .screenshot-flash { background-color: red !important; display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 99998; }
-        .question { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
-        .option { display: block; margin-bottom: 8px; cursor: pointer; }
-        .input-field { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
-        button.btn-primary { background: #1a73e8; color: white; border: none; padding: 12px; border-radius: 6px; width: 100%; font-weight: bold; cursor: pointer; font-size: 16px; }
-        button.btn-primary:hover { background: #1557b0; }
-        .hidden { display: none !important; }
-        .error { color: #d93025; margin-top:15px; font-weight: bold; }
+        .btn-ack { background: #d93025; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 15px;}
         
-        /* Pre-Exam Warning Box */
-        .rules-list {
-            text-align: left; background: #fff3f3; padding: 15px 15px 15px 35px; 
-            border-left: 4px solid #d93025; font-size: 14px; border-radius: 4px; color: #b3261e; margin-bottom: 20px;
+        .screenshot-flash { background-color: red !important; display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 99998; }
+        button.btn-primary { background: #1a73e8; color: white; border: none; padding: 12px; border-radius: 6px; width: 100%; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 15px;}
+        
+        #exam-container {
+            display: none; width: 100vw; height: 100vh; padding-top: 40px; box-sizing: border-box;
         }
-        .rules-list li { margin-bottom: 8px; }
-
-        /* Post-Exam Audit Receipt */
-        #student-audit-log {
-            margin-top: 25px; text-align: left; background: #f8f9fa; 
-            padding: 20px; border-radius: 6px; font-size: 13px; border: 1px solid #ddd;
-        }
+        iframe { width: 100%; height: 100%; border: none; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
@@ -81,116 +61,69 @@
     <div id="warning-overlay">
         <div class="warning-box">
             <h3>⚠️ SECURITY WARNING</h3>
-            <p class="infraction-text" id="warning-detail">Violation details go here.</p>
-            <div class="strike-count" id="warning-strike-count">Recorded Violation #1</div>
+            <p id="warning-detail">Violation details go here.</p>
+            <p style="color: #777; font-size: 13px;" id="warning-strike-count"></p>
             <button class="btn-ack" id="ack-btn">I Understand & Return to Exam</button>
         </div>
     </div>
 
-    <!-- Screen 1: Permissions & Rules Warning -->
-    <div id="permission-screen" class="card" style="text-align: center;">
+    <!-- Permissions Screen -->
+    <div id="permission-screen" class="card">
         <h2>Assessment Environment Check</h2>
-        <p>This is a strictly proctored exam. <strong>Any of the following actions will generate a security warning and be logged in a report sent to your instructor:</strong></p>
-        
-        <ul class="rules-list">
-            <li>Switching tabs, opening other apps, or minimizing the browser.</li>
-            <li>Clicking outside the exam window (e.g., using a second monitor).</li>
-            <li>Exiting Fullscreen mode.</li>
-            <li>Attempting to use Keyboard Shortcuts (PrintScreen, Copy/Paste, F12).</li>
-            <li>Covering your webcam or sitting in a dark room.</li>
-        </ul>
-
-        <button id="start-btn" class="btn-primary">I Understand, Start Exam</button>
-        <p id="perm-message" class="error hidden"></p>
+        <p style="text-align: left; background: #fff3f3; padding: 15px; border-left: 4px solid #d93025; font-size: 14px;">
+            <strong>RULES:</strong> Do not switch tabs, minimize the window, exit Fullscreen, or use keyboard shortcuts. <br><br>
+            <em>Note: If the timer runs out or you trigger too many warnings, the exam will close and unsubmitted work will be lost.</em>
+        </p>
+        <button id="start-btn" class="btn-primary">Grant Camera/Mic & Start Exam</button>
+        <p id="perm-message" style="color: red; font-weight: bold;" class="hidden"></p>
     </div>
 
-    <!-- Screen 2: Exam -->
-    <div id="exam-screen" class="card hidden" style="margin-top: 60px;">
-        <h2>Online Assessment</h2>
-        <form id="quiz-form">
-            <label><strong>Full Name:</strong></label>
-            <input type="text" id="student-name" name="name" class="input-field" required>
-            <label><strong>Student Email (Required for receipt):</strong></label>
-            <input type="text" id="student-id" name="studentId" class="input-field" required>
-            <hr style="margin: 20px 0; border: 0; border-top: 1px solid #ddd;">
-            <div id="question-container"></div>
-            <button type="submit" class="btn-primary" id="submit-btn" style="margin-top: 20px;">Submit Exam</button>
-        </form>
+    <!-- Google Form Container -->
+    <div id="exam-container">
+        <!-- PASTE YOUR GOOGLE FORM EMBED LINK HERE -->
+        <iframe src="https://docs.google.com/forms/d/e/1FAIpQLScA99fvElgJtVBXjdyMrIPYpSYTUtFQBX0MZOpPWgCobIrfNg/viewform?usp=header" allow="camera; microphone"></iframe>
     </div>
 
-    <!-- Screen 3: Submission & Final Warning Receipt -->
-    <div id="result-screen" class="card hidden" style="text-align: center;">
-        <h2>Exam Completed</h2>
-        <p id="result-message">Processing your responses...</p>
-        
-        <!-- The Final Log Displayed to the Student -->
-        <div id="student-audit-log" class="hidden">
-            <strong style="color:#d93025; font-size:15px;">Your Security Audit Log:</strong>
-            <p style="color: #666; margin-top:5px; margin-bottom: 10px;">The following exact report has been submitted to your instructor.</p>
-            <ul id="log-list" style="padding-left: 20px; color: #333; line-height: 1.6;"></ul>
-        </div>
+    <!-- Terminal Screen -->
+    <div id="result-screen" class="card hidden">
+        <h2 id="final-title">Exam Terminated</h2>
+        <p id="final-message">Your access to this assessment has been closed.</p>
     </div>
 
     <script>
         (function() {
-            // PASTE YOUR GOOGLE APPS SCRIPT URL HERE
-            const SCRIPT_URL = "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL"; 
-            
-            const questionsRaw = [
-                { id: "q1", text: "1. What is the capital of France?", options: ["Berlin", "Madrid", "Paris", "Rome"] },
-                { id: "q2", text: "2. What is 2 + 2?", options: ["3", "4", "5"] },
-                { id: "q3", text: "3. Which planet is known as the Red Planet?", options: ["Venus", "Mars", "Jupiter"] }
-            ];
-
-            let violationLogs = JSON.parse(localStorage.getItem('violationLogs') || '[]');
-            let tabSwitchCount = parseInt(localStorage.getItem('tabSwitches') || '0');
-            let timerInterval, devToolsInterval, pixelCheckInterval;
+            let tabSwitchCount = parseInt(localStorage.getItem('gf_tabSwitches') || '0');
+            let timerInterval;
             let mediaStream = null;
             let initialWindowWidth = window.innerWidth;
             let initialWindowHeight = window.innerHeight;
             let lastWarningTime = 0;
 
-            if (localStorage.getItem('examSubmitted') === 'true') {
-                document.getElementById('permission-screen').classList.add('hidden');
-                document.getElementById('result-screen').classList.remove('hidden');
-                document.getElementById('result-message').innerText = "Exam already submitted.";
+            if (localStorage.getItem('gf_examLocked') === 'true') {
+                lockOutStudent("You have already completed or been locked out of this exam.");
                 return;
             }
 
-            function poisonText(str) { return str.split('').join('\u200B'); }
-
-            function renderQuestions() {
-                const container = document.getElementById('question-container');
-                questionsRaw.forEach(q => {
-                    let html = `<div class="question"><h4>${poisonText(q.text)}</h4>`;
-                    q.options.forEach(opt => {
-                        html += `<label class="option"><input type="radio" name="${q.id}" value="${opt}"> ${poisonText(opt)}</label>`;
-                    });
-                    html += `</div>`;
-                    container.innerHTML += html;
-                });
-            }
-            renderQuestions();
-
             function triggerExactWarning(exactRuleMessage) {
-                if (document.getElementById('exam-screen').classList.contains('hidden')) return;
-
+                if (document.getElementById('exam-container').style.display === 'none') return;
+                
                 const now = Date.now();
                 if (now - lastWarningTime < 1200) return;
                 lastWarningTime = now;
 
                 tabSwitchCount++;
-                const timestamp = new Date().toLocaleTimeString();
+                localStorage.setItem('gf_tabSwitches', tabSwitchCount);
                 
-                violationLogs.push({ time: timestamp, reason: exactRuleMessage, count: tabSwitchCount });
-                localStorage.setItem('tabSwitches', tabSwitchCount);
-                localStorage.setItem('violationLogs', JSON.stringify(violationLogs));
-
                 document.getElementById('violations-pill').innerText = tabSwitchCount;
                 document.getElementById('warning-detail').innerHTML = `<strong>Rule Broken:</strong><br>${exactRuleMessage}`;
-                document.getElementById('warning-strike-count').innerText = `Recorded Infraction #${tabSwitchCount} • Logged at ${timestamp}`;
+                document.getElementById('warning-strike-count').innerText = `Recorded Infraction #${tabSwitchCount}`;
                 
                 document.getElementById('warning-overlay').style.display = 'flex';
+
+                // Lock them out completely if they cheat 5 times
+                if (tabSwitchCount >= 5) {
+                    lockOutStudent("Maximum security violations reached. Exam terminated.");
+                }
             }
 
             document.getElementById('ack-btn').addEventListener('click', async () => {
@@ -200,9 +133,22 @@
                 }
             });
 
-            document.addEventListener('visibilitychange', () => { if (document.hidden) triggerExactWarning("Switched browser tabs or minimized window."); });
-            window.addEventListener('blur', () => { triggerExactWarning("Clicked outside the exam window."); });
-            document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) triggerExactWarning("Exited Fullscreen mode."); });
+            // Security Triggers
+            document.addEventListener('visibilitychange', () => { 
+                if (document.hidden) triggerExactWarning("Switched browser tabs or minimized window."); 
+            });
+            
+            // THE IFRAME FIX: Only triggers if they click completely out of the browser, not inside the form
+            window.addEventListener('blur', () => { 
+                if (document.activeElement && document.activeElement.tagName.toLowerCase() === 'iframe') {
+                    return; // They clicked inside the Google Form, this is fine.
+                }
+                triggerExactWarning("Window lost focus. You clicked outside the exam window."); 
+            });
+            
+            document.addEventListener('fullscreenchange', () => { 
+                if (!document.fullscreenElement) triggerExactWarning("You exited Fullscreen mode."); 
+            });
 
             window.addEventListener('resize', () => {
                 if (document.fullscreenElement) return;
@@ -213,95 +159,53 @@
                 }
             });
 
-            document.addEventListener('contextmenu', e => { e.preventDefault(); triggerExactWarning("Right-click is disabled."); });
-            document.addEventListener('copy', e => { e.preventDefault(); navigator.clipboard.writeText(''); triggerExactWarning("Attempted to copy content."); });
-            document.addEventListener('paste', e => { e.preventDefault(); triggerExactWarning("Attempted to paste content."); });
-            document.addEventListener('dragstart', e => { e.preventDefault(); triggerExactWarning("Dragging text is disabled."); });
-
             document.addEventListener('keydown', (e) => {
-                if (e.key === 'F12') { e.preventDefault(); triggerExactWarning("Developer shortcut 'F12' is prohibited."); }
-                if (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) { e.preventDefault(); triggerExactWarning(`DevTools shortcut is prohibited.`); }
-                if (e.ctrlKey && ['u', 'p', 's'].includes(e.key.toLowerCase())) { e.preventDefault(); triggerExactWarning("View/Print/Save shortcuts are prohibited."); }
-                
+                if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) || (e.ctrlKey && ['u', 'p', 's'].includes(e.key.toLowerCase()))) {
+                    e.preventDefault(); triggerExactWarning("Prohibited keyboard shortcut used.");
+                }
                 if (e.key === 'PrintScreen') {
-                    e.preventDefault();
-                    navigator.clipboard.writeText('');
+                    e.preventDefault(); navigator.clipboard.writeText('');
                     document.getElementById('flash-overlay').style.display = 'block';
                     setTimeout(() => document.getElementById('flash-overlay').style.display = 'none', 400);
-                    triggerExactWarning("Screenshot key ('PrintScreen') pressed.");
+                    triggerExactWarning("Screenshot attempt blocked.");
                 }
             });
 
-            devToolsInterval = setInterval(() => {
-                const start = performance.now(); debugger;
-                if (performance.now() - start > 100) triggerExactWarning("Developer Tools opened.");
-            }, 1500);
-
-            function startWebcamAnalysis(stream) {
-                const hiddenVideo = document.createElement('video');
-                hiddenVideo.style.display = 'none'; hiddenVideo.srcObject = stream; hiddenVideo.play();
-                const hiddenCanvas = document.createElement('canvas');
-                hiddenCanvas.width = 50; hiddenCanvas.height = 50;
-                const ctx = hiddenCanvas.getContext('2d');
-
-                pixelCheckInterval = setInterval(() => {
-                    if (hiddenVideo.readyState === hiddenVideo.HAVE_ENOUGH_DATA) {
-                        ctx.drawImage(hiddenVideo, 0, 0, 50, 50);
-                        const frame = ctx.getImageData(0, 0, 50, 50).data;
-                        let isBlack = true;
-                        for (let i = 0; i < frame.length; i += 4) {
-                            if (frame[i] > 18 || frame[i+1] > 18 || frame[i+2] > 18) { isBlack = false; break; }
-                        }
-                        if (isBlack) triggerExactWarning("Webcam is covered or room is completely dark.");
-                    }
-                }, 5000);
-            }
-
             document.getElementById('start-btn').addEventListener('click', async () => {
                 try {
-                    const devices = await navigator.mediaDevices.enumerateDevices();
-                    if (devices.some(d => d.label.toLowerCase().includes('obs') || d.label.toLowerCase().includes('virtual'))) {
-                        alert("SECURITY ERROR: Virtual cameras are not permitted."); return;
-                    }
                     if (document.documentElement.requestFullscreen) { try { await document.documentElement.requestFullscreen(); } catch (e) {} }
 
                     mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                    document.getElementById('permission-screen').classList.add('hidden');
-                    document.getElementById('exam-screen').classList.remove('hidden');
+                    document.getElementById('permission-screen').style.display = 'none';
+                    document.getElementById('exam-container').style.display = 'block';
                     document.getElementById('status-bar-container').style.display = 'flex';
                     document.getElementById('violations-pill').innerText = tabSwitchCount;
 
                     initialWindowWidth = window.innerWidth;
                     initialWindowHeight = window.innerHeight;
 
-                    document.querySelectorAll('input').forEach(input => {
-                        const saved = localStorage.getItem('ans_' + input.name);
-                        if (saved) {
-                            if (input.type === 'radio' && input.value === saved) input.checked = true;
-                            if (input.type === 'text') input.value = saved;
-                        }
-                    });
-
                     startCountdown();
-                    startWebcamAnalysis(mediaStream);
 
                     mediaStream.getTracks().forEach(t => t.onended = () => {
-                        alert("SECURITY VIOLATION: Hardware connection lost. Auto-submitting."); submitQuiz();
+                        lockOutStudent("Hardware connection lost. Exam terminated.");
                     });
                 } catch (err) {
                     const msg = document.getElementById('perm-message');
                     msg.classList.remove('hidden');
-                    msg.innerHTML = "Camera & Microphone access is mandatory.";
+                    msg.innerHTML = "Camera & Microphone access is mandatory to begin.";
                 }
             });
 
             function startCountdown() {
-                let endTime = localStorage.getItem('examEndTime');
-                if (!endTime) { endTime = Date.now() + (2 * 60 * 60 * 1000); localStorage.setItem('examEndTime', endTime); }
+                let endTime = localStorage.getItem('gf_examEndTime');
+                if (!endTime) { endTime = Date.now() + (2 * 60 * 60 * 1000); localStorage.setItem('gf_examEndTime', endTime); }
+                
                 function tick() {
                     const remaining = endTime - Date.now();
-                    if (remaining <= 0) { clearInterval(timerInterval); alert("Time is up! Submitting automatically."); submitQuiz(); }
-                    else {
+                    if (remaining <= 0) { 
+                        clearInterval(timerInterval); 
+                        lockOutStudent("Time has expired. Any unsubmitted answers have been lost.");
+                    } else {
                         const h = Math.floor(remaining / 3600000), m = Math.floor((remaining % 3600000) / 60000), s = Math.floor((remaining % 60000) / 1000);
                         document.getElementById('timer-pill').innerText = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
                     }
@@ -309,62 +213,20 @@
                 tick(); timerInterval = setInterval(tick, 1000);
             }
 
-            const form = document.getElementById('quiz-form');
-            form.addEventListener('change', (e) => { if (e.target.name) localStorage.setItem('ans_' + e.target.name, e.target.value); });
-            form.addEventListener('submit', e => { e.preventDefault(); submitQuiz(); });
-
-            function submitQuiz() {
-                clearInterval(timerInterval); clearInterval(devToolsInterval); clearInterval(pixelCheckInterval);
+            function lockOutStudent(reason) {
+                clearInterval(timerInterval);
                 if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
                 if (document.fullscreenElement) document.exitFullscreen();
 
-                document.getElementById('exam-screen').classList.add('hidden');
+                localStorage.setItem('gf_examLocked', 'true');
+                
+                document.getElementById('permission-screen').style.display = 'none';
+                document.getElementById('exam-container').style.display = 'none';
                 document.getElementById('status-bar-container').style.display = 'none';
                 document.getElementById('warning-overlay').style.display = 'none';
+                
                 document.getElementById('result-screen').classList.remove('hidden');
-
-                const formData = new FormData(form);
-                const answers = {};
-                for (let [key, val] of formData.entries()) {
-                    if (key !== 'name' && key !== 'studentId') answers[key] = val;
-                }
-
-                const payload = {
-                    name: document.getElementById('student-name').value,
-                    studentId: document.getElementById('student-id').value,
-                    tabSwitches: tabSwitchCount,
-                    violationLogs: violationLogs,
-                    answers: answers
-                };
-
-                fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === "error") {
-                        document.getElementById('result-message').innerText = "Error: " + data.message;
-                        document.getElementById('result-message').style.color = "red";
-                    } else {
-                        document.getElementById('result-message').innerText = "Your assessment has been submitted successfully.";
-                        localStorage.setItem('examSubmitted', 'true');
-                        Object.keys(localStorage).forEach(key => { if (key.startsWith('ans_')) localStorage.removeItem(key); });
-                        
-                        // --- RENDER THE FINAL AUDIT LOG TO THE STUDENT ---
-                        const logContainer = document.getElementById('student-audit-log');
-                        const logList = document.getElementById('log-list');
-                        logContainer.classList.remove('hidden');
-                        
-                        if (violationLogs.length === 0) {
-                            logList.innerHTML = "<li style='color: green; list-style-type: none;'>✅ No violations recorded. Great job!</li>";
-                        } else {
-                            violationLogs.forEach(log => {
-                                let li = document.createElement('li');
-                                li.innerHTML = `<strong>[${log.time}]</strong> - ${log.reason}`;
-                                logList.appendChild(li);
-                            });
-                        }
-                    }
-                })
-                .catch(() => { document.getElementById('result-message').innerText = "Network error. Keep page open to retry submission."; });
+                document.getElementById('final-message').innerText = reason;
             }
         })();
     </script>
