@@ -104,7 +104,8 @@
         <div class="input-group">
             <label>1. Student Details:</label>
             <input type="text" id="student-name-input" placeholder="Full Name" required style="margin-bottom: 8px;">
-            <input type="text" id="student-id-input" placeholder="Student ID / Roll No" required>
+            <input type="text" id="roll-no-input" placeholder="13-Digit Roll Number" maxlength="13" required>
+            <p id="roll-error" style="color: #d93025; font-size: 12px; margin-top: 5px; display: none; font-weight: bold;">Roll number must be exactly 13 digits.</p>
         </div>
 
         <div class="instruction-box">
@@ -174,7 +175,7 @@
             let lastWarningTime = 0;
             let formLoadCount = 0; 
             let hardwareHashValue = "Not Generated";
-            let lastInternalTick = Date.now(); // The Stopwatch
+            let lastInternalTick = Date.now(); 
 
             const examAgreementCheckbox = document.getElementById('exam-agreement-checkbox');
             const startBtn = document.getElementById('start-btn');
@@ -185,7 +186,8 @@
             const resumeFinalBtn = document.getElementById('resume-final-btn');
             const restartScreenBtn = document.getElementById('restart-screen-btn');
             const nameInput = document.getElementById('student-name-input');
-            const idInput = document.getElementById('student-id-input');
+            const rollInput = document.getElementById('roll-no-input');
+            const rollError = document.getElementById('roll-error');
             const container = document.getElementById('exam-container');
 
             if (isMobile) grantPermBtn.innerText = "📸 Grant Camera & Mic Access (Mobile)";
@@ -269,15 +271,13 @@
                 triggerExactWarning("SEVERE TAMPERING DETECTED: " + reason);
             }
 
-            // --- THE FIXED HEARTBEAT TIMER ---
             setInterval(() => {
                 const now = Date.now();
                 const timeDiff = now - lastInternalTick; 
-                lastInternalTick = now; // Always update the clock so it doesn't fall behind
+                lastInternalTick = now; 
 
-                if (!isExamActive) return; // If exam is paused for a warning, stop here.
+                if (!isExamActive) return; 
                 
-                // If the clock jumped by > 4.5 seconds while the exam was ACTIVE, it was suspended.
                 if (timeDiff > 4500) triggerTamperProtocol("Process Suspension / System Freeze Detected");
 
                 const start = performance.now(); debugger;
@@ -302,7 +302,7 @@
                 if (!isExamActive) return;
                 fetch(AUDIT_WEBHOOK_URL, {
                     method: 'POST', mode: 'no-cors',
-                    body: JSON.stringify({ action: 'ping', studentId: idInput.value, time: new Date().toLocaleTimeString() })
+                    body: JSON.stringify({ action: 'ping', studentId: rollInput.value, time: new Date().toLocaleTimeString() })
                 }).catch(()=>{}); 
             }, 30000);
 
@@ -341,8 +341,18 @@
                 }
             });
 
+            // Input Validation with STRICT 13-Digit Logic
             function validateInputs() {
-                if (examAgreementCheckbox.checked && nameInput.value.trim() !== '' && idInput.value.trim() !== '' && permissionsGranted) {
+                const isRollValid = /^\d{13}$/.test(rollInput.value);
+                
+                // Show warning if they started typing but it's not 13 digits yet
+                if (rollInput.value.length > 0 && !isRollValid) {
+                    rollError.style.display = 'block';
+                } else {
+                    rollError.style.display = 'none';
+                }
+
+                if (examAgreementCheckbox.checked && nameInput.value.trim() !== '' && isRollValid && permissionsGranted) {
                     startBtn.disabled = false;
                     startBtn.innerText = "Begin Exam Now";
                 } else {
@@ -350,9 +360,15 @@
                     startBtn.innerText = "Complete All Steps Above to Start";
                 }
             }
+
+            // Force Numbers Only on Roll Input
+            rollInput.addEventListener('input', function() {
+                this.value = this.value.replace(/\D/g, ''); // Removes any non-numeric character automatically
+                validateInputs();
+            });
+
             examAgreementCheckbox.addEventListener('change', validateInputs);
             nameInput.addEventListener('input', validateInputs);
-            idInput.addEventListener('input', validateInputs);
 
             if (localStorage.getItem('gf_examLocked') === 'true') {
                 document.getElementById('instruction-screen').style.display = 'none';
@@ -396,7 +412,7 @@
                     document.getElementById('screen-share-overlay').style.display = 'none';
                     document.getElementById('exam-container').style.display = 'block';
                     attachScreenListeners(); 
-                    lastInternalTick = Date.now(); // Reset clock before turning sensors back on
+                    lastInternalTick = Date.now(); 
                     isExamActive = true; 
                 } catch (e) { alert("You MUST share your screen to continue the exam."); }
             });
@@ -463,7 +479,7 @@
                     try { await document.documentElement.requestFullscreen(); } catch (e) {}
                 }
                 
-                lastInternalTick = Date.now(); // RESET STOPWATCH to block the false positive!
+                lastInternalTick = Date.now(); 
                 isExamActive = true; 
             });
 
@@ -521,7 +537,7 @@
                     initialWindowWidth = window.innerWidth; initialWindowHeight = window.innerHeight;
                     if (!timerInterval) startCountdown();
                     
-                    lastInternalTick = Date.now(); // RESET STOPWATCH
+                    lastInternalTick = Date.now(); 
                     isExamActive = true; 
                 } catch (e) { alert("Camera, Mic & Screen Share are mandatory to resume."); }
             });
@@ -566,10 +582,10 @@
             });
 
             startBtn.addEventListener('click', async () => {
-                if (!examAgreementCheckbox.checked || nameInput.value.trim() === '' || idInput.value.trim() === '' || !permissionsGranted) return;
+                if (!examAgreementCheckbox.checked || nameInput.value.trim() === '' || !/^\d{13}$/.test(rollInput.value) || !permissionsGranted) return;
                 
                 localStorage.setItem('gf_studentName', nameInput.value);
-                localStorage.setItem('gf_studentId', idInput.value);
+                localStorage.setItem('gf_studentId', rollInput.value);
 
                 try {
                     isTransitioning = true;
@@ -603,7 +619,7 @@
                     attachScreenListeners();
                     startAudioMonitoring(mediaStream); 
                     
-                    lastInternalTick = Date.now(); // RESET STOPWATCH
+                    lastInternalTick = Date.now(); 
                     isExamActive = true; 
                 } catch (err) { alert("A system error occurred. Please refresh the page."); }
             });
