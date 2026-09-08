@@ -114,7 +114,7 @@
                 <li><strong>No Leaving the Window:</strong> Clicking outside the exam triggers a violation.</li>
                 <li><strong>Environment Monitoring:</strong> Whispering and talking will be detected.</li>
                 <li><strong>Anti-Tampering:</strong> System suspension or code tampering triggers an instant Last Warning.</li>
-                <li><strong>Screen Share Required:</strong> Dual monitors are blocked.</li>
+                <li><strong>Screen Share Required:</strong> (Desktop only) Dual monitors are blocked.</li>
             </ul>
         </div>
 
@@ -156,13 +156,17 @@
             // ==========================================
             const ENCODED_FORM_URL = "aHR0cHM6Ly9kb2NzLmdvb2dsZS5jb20vZm9ybXMvZC9lLzFGQUlwUUxTY0E5OWZ2RWxnSnRWQlhqZHlNcklQWXBTWVRVdEZRQlgwTVpPcFBXZ0NvYklyZk5nL3ZpZXdmb3JtP2VtYmVkZGVkPXRydWU=";
 
+            // --- STATE VARIABLES ---
             let isExamActive = false; 
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
             let tabSwitchCount = parseInt(localStorage.getItem('gf_tabSwitches') || '0');
             let violationLogs = JSON.parse(localStorage.getItem('gf_violationLogs') || '[]');
             
             let timerInterval, penaltyInterval, mediaStream = null, screenStream = null;
             let permissionsGranted = false;
             let screenShareDrops = 0; 
+            let wakeLock = null;
             
             let initialWindowWidth = window.innerWidth;
             let initialWindowHeight = window.innerHeight;
@@ -181,6 +185,23 @@
             const nameInput = document.getElementById('student-name-input');
             const idInput = document.getElementById('student-id-input');
             const container = document.getElementById('exam-container');
+
+            // --- MOBILE UI ADAPTATION ---
+            if (isMobile) {
+                grantPermBtn.innerText = "📸 Grant Camera & Mic Access (Mobile)";
+            }
+
+            // --- SCREEN WAKE LOCK API (Prevents Android Sleep) ---
+            async function requestWakeLock() {
+                try {
+                    if ('wakeLock' in navigator) {
+                        wakeLock = await navigator.wakeLock.request('screen');
+                    }
+                } catch (err) { console.log("Wake Lock not supported."); }
+            }
+            document.addEventListener('visibilitychange', () => {
+                if (wakeLock !== null && document.visibilityState === 'visible') requestWakeLock();
+            });
 
             // --- DEEP SECURITY: CANVAS HARDWARE FINGERPRINTING ---
             function generateHardwareFingerprint() {
@@ -261,9 +282,7 @@
                 if (!isExamActive) return;
                 
                 const now = Date.now();
-                if (now - lastInternalTick > 4000) {
-                    triggerTamperProtocol("Process Suspension / System Freeze Detected");
-                }
+                if (now - lastInternalTick > 4000) triggerTamperProtocol("Process Suspension / System Freeze Detected");
                 lastInternalTick = now;
 
                 const start = performance.now(); debugger;
@@ -275,7 +294,8 @@
                     triggerTamperProtocol("LocalStorage Manipulation Attempted");
                 }
 
-                if (window.outerWidth > 0 && window.innerHeight > 0) {
+                // Window Math only on Desktop (Mobile URLs resizing causes false positives)
+                if (!isMobile && window.outerWidth > 0 && window.innerHeight > 0) {
                     const widthDiff = window.outerWidth - window.innerWidth;
                     const heightDiff = window.outerHeight - window.innerHeight;
                     if (widthDiff > 200 || heightDiff > 200) triggerTamperProtocol("Developer Tools Docked Panel Detected");
@@ -308,15 +328,20 @@
                 if (detectVirtualMachine()) { alert("SECURITY ERROR: Virtual Machines and Emulators are strictly prohibited."); return; }
                 try {
                     mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                    screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
                     
-                    permStatus.innerText = "Status: Camera, Mic & Screen Active ✅";
+                    if (!isMobile) {
+                        screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
+                        permStatus.innerText = "Status: Camera, Mic & Screen Active ✅";
+                    } else {
+                        permStatus.innerText = "Status: Camera & Mic Active ✅";
+                    }
+                    
                     permStatus.style.color = "green";
                     grantPermBtn.style.display = "none";
                     permissionsGranted = true;
                     validateInputs();
                 } catch(e) {
-                    permStatus.innerText = "Status: Access Denied ❌ You MUST allow both Camera and Screen Share.";
+                    permStatus.innerText = "Status: Access Denied ❌ You MUST grant permissions.";
                     permStatus.style.color = "red";
                 }
             });
@@ -342,12 +367,18 @@
                 return;
             }
 
-            // --- SCREEN SHARE "LAST CHANCE" MANAGER ---
-            function attachStreamListeners() {
+            // --- HARDWARE DISCONNECTION HANDLERS ---
+            function attachMediaListeners() {
                 if (mediaStream) {
-                    mediaStream.getTracks().forEach(t => t.onended = () => { lockOutStudent("Exam Terminated", "Webcam/Mic connection was permanently lost.", false); });
+                    mediaStream.getTracks().forEach(t => {
+                        t.onended = () => { 
+                            if (isExamActive) triggerExactWarning("Camera/Mic disconnected or screen locked."); 
+                        };
+                    });
                 }
-                if (screenStream) {
+            }
+            function attachScreenListeners() {
+                if (screenStream && !isMobile) {
                     screenStream.getVideoTracks()[0].onended = () => { 
                         screenShareDrops++;
                         if (screenShareDrops > 1) {
@@ -370,7 +401,7 @@
                     screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
                     document.getElementById('screen-share-overlay').style.display = 'none';
                     document.getElementById('exam-container').style.display = 'block';
-                    attachStreamListeners(); 
+                    attachScreenListeners(); 
                     isExamActive = true; 
                 } catch (e) { alert("You MUST share your screen to continue the exam."); }
             });
@@ -411,9 +442,26 @@
                 isExamActive = false; 
             }
 
+            // Resume from Warning (forces camera reconnection if screen was locked)
             violationCheckbox.addEventListener('change', (e) => { violationAckBtn.disabled = !e.target.checked; });
             violationAckBtn.addEventListener('click', async () => {
                 if (!violationCheckbox.checked) return; 
+                
+                let needsCamera = false;
+                if (mediaStream) {
+                    mediaStream.getTracks().forEach(t => { if (t.readyState === 'ended') needsCamera = true; });
+                } else { needsCamera = true; }
+
+                if (needsCamera) {
+                    try {
+                        mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                        attachMediaListeners(); 
+                    } catch(e) {
+                        alert("You MUST allow camera/mic access to resume the exam.");
+                        return; 
+                    }
+                }
+
                 document.getElementById('warning-overlay').style.display = 'none';
                 if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
                     try { await document.documentElement.requestFullscreen(); } catch (e) {}
@@ -456,8 +504,13 @@
                 try {
                     if (document.documentElement.requestFullscreen) { try { await document.documentElement.requestFullscreen(); } catch (e) {} }
                     mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                    screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
-                    attachStreamListeners();
+                    
+                    if (!isMobile) {
+                        screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
+                    }
+                    
+                    attachMediaListeners();
+                    attachScreenListeners();
                     startAudioMonitoring(mediaStream); 
 
                     document.getElementById('timeout-screen').classList.add('hidden');
@@ -503,6 +556,7 @@
 
                 try {
                     if (document.documentElement.requestFullscreen) { try { await document.documentElement.requestFullscreen(); } catch (e) {} }
+                    requestWakeLock(); // Start screen lock for mobile
                     
                     document.getElementById('instruction-screen').style.display = 'none';
                     document.getElementById('exam-container').style.display = 'block';
@@ -526,7 +580,8 @@
                     
                     container.appendChild(iframe);
                     startCountdown();
-                    attachStreamListeners();
+                    attachMediaListeners();
+                    attachScreenListeners();
                     startAudioMonitoring(mediaStream); 
                     
                     isExamActive = true; 
