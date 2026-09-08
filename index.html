@@ -49,6 +49,17 @@
 </head>
 <body>
 
+    <!-- NO-JAVASCRIPT FATAL ERROR SCREEN -->
+    <noscript>
+        <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #202124; color: white; display: flex; justify-content: center; align-items: center; z-index: 999999; text-align: center; font-family: sans-serif;">
+            <div style="background: #d93025; padding: 40px; border-radius: 12px; max-width: 500px;">
+                <h1 style="margin-top: 0;">JavaScript Disabled</h1>
+                <p style="font-size: 16px; line-height: 1.5;">This secure exam portal requires JavaScript to function. You have disabled JavaScript or are using an unsupported browser.</p>
+                <p style="font-weight: bold; margin-top: 20px;">Please enable JavaScript in your browser settings and refresh this page to begin.</p>
+            </div>
+        </div>
+    </noscript>
+
     <div class="screenshot-flash" id="flash-overlay"></div>
 
     <div id="status-bar-container">
@@ -341,11 +352,9 @@
                 }
             });
 
-            // Input Validation with STRICT 13-Digit Logic
             function validateInputs() {
                 const isRollValid = /^\d{13}$/.test(rollInput.value);
                 
-                // Show warning if they started typing but it's not 13 digits yet
                 if (rollInput.value.length > 0 && !isRollValid) {
                     rollError.style.display = 'block';
                 } else {
@@ -361,9 +370,8 @@
                 }
             }
 
-            // Force Numbers Only on Roll Input
             rollInput.addEventListener('input', function() {
-                this.value = this.value.replace(/\D/g, ''); // Removes any non-numeric character automatically
+                this.value = this.value.replace(/\D/g, ''); 
                 validateInputs();
             });
 
