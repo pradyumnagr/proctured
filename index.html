@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Proctored Exam</title>
+    <title>Proctored Exam Portal</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -14,7 +14,7 @@
 
         .card {
             background: white; padding: 30px; border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 90%; max-width: 600px; text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 90%; max-width: 650px; text-align: center;
         }
 
         /* Top Bar Indicators */
@@ -38,34 +38,50 @@
         }
         .warning-box h3 { color: #d93025; margin-top: 0; font-size: 22px; }
         
-        /* Checkbox & Button Styles */
         .ack-container {
             text-align: left; background: #fff3f3; padding: 12px; 
             border-radius: 6px; border: 1px solid #ffcdd2; margin-bottom: 20px;
         }
-        .ack-label {
-            display: flex; align-items: flex-start; cursor: pointer; font-size: 14px; color: #333; line-height: 1.4;
-        }
-        .ack-checkbox {
-            margin-right: 12px; width: 18px; height: 18px; margin-top: 2px; cursor: pointer;
-        }
+        .ack-label { display: flex; align-items: flex-start; cursor: pointer; font-size: 14px; color: #333; line-height: 1.4; }
+        .ack-checkbox { margin-right: 12px; width: 18px; height: 18px; margin-top: 2px; cursor: pointer; }
         
         .btn-ack { 
             background: #d93025; color: white; border: none; padding: 12px 24px; 
             border-radius: 6px; font-weight: bold; width: 100%; transition: 0.2s;
         }
-        /* Disabled button state */
-        .btn-ack:disabled {
-            background: #cccccc; cursor: not-allowed; opacity: 0.7; color: #666;
-        }
+        .btn-ack:disabled { background: #cccccc; cursor: not-allowed; opacity: 0.7; color: #666; }
         .btn-ack:not(:disabled):hover { background: #b3261e; cursor: pointer; }
+
+        /* Instruction Page Styles */
+        .instruction-box {
+            background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px;
+            padding: 20px; text-align: left; max-height: 300px; overflow-y: auto;
+            margin-bottom: 20px; font-size: 14px; color: #333; line-height: 1.6;
+        }
+        .instruction-box h4 { margin-top: 0; color: #1a73e8; font-size: 16px; margin-bottom: 10px;}
+        .instruction-box ul { padding-left: 20px; margin-top: 5px; }
+        .instruction-box li { margin-bottom: 8px; }
         
+        button.btn-primary { background: #1a73e8; color: white; border: none; padding: 14px; border-radius: 6px; width: 100%; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.2s;}
+        button.btn-primary:disabled { background: #cccccc; cursor: not-allowed; color: #666;}
+        button.btn-primary:not(:disabled):hover { background: #1557b0; }
+        
+        /* 5-Minute Penalty Screen Styles */
+        #penalty-timer { font-size: 48px; font-weight: bold; color: #d93025; font-family: monospace; display: block; margin: 20px 0; }
+
         .screenshot-flash { background-color: red !important; display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 99998; }
-        button.btn-primary { background: #1a73e8; color: white; border: none; padding: 12px; border-radius: 6px; width: 100%; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 15px;}
-        
         #exam-container { display: none; width: 100vw; height: 100vh; padding-top: 40px; box-sizing: border-box; }
         iframe { width: 100%; height: 100%; border: none; }
         .hidden { display: none !important; }
+        
+        /* Designer Credit Style */
+        .designer-credit {
+            margin-top: 25px;
+            font-family: 'Brush Script MT', cursive;
+            font-size: 15px;
+            color: #888;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -77,37 +93,82 @@
         <div>Security Violations: <span id="violations-pill">0</span></div>
     </div>
 
-    <!-- UPDATED: Warning Modal with Checkbox -->
+    <!-- Security Warning Modal (Strikes 1 to 4) -->
     <div id="warning-overlay">
         <div class="warning-box">
             <h3>⚠️ SECURITY WARNING</h3>
             <p id="warning-detail" style="font-size: 15px;">Violation details go here.</p>
             <p style="color: #777; font-size: 13px;" id="warning-strike-count"></p>
             
-            <p style="color: #d93025; font-weight: bold; font-size: 15px; margin: 20px 0;">
-                FINAL WARNING: Your exam will be permanently closed if you continue to violate the rules.
+            <p style="color: #d93025; font-weight: bold; font-size: 14px; margin: 20px 0;">
+                WARNING: Reaching 5 violations will trigger a 5-minute exam lockout. A 6th violation will permanently terminate the exam.
             </p>
             
             <div class="ack-container">
                 <label class="ack-label">
-                    <input type="checkbox" id="ack-checkbox" class="ack-checkbox">
-                    I acknowledge this security violation and understand that my exam will be terminated if I repeat it.
+                    <input type="checkbox" id="violation-checkbox" class="ack-checkbox">
+                    I acknowledge this security violation and understand the penalty rules.
                 </label>
             </div>
 
-            <button class="btn-ack" id="ack-btn" disabled>Acknowledge & Return to Exam</button>
+            <button class="btn-ack" id="violation-ack-btn" disabled>Acknowledge & Return to Exam</button>
         </div>
     </div>
 
-    <!-- Permissions Screen -->
-    <div id="permission-screen" class="card">
-        <h2>Assessment Environment Check</h2>
-        <p style="text-align: left; background: #fff3f3; padding: 15px; border-left: 4px solid #d93025; font-size: 14px;">
-            <strong>RULES:</strong> Do not switch tabs, minimize the window, exit Fullscreen, or use keyboard shortcuts. <br><br>
-            <em>Note: If the timer runs out or you trigger too many warnings, the exam will close and unsubmitted work will be lost.</em>
+    <!-- 5-MINUTE PENALTY LOCKOUT SCREEN (Strike 5) -->
+    <div id="timeout-screen" class="card hidden" style="border-top: 10px solid #d93025;">
+        <h2 style="color: #d93025; margin-top: 0;">TEMPORARY LOCKOUT</h2>
+        <p style="font-size: 16px; color: #333; font-weight: bold;">You have reached 5 Security Violations.</p>
+        <p style="color: #555; font-size: 14px; margin-bottom: 5px;">Your exam has been paused and hidden as a penalty. You must wait for the countdown to expire before you can resume.</p>
+        
+        <span id="penalty-timer">05:00</span>
+        
+        <p style="color: #d93025; font-weight: bold; font-size: 14px; background: #fff3f3; padding: 10px; border-radius: 6px; margin-bottom: 25px;">
+            ⚠️ If you trigger ONE MORE violation after this, your exam will be permanently submitted and closed.
         </p>
-        <button id="start-btn" class="btn-primary">Grant Camera/Mic & Start Exam</button>
-        <p id="perm-message" style="color: red; font-weight: bold;" class="hidden"></p>
+
+        <button id="resume-final-btn" class="btn-primary" disabled>Please wait...</button>
+    </div>
+
+    <!-- INSTRUCTIONS AND AGREEMENT SCREEN -->
+    <div id="instruction-screen" class="card">
+        <h2 style="margin-top: 0; color: #202124;">Exam Instructions & Rules</h2>
+        
+        <div class="instruction-box">
+            <h4>1. Mandatory Hardware</h4>
+            <ul>
+                <li>You must grant permission to use your <strong>Camera and Microphone</strong>.</li>
+                <li>Your face must remain clearly visible at all times.</li>
+            </ul>
+
+            <h4>2. Strict Proctoring Rules</h4>
+            <ul>
+                <li><strong>No Tab Switching:</strong> You cannot open other tabs, browsers, or apps.</li>
+                <li><strong>No Leaving the Window:</strong> Clicking outside the exam triggers a violation.</li>
+                <li><strong>No Exiting Fullscreen:</strong> The exam must remain in Fullscreen mode.</li>
+                <li><strong>No Shortcuts:</strong> Copy, Paste, Print Screen, and Developer Tools are disabled.</li>
+            </ul>
+
+            <h4>3. The Lockout Penalty System</h4>
+            <ul>
+                <li>Every rule violation is permanently recorded.</li>
+                <li>If you reach <strong>5 Violations</strong>, your exam will be locked and hidden for a mandatory <strong>5-minute penalty period.</strong></li>
+                <li>A <strong>6th violation</strong> will result in immediate and permanent termination of the exam.</li>
+            </ul>
+        </div>
+
+        <div style="text-align: left; margin-bottom: 20px;">
+            <label class="ack-label">
+                <input type="checkbox" id="exam-agreement-checkbox" class="ack-checkbox">
+                <strong>I have read the instructions and agree to the terms of this proctored exam.</strong>
+            </label>
+        </div>
+
+        <button id="start-btn" class="btn-primary" disabled>Accept Rules & Start System Check</button>
+        <p id="perm-message" style="color: #d93025; font-weight: bold; margin-top: 15px;" class="hidden"></p>
+        
+        <!-- Designer Credit Added Here -->
+        <div class="designer-credit">Designed by Pradyumn</div>
     </div>
 
     <!-- Google Form Container -->
@@ -116,36 +177,61 @@
         <iframe src="https://docs.google.com/forms/d/e/1FAIpQLScA99fvElgJtVBXjdyMrIPYpSYTUtFQBX0MZOpPWgCobIrfNg/viewform?usp=header" allow="camera; microphone"></iframe>
     </div>
 
-    <!-- Terminal Screen -->
+    <!-- Final Termination Screen (Strike 6 or Time Up) -->
     <div id="result-screen" class="card hidden">
-        <h2 id="final-title">Exam Terminated</h2>
-        <p id="final-message">Your access to this assessment has been closed.</p>
+        <h2 id="final-title" style="color: #d93025;">Exam Terminated</h2>
+        <p id="final-message">Your access to this assessment has been permanently closed.</p>
     </div>
 
     <script>
         (function() {
             let tabSwitchCount = parseInt(localStorage.getItem('gf_tabSwitches') || '0');
             let timerInterval;
+            let penaltyInterval;
             let mediaStream = null;
             let initialWindowWidth = window.innerWidth;
             let initialWindowHeight = window.innerHeight;
             let lastWarningTime = 0;
 
-            const ackCheckbox = document.getElementById('ack-checkbox');
-            const ackBtn = document.getElementById('ack-btn');
+            // DOM Elements
+            const examAgreementCheckbox = document.getElementById('exam-agreement-checkbox');
+            const startBtn = document.getElementById('start-btn');
+            const violationCheckbox = document.getElementById('violation-checkbox');
+            const violationAckBtn = document.getElementById('violation-ack-btn');
+            const resumeFinalBtn = document.getElementById('resume-final-btn');
 
+            // 1. Initial State Check (Locks and ongoing Penalties)
             if (localStorage.getItem('gf_examLocked') === 'true') {
-                lockOutStudent("You have already completed or been locked out of this exam.");
+                document.getElementById('instruction-screen').style.display = 'none';
+                document.getElementById('result-screen').classList.remove('hidden');
+                document.getElementById('final-message').innerText = "You have already completed or been locked out of this exam.";
                 return;
             }
 
-            // Unlock button only when checkbox is checked
-            ackCheckbox.addEventListener('change', (e) => {
-                ackBtn.disabled = !e.target.checked;
+            let activePenaltyEndTime = localStorage.getItem('gf_timeoutEndTime');
+            if (activePenaltyEndTime && parseInt(activePenaltyEndTime) > Date.now()) {
+                // If they refreshed DURING the 5-minute penalty, throw them straight back into it
+                startPenaltyCountdown(parseInt(activePenaltyEndTime));
+            } else if (activePenaltyEndTime && parseInt(activePenaltyEndTime) <= Date.now()) {
+                // Penalty is over but they refreshed. Let them start normally from instructions, but keep strike count.
+                localStorage.removeItem('gf_timeoutEndTime');
+            }
+
+            // 2. Button Logic Handlers
+            examAgreementCheckbox.addEventListener('change', (e) => {
+                startBtn.disabled = !e.target.checked;
+                startBtn.innerText = e.target.checked ? "Grant Permissions & Enter Exam" : "Accept Rules & Start System Check";
             });
 
+            violationCheckbox.addEventListener('change', (e) => {
+                violationAckBtn.disabled = !e.target.checked;
+            });
+
+            // 3. Central Violation Handler
             function triggerExactWarning(exactRuleMessage) {
+                // Ignore warnings if exam isn't open or if they are in the penalty box
                 if (document.getElementById('exam-container').style.display === 'none') return;
+                if (!document.getElementById('timeout-screen').classList.contains('hidden')) return;
                 
                 const now = Date.now();
                 if (now - lastWarningTime < 1200) return;
@@ -153,49 +239,116 @@
 
                 tabSwitchCount++;
                 localStorage.setItem('gf_tabSwitches', tabSwitchCount);
-                
                 document.getElementById('violations-pill').innerText = tabSwitchCount;
-                document.getElementById('warning-detail').innerHTML = `<strong>Rule Broken:</strong><br>${exactRuleMessage}`;
-                document.getElementById('warning-strike-count').innerText = `Recorded Infraction #${tabSwitchCount} of 5 permitted.`;
-                
-                // Reset checkbox and button state for the new warning
-                ackCheckbox.checked = false;
-                ackBtn.disabled = true;
 
-                document.getElementById('warning-overlay').style.display = 'flex';
-
-                // Lock them out completely if they cheat 5 times
-                if (tabSwitchCount >= 5) {
-                    lockOutStudent("Maximum security violations reached. Exam terminated.");
+                // --- STRIKE 5: 5-Minute Penalty Lockout ---
+                if (tabSwitchCount === 5) {
+                    let timeoutEnd = Date.now() + (5 * 60 * 1000); // 5 minutes from right now
+                    localStorage.setItem('gf_timeoutEndTime', timeoutEnd);
+                    startPenaltyCountdown(timeoutEnd);
+                    return;
                 }
+
+                // --- STRIKE 6: Permanent Lockout ---
+                if (tabSwitchCount > 5) {
+                    lockOutStudent("Final violation triggered (Strike 6). Exam permanently terminated.");
+                    return;
+                }
+
+                // --- STRIKES 1-4: Standard Warning ---
+                document.getElementById('warning-detail').innerHTML = `<strong>Rule Broken:</strong><br>${exactRuleMessage}`;
+                document.getElementById('warning-strike-count').innerText = `Recorded Infraction #${tabSwitchCount} of 4 permitted before temporary lockout.`;
+                
+                violationCheckbox.checked = false;
+                violationAckBtn.disabled = true;
+                document.getElementById('warning-overlay').style.display = 'flex';
             }
 
-            document.getElementById('ack-btn').addEventListener('click', async () => {
-                if (!ackCheckbox.checked) return; // Failsafe
-                
+            // 4. Penalty Box Countdown Logic
+            function startPenaltyCountdown(endTime) {
+                // Hide the exam and UI
+                document.getElementById('instruction-screen').style.display = 'none';
+                document.getElementById('exam-container').style.display = 'none';
+                document.getElementById('status-bar-container').style.display = 'none';
+                document.getElementById('warning-overlay').style.display = 'none';
+
+                // Disconnect Camera/Mic to save their privacy during the 5 min timeout
+                if (mediaStream) {
+                    mediaStream.getTracks().forEach(t => t.stop());
+                    mediaStream = null;
+                }
+                if (document.fullscreenElement) { document.exitFullscreen().catch(()=>{}); }
+
+                document.getElementById('timeout-screen').classList.remove('hidden');
+                const timerDisplay = document.getElementById('penalty-timer');
+                resumeFinalBtn.disabled = true;
+                resumeFinalBtn.innerText = "Please wait...";
+
+                function tick() {
+                    const remaining = endTime - Date.now();
+                    if (remaining <= 0) {
+                        clearInterval(penaltyInterval);
+                        timerDisplay.innerText = "00:00";
+                        resumeFinalBtn.disabled = false;
+                        resumeFinalBtn.innerText = "Acknowledge & Resume Final Chance";
+                    } else {
+                        const m = Math.floor(remaining / 60000);
+                        const s = Math.floor((remaining % 60000) / 1000);
+                        timerDisplay.innerText = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+                    }
+                }
+                tick();
+                penaltyInterval = setInterval(tick, 1000);
+            }
+
+            // 5. Resume from Penalty Logic
+            resumeFinalBtn.addEventListener('click', async () => {
+                try {
+                    // Re-request Fullscreen & Hardware
+                    if (document.documentElement.requestFullscreen) { try { await document.documentElement.requestFullscreen(); } catch (e) {} }
+                    mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+
+                    document.getElementById('timeout-screen').classList.add('hidden');
+                    localStorage.removeItem('gf_timeoutEndTime');
+
+                    // Show Exam
+                    document.getElementById('exam-container').style.display = 'block';
+                    document.getElementById('status-bar-container').style.display = 'flex';
+
+                    initialWindowWidth = window.innerWidth;
+                    initialWindowHeight = window.innerHeight;
+
+                    // Ensure main exam timer is running
+                    if (!timerInterval) startCountdown();
+
+                    mediaStream.getTracks().forEach(t => t.onended = () => {
+                        lockOutStudent("Hardware connection lost. Exam terminated.");
+                    });
+                } catch (e) {
+                    alert("Camera & Microphone permissions are mandatory to resume the exam.");
+                }
+            });
+
+            // 6. Resume from Standard Warning
+            violationAckBtn.addEventListener('click', async () => {
+                if (!violationCheckbox.checked) return; 
                 document.getElementById('warning-overlay').style.display = 'none';
                 if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
                     try { await document.documentElement.requestFullscreen(); } catch (e) {}
                 }
             });
 
-            // Security Triggers
+            // 7. Security Monitors
             document.addEventListener('visibilitychange', () => { 
                 if (document.hidden) triggerExactWarning("Switched browser tabs or minimized window."); 
             });
-            
-            // THE IFRAME FIX: Ignores clicks inside the form, punishes clicking outside the browser
             window.addEventListener('blur', () => { 
-                if (document.activeElement && document.activeElement.tagName.toLowerCase() === 'iframe') {
-                    return; // Clicking inside Google Form is safe.
-                }
+                if (document.activeElement && document.activeElement.tagName.toLowerCase() === 'iframe') return; 
                 triggerExactWarning("Window lost focus. You clicked outside the exam window."); 
             });
-            
             document.addEventListener('fullscreenchange', () => { 
                 if (!document.fullscreenElement) triggerExactWarning("You exited Fullscreen mode."); 
             });
-
             window.addEventListener('resize', () => {
                 if (document.fullscreenElement) return;
                 if (window.innerWidth < (initialWindowWidth * 0.85) || window.innerHeight < (initialWindowHeight * 0.85)) {
@@ -204,7 +357,6 @@
                     initialWindowHeight = window.innerHeight;
                 }
             });
-
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) || (e.ctrlKey && ['u', 'p', 's'].includes(e.key.toLowerCase()))) {
                     e.preventDefault(); triggerExactWarning("Prohibited keyboard shortcut used.");
@@ -217,12 +369,14 @@
                 }
             });
 
-            document.getElementById('start-btn').addEventListener('click', async () => {
+            // 8. Initial Exam Start Sequence
+            startBtn.addEventListener('click', async () => {
+                if (!examAgreementCheckbox.checked) return;
                 try {
                     if (document.documentElement.requestFullscreen) { try { await document.documentElement.requestFullscreen(); } catch (e) {} }
-
                     mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                    document.getElementById('permission-screen').style.display = 'none';
+                    
+                    document.getElementById('instruction-screen').style.display = 'none';
                     document.getElementById('exam-container').style.display = 'block';
                     document.getElementById('status-bar-container').style.display = 'flex';
                     document.getElementById('violations-pill').innerText = tabSwitchCount;
@@ -238,10 +392,11 @@
                 } catch (err) {
                     const msg = document.getElementById('perm-message');
                     msg.classList.remove('hidden');
-                    msg.innerHTML = "Camera & Microphone access is mandatory to begin.";
+                    msg.innerHTML = "Camera & Microphone permissions are mandatory to start. Please allow access in your browser settings.";
                 }
             });
 
+            // 9. Master 2-Hour Timer
             function startCountdown() {
                 let endTime = localStorage.getItem('gf_examEndTime');
                 if (!endTime) { endTime = Date.now() + (2 * 60 * 60 * 1000); localStorage.setItem('gf_examEndTime', endTime); }
@@ -259,17 +414,19 @@
                 tick(); timerInterval = setInterval(tick, 1000);
             }
 
+            // 10. Permanent Lockout Enforcement
             function lockOutStudent(reason) {
                 clearInterval(timerInterval);
                 if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
-                if (document.fullscreenElement) document.exitFullscreen();
+                if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
 
                 localStorage.setItem('gf_examLocked', 'true');
                 
-                document.getElementById('permission-screen').style.display = 'none';
+                document.getElementById('instruction-screen').style.display = 'none';
                 document.getElementById('exam-container').style.display = 'none';
                 document.getElementById('status-bar-container').style.display = 'none';
                 document.getElementById('warning-overlay').style.display = 'none';
+                document.getElementById('timeout-screen').style.display = 'none';
                 
                 document.getElementById('result-screen').classList.remove('hidden');
                 document.getElementById('final-message').innerText = reason;
