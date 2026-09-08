@@ -12,7 +12,7 @@
         #timer-pill { background: #d93025; padding: 4px 12px; border-radius: 4px; }
         #violations-pill { background: #ea8600; padding: 4px 12px; border-radius: 4px; }
 
-        #warning-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.85); z-index: 99999; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
+        #warning-overlay, #screen-share-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.85); z-index: 99999; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
         .warning-box { background: #ffffff; border-top: 8px solid #d93025; padding: 30px; border-radius: 10px; max-width: 480px; width: 90%; text-align: center; }
         .warning-box h3 { color: #d93025; margin-top: 0; font-size: 22px; }
         
@@ -73,6 +73,18 @@
         </div>
     </div>
 
+    <!-- ONE LAST CHANCE SCREEN SHARE MODAL -->
+    <div id="screen-share-overlay">
+        <div class="warning-box" style="border-top: 8px solid #ea8600;">
+            <h3 style="color: #ea8600;">⚠️ SCREEN SHARE STOPPED</h3>
+            <p style="font-size: 15px; margin-bottom: 15px;">You have stopped sharing your screen. This is a severe violation of exam rules.</p>
+            <p style="color: #d93025; font-weight: bold; margin-bottom: 25px; background: #fff3f3; padding: 10px; border-radius: 6px;">
+                You have exactly ONE last chance to resume screen sharing. If you stop it again, your exam will be permanently terminated.
+            </p>
+            <button id="restart-screen-btn" class="btn-primary" style="background: #ea8600;">Restart Screen Share Now</button>
+        </div>
+    </div>
+
     <!-- 5-MINUTE PENALTY LOCKOUT SCREEN -->
     <div id="timeout-screen" class="card hidden" style="border-top: 10px solid #d93025;">
         <h2 style="color: #d93025; margin-top: 0;">TEMPORARY LOCKOUT</h2>
@@ -102,11 +114,11 @@
                 <li><strong>No Leaving the Window:</strong> Clicking outside the exam triggers a violation.</li>
                 <li><strong>No Exiting Fullscreen:</strong> The exam must remain in Fullscreen mode.</li>
                 <li><strong>Screen Share Required:</strong> Your screen must be shared. Dual monitors are blocked.</li>
+                <li><strong>Anti-Tampering:</strong> Attempting to bypass security code triggers an instant Last Warning.</li>
                 <li><strong>Penalty System:</strong> 7 Violations = 5 Min Lockout. 8 Violations = Permanent Termination.</li>
             </ul>
         </div>
 
-        <!-- System Hardware Request -->
         <div class="system-check-box">
             <label style="display: block; color: #1a73e8; font-weight: bold; margin-bottom: 8px;">3. System Check (Required):</label>
             <button id="grant-perm-btn" type="button" style="background: #1a73e8; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%;">📸 Grant Camera & Screen Share Access</button>
@@ -124,7 +136,7 @@
         <div class="designer-credit">Designed by Pradyumn</div>
     </div>
 
-    <!-- Empty Google Form Container (Base64 URL injected here later) -->
+    <!-- Empty Google Form Container -->
     <div id="exam-container"></div>
 
     <!-- Final Termination / Success Screen -->
@@ -142,23 +154,22 @@
 
             // ==========================================
             // 2. BASE64 ENCRYPTED GOOGLE FORM URL
-            // (Decodes to: https://docs.google.com/forms/d/e/1FAIpQLScA99fvElgJtVBXjdyMrIPYpSYTUtFQBX0MZOpPWgCobIrfNg/viewform?embedded=true)
             // ==========================================
             const ENCODED_FORM_URL = "aHR0cHM6Ly9kb2NzLmdvb2dsZS5jb20vZm9ybXMvZC9lLzFGQUlwUUxTY0E5OWZ2RWxnSnRWQlhqZHlNcklQWXBTWVRVdEZRQlgwTVpPcFBXZ0NvYklyZk5nL3ZpZXdmb3JtP2VtYmVkZGVkPXRydWU=";
 
-            // --- MASTER SHIELD & STATE ---
             let isExamActive = false; 
             let tabSwitchCount = parseInt(localStorage.getItem('gf_tabSwitches') || '0');
             let violationLogs = JSON.parse(localStorage.getItem('gf_violationLogs') || '[]');
             
             let timerInterval, penaltyInterval, mediaStream = null, screenStream = null;
             let permissionsGranted = false;
+            let screenShareDrops = 0; // Tracks the "One Last Chance" screen share allowance
+            
             let initialWindowWidth = window.innerWidth;
             let initialWindowHeight = window.innerHeight;
             let lastWarningTime = 0;
             let formLoadCount = 0; 
 
-            // DOM Elements
             const examAgreementCheckbox = document.getElementById('exam-agreement-checkbox');
             const startBtn = document.getElementById('start-btn');
             const grantPermBtn = document.getElementById('grant-perm-btn');
@@ -166,11 +177,76 @@
             const violationCheckbox = document.getElementById('violation-checkbox');
             const violationAckBtn = document.getElementById('violation-ack-btn');
             const resumeFinalBtn = document.getElementById('resume-final-btn');
+            const restartScreenBtn = document.getElementById('restart-screen-btn');
             const nameInput = document.getElementById('student-name-input');
             const idInput = document.getElementById('student-id-input');
             const container = document.getElementById('exam-container');
 
-            // --- WEBGL VIRTUAL MACHINE DETECTOR ---
+            // --- DEEP SECURITY: INTEGRITY & TAMPER PROTOCOL ---
+            
+            // Check if native JavaScript functions were maliciously rewritten
+            function checkNativeIntegrity() {
+                const fns = [window.addEventListener, document.addEventListener, atob, fetch];
+                for (let fn of fns) {
+                    if (!fn.toString().includes('[native code]')) return false;
+                }
+                return true;
+            }
+
+            // Monitor DOM to ensure they don't use Inspect Element to delete warning boxes
+            const observer = new MutationObserver((mutations) => {
+                if (!isExamActive) return;
+                mutations.forEach((mutation) => {
+                    mutation.removedNodes.forEach((node) => {
+                        if (node.id === 'warning-overlay' || node.id === 'timeout-screen' || node.id === 'exam-container') {
+                            triggerTamperProtocol("DOM Manipulation / Overlay Deletion");
+                        }
+                    });
+                });
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+
+            // Triggers INSTANT LAST WARNING for severe hacking attempts
+            function triggerTamperProtocol(reason) {
+                if (!isExamActive) return;
+                // Instantly force strikes up to 6, so the next command bumps it to 7 (Penalty Box)
+                if (tabSwitchCount < 6) {
+                    tabSwitchCount = 6;
+                    localStorage.setItem('gf_tabSwitches', 6);
+                }
+                triggerExactWarning("SEVERE TAMPERING DETECTED: " + reason);
+            }
+
+            // Background Integrity Loops
+            setInterval(() => {
+                if (!isExamActive) return;
+                
+                // 1. Detect Undocked DevTools via debugger pause delay
+                const start = performance.now();
+                debugger;
+                if (performance.now() - start > 150) {
+                    triggerTamperProtocol("Developer Tools Code Execution Paused");
+                }
+                
+                // 2. Detect Extension Overrides
+                if (!checkNativeIntegrity()) triggerTamperProtocol("JavaScript Modification / Extension Interference");
+                
+                // 3. Detect LocalStorage Rollbacks
+                if (parseInt(localStorage.getItem('gf_tabSwitches') || '0') < tabSwitchCount) {
+                    triggerTamperProtocol("LocalStorage Manipulation Attempted");
+                }
+
+                // 4. Detect Docked DevTools via Window Math
+                if (window.outerWidth > 0 && window.innerHeight > 0) {
+                    const widthDiff = window.outerWidth - window.innerWidth;
+                    const heightDiff = window.outerHeight - window.innerHeight;
+                    if (widthDiff > 200 || heightDiff > 200) {
+                        triggerTamperProtocol("Developer Tools Docked Panel Detected");
+                    }
+                }
+            }, 2500);
+
+            // --- HARDWARE VERIFICATION ---
             function detectVirtualMachine() {
                 try {
                     const canvas = document.createElement('canvas');
@@ -179,21 +255,14 @@
                     const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
                     if (!debugInfo) return false;
                     const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL).toLowerCase();
-                    if (renderer.includes('swiftshader') || renderer.includes('llvmpipe') || renderer.includes('vmware') || renderer.includes('virtualbox')) {
-                        return true;
-                    }
+                    if (renderer.includes('swiftshader') || renderer.includes('llvmpipe') || renderer.includes('vmware') || renderer.includes('virtualbox')) return true;
                     return false;
                 } catch (e) { return false; }
             }
 
-            // --- PRE-EXAM SYSTEM CHECK (CAM + SCREEN SHARE) ---
             grantPermBtn.addEventListener('click', async () => {
-                if (detectVirtualMachine()) {
-                    alert("SECURITY ERROR: Virtual Machines and Emulators are strictly prohibited.");
-                    return;
-                }
+                if (detectVirtualMachine()) { alert("SECURITY ERROR: Virtual Machines and Emulators are strictly prohibited."); return; }
                 try {
-                    // Request BOTH Video/Audio and DisplayMedia
                     mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                     screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
                     
@@ -229,20 +298,47 @@
                 return;
             }
 
-            // --- HARDWARE DISCONNECTION MONITOR ---
+            // --- THE SCREEN SHARE "LAST CHANCE" MANAGER ---
             function attachStreamListeners() {
                 if (mediaStream) {
-                    mediaStream.getTracks().forEach(t => t.onended = () => { lockOutStudent("Exam Terminated", "Webcam/Mic connection was lost.", false); });
+                    mediaStream.getTracks().forEach(t => t.onended = () => { lockOutStudent("Exam Terminated", "Webcam/Mic connection was permanently lost.", false); });
                 }
                 if (screenStream) {
-                    screenStream.getVideoTracks()[0].onended = () => { lockOutStudent("Exam Terminated", "Screen sharing was stopped.", false); };
+                    screenStream.getVideoTracks()[0].onended = () => { 
+                        screenShareDrops++;
+                        if (screenShareDrops > 1) {
+                            // Strike 2: Permanent Death
+                            lockOutStudent("Exam Terminated", "Screen sharing was stopped multiple times.", false);
+                        } else {
+                            // Strike 1: One Last Chance Modal
+                            isExamActive = false;
+                            document.getElementById('exam-container').style.display = 'none';
+                            document.getElementById('screen-share-overlay').style.display = 'flex';
+                            
+                            const timestamp = new Date().toLocaleTimeString();
+                            violationLogs.push({ time: timestamp, reason: "Screen Sharing Stopped (Warning Issued)" });
+                            localStorage.setItem('gf_violationLogs', JSON.stringify(violationLogs));
+                        }
+                    };
                 }
             }
+
+            restartScreenBtn.addEventListener('click', async () => {
+                try {
+                    screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
+                    document.getElementById('screen-share-overlay').style.display = 'none';
+                    document.getElementById('exam-container').style.display = 'block';
+                    attachStreamListeners(); // Re-attach the death listener
+                    isExamActive = true; 
+                } catch (e) {
+                    alert("You MUST share your screen to continue the exam.");
+                }
+            });
+
 
             // --- CENTRAL PROCTORING HANDLER ---
             function triggerExactWarning(exactRuleMessage) {
                 if (!isExamActive) return; 
-                
                 const now = Date.now();
                 if (now - lastWarningTime < 1200) return;
                 lastWarningTime = now;
@@ -289,7 +385,6 @@
             // --- PENALTY BOX LOGIC ---
             function startPenaltyCountdown(endTime) {
                 isExamActive = false; 
-                
                 document.getElementById('exam-container').style.display = 'none';
                 document.getElementById('status-bar-container').style.display = 'none';
                 document.getElementById('warning-overlay').style.display = 'none';
@@ -321,7 +416,6 @@
             resumeFinalBtn.addEventListener('click', async () => {
                 try {
                     if (document.documentElement.requestFullscreen) { try { await document.documentElement.requestFullscreen(); } catch (e) {} }
-                    // Re-request both on resume
                     mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                     screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
                     attachStreamListeners();
@@ -331,24 +425,16 @@
                     document.getElementById('exam-container').style.display = 'block';
                     document.getElementById('status-bar-container').style.display = 'flex';
                     
-                    initialWindowWidth = window.innerWidth;
-                    initialWindowHeight = window.innerHeight;
+                    initialWindowWidth = window.innerWidth; initialWindowHeight = window.innerHeight;
                     if (!timerInterval) startCountdown();
-                    
                     isExamActive = true; 
                 } catch (e) { alert("Camera, Mic & Screen Share are mandatory to resume."); }
             });
 
-            // --- SECURITY SENSORS ---
+            // --- BASIC SENSORS ---
             document.addEventListener('visibilitychange', () => { if (document.hidden) triggerExactWarning("Switched browser tabs or minimized window."); });
-            
-            window.addEventListener('blur', () => { 
-                if (document.activeElement && document.activeElement.tagName.toLowerCase() === 'iframe') return; 
-                triggerExactWarning("Window lost focus. Clicked outside the exam window."); 
-            });
-            
+            window.addEventListener('blur', () => { if (document.activeElement && document.activeElement.tagName.toLowerCase() === 'iframe') return; triggerExactWarning("Window lost focus. Clicked outside the exam window."); });
             document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) triggerExactWarning("Exited Fullscreen mode."); });
-            
             window.addEventListener('resize', () => {
                 if (document.fullscreenElement) return;
                 if (window.innerWidth < (initialWindowWidth * 0.85) || window.innerHeight < (initialWindowHeight * 0.85)) {
@@ -356,19 +442,6 @@
                     initialWindowWidth = window.innerWidth; initialWindowHeight = window.innerHeight;
                 }
             });
-
-            // WINDOW DIMENSION MATH (Detects Docked DevTools)
-            setInterval(() => {
-                if (!isExamActive) return;
-                if (window.outerWidth > 0 && window.innerHeight > 0) {
-                    const widthDiff = window.outerWidth - window.innerWidth;
-                    const heightDiff = window.outerHeight - window.innerHeight;
-                    if (widthDiff > 200 || heightDiff > 200) {
-                        triggerExactWarning("Developer Tools panel detected via window dimensions.");
-                    }
-                }
-            }, 2000);
-
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) || (e.ctrlKey && ['u', 'p', 's'].includes(e.key.toLowerCase()))) {
                     e.preventDefault(); triggerExactWarning("Prohibited keyboard shortcut used.");
@@ -381,7 +454,7 @@
                 }
             });
 
-            // --- EXAM START ROUTINE & BASE64 INJECTION ---
+            // --- EXAM START ROUTINE & INJECTION ---
             startBtn.addEventListener('click', async () => {
                 if (!examAgreementCheckbox.checked || nameInput.value.trim() === '' || idInput.value.trim() === '' || !permissionsGranted) return;
                 
@@ -398,32 +471,24 @@
                     
                     initialWindowWidth = window.innerWidth; initialWindowHeight = window.innerHeight;
 
-                    // INJECT BASE64 IFRAME SECURELY
                     const decodedUrl = atob(ENCODED_FORM_URL);
                     const iframe = document.createElement('iframe');
                     iframe.src = decodedUrl;
                     iframe.id = "google-form-iframe";
                     iframe.setAttribute("allow", "camera; microphone");
-                    iframe.style.width = "100%";
-                    iframe.style.height = "100%";
-                    iframe.style.border = "none";
+                    iframe.style.width = "100%"; iframe.style.height = "100%"; iframe.style.border = "none";
                     
                     iframe.addEventListener('load', () => {
                         formLoadCount++;
-                        if (formLoadCount === 2) {
-                            lockOutStudent("Exam Submitted Successfully", "Your responses and security logs have been recorded.", true);
-                        }
+                        if (formLoadCount === 2) { lockOutStudent("Exam Submitted Successfully", "Your responses and security logs have been recorded.", true); }
                     });
                     
                     container.appendChild(iframe);
-
                     startCountdown();
                     attachStreamListeners();
                     
-                    isExamActive = true; // Activate all security shields
-                } catch (err) {
-                    alert("A system error occurred. Please refresh the page.");
-                }
+                    isExamActive = true; 
+                } catch (err) { alert("A system error occurred. Please refresh the page."); }
             });
 
             // --- MASTER TIMER ---
@@ -433,8 +498,7 @@
                 function tick() {
                     const remaining = endTime - Date.now();
                     if (remaining <= 0) { 
-                        clearInterval(timerInterval); 
-                        lockOutStudent("Exam Terminated", "Time has expired.", false);
+                        clearInterval(timerInterval); lockOutStudent("Exam Terminated", "Time has expired.", false);
                     } else {
                         const h = Math.floor(remaining / 3600000), m = Math.floor((remaining % 3600000) / 60000), s = Math.floor((remaining % 60000) / 1000);
                         document.getElementById('timer-pill').innerText = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
@@ -443,13 +507,14 @@
                 tick(); timerInterval = setInterval(tick, 1000);
             }
 
-            // --- PERMANENT LOCKOUT / SUBMIT ENFORCEMENT ---
+            // --- PERMANENT LOCKOUT / AUDIT LOGGING ---
             function lockOutStudent(title, message, isSuccess) {
                 isExamActive = false; 
                 clearInterval(timerInterval);
                 if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
                 if (screenStream) screenStream.getTracks().forEach(t => t.stop());
                 if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+                observer.disconnect();
 
                 localStorage.setItem('gf_examLocked', 'true');
                 
@@ -458,6 +523,7 @@
                 document.getElementById('status-bar-container').style.display = 'none';
                 document.getElementById('warning-overlay').style.display = 'none';
                 document.getElementById('timeout-screen').style.display = 'none';
+                document.getElementById('screen-share-overlay').style.display = 'none';
                 
                 document.getElementById('result-screen').classList.remove('hidden');
                 document.getElementById('final-title').innerText = title;
