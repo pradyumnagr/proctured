@@ -37,14 +37,33 @@
             max-width: 480px; width: 90%; text-align: center;
         }
         .warning-box h3 { color: #d93025; margin-top: 0; font-size: 22px; }
-        .btn-ack { background: #d93025; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 15px;}
+        
+        /* Checkbox & Button Styles */
+        .ack-container {
+            text-align: left; background: #fff3f3; padding: 12px; 
+            border-radius: 6px; border: 1px solid #ffcdd2; margin-bottom: 20px;
+        }
+        .ack-label {
+            display: flex; align-items: flex-start; cursor: pointer; font-size: 14px; color: #333; line-height: 1.4;
+        }
+        .ack-checkbox {
+            margin-right: 12px; width: 18px; height: 18px; margin-top: 2px; cursor: pointer;
+        }
+        
+        .btn-ack { 
+            background: #d93025; color: white; border: none; padding: 12px 24px; 
+            border-radius: 6px; font-weight: bold; width: 100%; transition: 0.2s;
+        }
+        /* Disabled button state */
+        .btn-ack:disabled {
+            background: #cccccc; cursor: not-allowed; opacity: 0.7; color: #666;
+        }
+        .btn-ack:not(:disabled):hover { background: #b3261e; cursor: pointer; }
         
         .screenshot-flash { background-color: red !important; display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 99998; }
         button.btn-primary { background: #1a73e8; color: white; border: none; padding: 12px; border-radius: 6px; width: 100%; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 15px;}
         
-        #exam-container {
-            display: none; width: 100vw; height: 100vh; padding-top: 40px; box-sizing: border-box;
-        }
+        #exam-container { display: none; width: 100vw; height: 100vh; padding-top: 40px; box-sizing: border-box; }
         iframe { width: 100%; height: 100%; border: none; }
         .hidden { display: none !important; }
     </style>
@@ -58,12 +77,25 @@
         <div>Security Violations: <span id="violations-pill">0</span></div>
     </div>
 
+    <!-- UPDATED: Warning Modal with Checkbox -->
     <div id="warning-overlay">
         <div class="warning-box">
             <h3>⚠️ SECURITY WARNING</h3>
-            <p id="warning-detail">Violation details go here.</p>
+            <p id="warning-detail" style="font-size: 15px;">Violation details go here.</p>
             <p style="color: #777; font-size: 13px;" id="warning-strike-count"></p>
-            <button class="btn-ack" id="ack-btn">I Understand & Return to Exam</button>
+            
+            <p style="color: #d93025; font-weight: bold; font-size: 15px; margin: 20px 0;">
+                FINAL WARNING: Your exam will be permanently closed if you continue to violate the rules.
+            </p>
+            
+            <div class="ack-container">
+                <label class="ack-label">
+                    <input type="checkbox" id="ack-checkbox" class="ack-checkbox">
+                    I acknowledge this security violation and understand that my exam will be terminated if I repeat it.
+                </label>
+            </div>
+
+            <button class="btn-ack" id="ack-btn" disabled>Acknowledge & Return to Exam</button>
         </div>
     </div>
 
@@ -99,10 +131,18 @@
             let initialWindowHeight = window.innerHeight;
             let lastWarningTime = 0;
 
+            const ackCheckbox = document.getElementById('ack-checkbox');
+            const ackBtn = document.getElementById('ack-btn');
+
             if (localStorage.getItem('gf_examLocked') === 'true') {
                 lockOutStudent("You have already completed or been locked out of this exam.");
                 return;
             }
+
+            // Unlock button only when checkbox is checked
+            ackCheckbox.addEventListener('change', (e) => {
+                ackBtn.disabled = !e.target.checked;
+            });
 
             function triggerExactWarning(exactRuleMessage) {
                 if (document.getElementById('exam-container').style.display === 'none') return;
@@ -116,8 +156,12 @@
                 
                 document.getElementById('violations-pill').innerText = tabSwitchCount;
                 document.getElementById('warning-detail').innerHTML = `<strong>Rule Broken:</strong><br>${exactRuleMessage}`;
-                document.getElementById('warning-strike-count').innerText = `Recorded Infraction #${tabSwitchCount}`;
+                document.getElementById('warning-strike-count').innerText = `Recorded Infraction #${tabSwitchCount} of 5 permitted.`;
                 
+                // Reset checkbox and button state for the new warning
+                ackCheckbox.checked = false;
+                ackBtn.disabled = true;
+
                 document.getElementById('warning-overlay').style.display = 'flex';
 
                 // Lock them out completely if they cheat 5 times
@@ -127,6 +171,8 @@
             }
 
             document.getElementById('ack-btn').addEventListener('click', async () => {
+                if (!ackCheckbox.checked) return; // Failsafe
+                
                 document.getElementById('warning-overlay').style.display = 'none';
                 if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
                     try { await document.documentElement.requestFullscreen(); } catch (e) {}
@@ -138,10 +184,10 @@
                 if (document.hidden) triggerExactWarning("Switched browser tabs or minimized window."); 
             });
             
-            // THE IFRAME FIX: Only triggers if they click completely out of the browser, not inside the form
+            // THE IFRAME FIX: Ignores clicks inside the form, punishes clicking outside the browser
             window.addEventListener('blur', () => { 
                 if (document.activeElement && document.activeElement.tagName.toLowerCase() === 'iframe') {
-                    return; // They clicked inside the Google Form, this is fine.
+                    return; // Clicking inside Google Form is safe.
                 }
                 triggerExactWarning("Window lost focus. You clicked outside the exam window."); 
             });
