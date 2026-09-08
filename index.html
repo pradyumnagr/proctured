@@ -3,183 +3,370 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Proctored Assessment</title>
+    <title>Proctored Exam</title>
     <style>
-        /* Prevent text selection across the page */
+        /* Anti-Copy and Anti-Selection */
+        * { -webkit-touch-callout: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
+        input[type="text"] { user-select: text; -webkit-user-select: text; }
+
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f6f9;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            user-select: none;
-            -webkit-user-select: none;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f4f6f9; margin: 0; padding: 20px;
+            display: flex; justify-content: center; min-height: 100vh; box-sizing: border-box;
         }
 
-        /* Screen styles for system check and timeout */
-        .info-screen {
-            text-align: center;
-            background: white;
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            max-width: 500px;
+        .card {
+            background: white; padding: 30px; border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 100%; max-width: 650px; align-self: center;
         }
 
-        #timeout-screen {
-            display: none;
-            color: #d93025;
+        /* Top Bar Indicators */
+        #status-bar-container {
+            display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+            justify-content: space-between; background: #202124; color: white;
+            padding: 10px 20px; font-weight: bold; font-size: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
+        #timer-pill { background: #d93025; padding: 4px 12px; border-radius: 4px; }
+        #violations-pill { background: #ea8600; padding: 4px 12px; border-radius: 4px; }
 
-        /* Hide the form container initially */
-        #test-container {
-            display: none;
-            width: 100%;
-            height: 100vh;
+        /* Security Warning Modal */
+        #warning-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.85); z-index: 99999; justify-content: center;
+            align-items: center; backdrop-filter: blur(4px);
         }
-
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
+        .warning-box {
+            background: #ffffff; border-top: 8px solid #d93025; padding: 30px; border-radius: 10px;
+            max-width: 480px; width: 90%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
+        .warning-box h3 { color: #d93025; margin-top: 0; font-size: 22px; }
+        .warning-box p.infraction-text { font-size: 16px; color: #333; margin: 15px 0; line-height: 1.5; }
+        .warning-box .strike-count { font-size: 13px; color: #777; margin-bottom: 20px; font-weight: bold; }
 
-        .error {
-            color: #d93025;
-            font-weight: bold;
+        .btn-ack { background: #d93025; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; width: 100%; }
+        .btn-ack:hover { background: #b3261e; }
+
+        .screenshot-flash { background-color: red !important; display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 99998; }
+        .question { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .option { display: block; margin-bottom: 8px; cursor: pointer; }
+        .input-field { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        button.btn-primary { background: #1a73e8; color: white; border: none; padding: 12px; border-radius: 6px; width: 100%; font-weight: bold; cursor: pointer; font-size: 16px; }
+        button.btn-primary:hover { background: #1557b0; }
+        .hidden { display: none !important; }
+        .error { color: #d93025; margin-top:15px; font-weight: bold; }
+        
+        /* Pre-Exam Warning Box */
+        .rules-list {
+            text-align: left; background: #fff3f3; padding: 15px 15px 15px 35px; 
+            border-left: 4px solid #d93025; font-size: 14px; border-radius: 4px; color: #b3261e; margin-bottom: 20px;
         }
+        .rules-list li { margin-bottom: 8px; }
 
-        /* Timer UI at the top right of the screen */
-        #timer-display {
-            display: none;
-            position: fixed;
-            top: 15px;
-            right: 20px;
-            background: #d93025;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 6px;
-            font-weight: bold;
-            font-size: 18px;
-            z-index: 1000;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        /* Post-Exam Audit Receipt */
+        #student-audit-log {
+            margin-top: 25px; text-align: left; background: #f8f9fa; 
+            padding: 20px; border-radius: 6px; font-size: 13px; border: 1px solid #ddd;
         }
     </style>
 </head>
 <body>
 
-    <!-- Timer Overlay -->
-    <div id="timer-display">Time Left: <span id="time">02:00:00</span></div>
+    <div class="screenshot-flash" id="flash-overlay"></div>
 
-    <!-- Status Screen (Permissions) -->
-    <div id="status-screen" class="info-screen">
-        <h2>System Check</h2>
-        <p id="message">Requesting Camera and Microphone permissions...</p>
+    <div id="status-bar-container">
+        <div>Time Remaining: <span id="timer-pill">02:00:00</span></div>
+        <div>Security Violations: <span id="violations-pill">0</span></div>
     </div>
 
-    <!-- Timeout Screen -->
-    <div id="timeout-screen" class="info-screen">
-        <h2>Time is up!</h2>
-        <p>Your 2-hour assessment period has ended. You can no longer access the form.</p>
+    <div id="warning-overlay">
+        <div class="warning-box">
+            <h3>⚠️ SECURITY WARNING</h3>
+            <p class="infraction-text" id="warning-detail">Violation details go here.</p>
+            <div class="strike-count" id="warning-strike-count">Recorded Violation #1</div>
+            <button class="btn-ack" id="ack-btn">I Understand & Return to Exam</button>
+        </div>
     </div>
 
-    <!-- The Google Form -->
-    <div id="test-container">
-        <iframe src="https://docs.google.com/forms/d/e/1FAIpQLScD6_70QJJtFsF8zYDvJQVMpGwvaZpPj055PDqmwn0KZRYYtw/viewform?embedded=true" allow="camera; microphone"></iframe>
+    <!-- Screen 1: Permissions & Rules Warning -->
+    <div id="permission-screen" class="card" style="text-align: center;">
+        <h2>Assessment Environment Check</h2>
+        <p>This is a strictly proctored exam. <strong>Any of the following actions will generate a security warning and be logged in a report sent to your instructor:</strong></p>
+        
+        <ul class="rules-list">
+            <li>Switching tabs, opening other apps, or minimizing the browser.</li>
+            <li>Clicking outside the exam window (e.g., using a second monitor).</li>
+            <li>Exiting Fullscreen mode.</li>
+            <li>Attempting to use Keyboard Shortcuts (PrintScreen, Copy/Paste, F12).</li>
+            <li>Covering your webcam or sitting in a dark room.</li>
+        </ul>
+
+        <button id="start-btn" class="btn-primary">I Understand, Start Exam</button>
+        <p id="perm-message" class="error hidden"></p>
+    </div>
+
+    <!-- Screen 2: Exam -->
+    <div id="exam-screen" class="card hidden" style="margin-top: 60px;">
+        <h2>Online Assessment</h2>
+        <form id="quiz-form">
+            <label><strong>Full Name:</strong></label>
+            <input type="text" id="student-name" name="name" class="input-field" required>
+            <label><strong>Student Email (Required for receipt):</strong></label>
+            <input type="text" id="student-id" name="studentId" class="input-field" required>
+            <hr style="margin: 20px 0; border: 0; border-top: 1px solid #ddd;">
+            <div id="question-container"></div>
+            <button type="submit" class="btn-primary" id="submit-btn" style="margin-top: 20px;">Submit Exam</button>
+        </form>
+    </div>
+
+    <!-- Screen 3: Submission & Final Warning Receipt -->
+    <div id="result-screen" class="card hidden" style="text-align: center;">
+        <h2>Exam Completed</h2>
+        <p id="result-message">Processing your responses...</p>
+        
+        <!-- The Final Log Displayed to the Student -->
+        <div id="student-audit-log" class="hidden">
+            <strong style="color:#d93025; font-size:15px;">Your Security Audit Log:</strong>
+            <p style="color: #666; margin-top:5px; margin-bottom: 10px;">The following exact report has been submitted to your instructor.</p>
+            <ul id="log-list" style="padding-left: 20px; color: #333; line-height: 1.6;"></ul>
+        </div>
     </div>
 
     <script>
-        // --- 1. DISABLE RIGHT-CLICK & COPY/PASTE ---
-        document.addEventListener('contextmenu', event => event.preventDefault());
-        document.addEventListener('copy', event => event.preventDefault());
-        document.addEventListener('cut', event => event.preventDefault());
-        document.addEventListener('paste', event => event.preventDefault());
+        (function() {
+            // PASTE YOUR GOOGLE APPS SCRIPT URL HERE
+            const SCRIPT_URL = "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL"; 
+            
+            const questionsRaw = [
+                { id: "q1", text: "1. What is the capital of France?", options: ["Berlin", "Madrid", "Paris", "Rome"] },
+                { id: "q2", text: "2. What is 2 + 2?", options: ["3", "4", "5"] },
+                { id: "q3", text: "3. Which planet is known as the Red Planet?", options: ["Venus", "Mars", "Jupiter"] }
+            ];
 
-        // --- 2. TAB SWITCHING WARNING ---
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                alert("WARNING: You have switched tabs or minimized the window. This action is recorded.");
-            }
-        });
+            let violationLogs = JSON.parse(localStorage.getItem('violationLogs') || '[]');
+            let tabSwitchCount = parseInt(localStorage.getItem('tabSwitches') || '0');
+            let timerInterval, devToolsInterval, pixelCheckInterval;
+            let mediaStream = null;
+            let initialWindowWidth = window.innerWidth;
+            let initialWindowHeight = window.innerHeight;
+            let lastWarningTime = 0;
 
-        // --- 3. TIMER LOGIC (Resistant to Page Refreshes) ---
-        let timerInterval;
-
-        function startTimer() {
-            document.getElementById('timer-display').style.display = 'block';
-
-            // Check if an end time is already saved in the browser
-            let endTime = localStorage.getItem('assessmentEndTime');
-
-            if (!endTime) {
-                // If no end time exists, set it for 2 hours from RIGHT NOW
-                // 2 hours = 2 * 60 minutes * 60 seconds * 1000 milliseconds
-                endTime = Date.now() + (2 * 60 * 60 * 1000);
-                localStorage.setItem('assessmentEndTime', endTime);
+            if (localStorage.getItem('examSubmitted') === 'true') {
+                document.getElementById('permission-screen').classList.add('hidden');
+                document.getElementById('result-screen').classList.remove('hidden');
+                document.getElementById('result-message').innerText = "Exam already submitted.";
+                return;
             }
 
-            function updateTimer() {
+            function poisonText(str) { return str.split('').join('\u200B'); }
+
+            function renderQuestions() {
+                const container = document.getElementById('question-container');
+                questionsRaw.forEach(q => {
+                    let html = `<div class="question"><h4>${poisonText(q.text)}</h4>`;
+                    q.options.forEach(opt => {
+                        html += `<label class="option"><input type="radio" name="${q.id}" value="${opt}"> ${poisonText(opt)}</label>`;
+                    });
+                    html += `</div>`;
+                    container.innerHTML += html;
+                });
+            }
+            renderQuestions();
+
+            function triggerExactWarning(exactRuleMessage) {
+                if (document.getElementById('exam-screen').classList.contains('hidden')) return;
+
                 const now = Date.now();
-                const timeLeft = endTime - now;
+                if (now - lastWarningTime < 1200) return;
+                lastWarningTime = now;
 
-                if (timeLeft <= 0) {
-                    // Time is up
-                    clearInterval(timerInterval);
-                    document.getElementById('time').innerText = "00:00:00";
-                    triggerTimeout();
-                } else {
-                    // Calculate hours, minutes, and seconds remaining
-                    const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-                    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                tabSwitchCount++;
+                const timestamp = new Date().toLocaleTimeString();
+                
+                violationLogs.push({ time: timestamp, reason: exactRuleMessage, count: tabSwitchCount });
+                localStorage.setItem('tabSwitches', tabSwitchCount);
+                localStorage.setItem('violationLogs', JSON.stringify(violationLogs));
 
-                    // Pad numbers with leading zeros (e.g., 09 instead of 9)
-                    const formattedTime = 
-                        String(hours).padStart(2, '0') + ":" + 
-                        String(minutes).padStart(2, '0') + ":" + 
-                        String(seconds).padStart(2, '0');
-
-                    document.getElementById('time').innerText = formattedTime;
-                }
+                document.getElementById('violations-pill').innerText = tabSwitchCount;
+                document.getElementById('warning-detail').innerHTML = `<strong>Rule Broken:</strong><br>${exactRuleMessage}`;
+                document.getElementById('warning-strike-count').innerText = `Recorded Infraction #${tabSwitchCount} • Logged at ${timestamp}`;
+                
+                document.getElementById('warning-overlay').style.display = 'flex';
             }
 
-            // Run immediately so we don't wait 1 second for the first update
-            updateTimer(); 
-            // Update the clock every 1 second
-            timerInterval = setInterval(updateTimer, 1000);
-        }
-
-        function triggerTimeout() {
-            // Hide everything except the timeout message
-            document.getElementById('test-container').style.display = 'none';
-            document.getElementById('timer-display').style.display = 'none';
-            document.getElementById('timeout-screen').style.display = 'block';
-        }
-
-        // --- 4. REQUIRE CAMERA & MIC PERMISSIONS ---
-        const statusScreen = document.getElementById('status-screen');
-        const message = document.getElementById('message');
-        const testContainer = document.getElementById('test-container');
-
-        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-            .then((stream) => {
-                // PERMISSION GRANTED: Reveal form and start the countdown
-                statusScreen.style.display = 'none';
-                
-                // If they previously ran out of time and refreshed, the timer logic 
-                // will instantly hide the container and show the timeout screen.
-                testContainer.style.display = 'block'; 
-                startTimer();
-            })
-            .catch((error) => {
-                // PERMISSION DENIED
-                message.classList.add("error");
-                message.innerHTML = "Camera and Microphone permissions were denied.<br><br>You cannot attempt this test without granting permissions. Please update your browser settings and refresh the page.";
+            document.getElementById('ack-btn').addEventListener('click', async () => {
+                document.getElementById('warning-overlay').style.display = 'none';
+                if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+                    try { await document.documentElement.requestFullscreen(); } catch (e) {}
+                }
             });
+
+            document.addEventListener('visibilitychange', () => { if (document.hidden) triggerExactWarning("Switched browser tabs or minimized window."); });
+            window.addEventListener('blur', () => { triggerExactWarning("Clicked outside the exam window."); });
+            document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) triggerExactWarning("Exited Fullscreen mode."); });
+
+            window.addEventListener('resize', () => {
+                if (document.fullscreenElement) return;
+                if (window.innerWidth < (initialWindowWidth * 0.85) || window.innerHeight < (initialWindowHeight * 0.85)) {
+                    triggerExactWarning("Split-screen mode or window resizing detected.");
+                    initialWindowWidth = window.innerWidth;
+                    initialWindowHeight = window.innerHeight;
+                }
+            });
+
+            document.addEventListener('contextmenu', e => { e.preventDefault(); triggerExactWarning("Right-click is disabled."); });
+            document.addEventListener('copy', e => { e.preventDefault(); navigator.clipboard.writeText(''); triggerExactWarning("Attempted to copy content."); });
+            document.addEventListener('paste', e => { e.preventDefault(); triggerExactWarning("Attempted to paste content."); });
+            document.addEventListener('dragstart', e => { e.preventDefault(); triggerExactWarning("Dragging text is disabled."); });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'F12') { e.preventDefault(); triggerExactWarning("Developer shortcut 'F12' is prohibited."); }
+                if (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) { e.preventDefault(); triggerExactWarning(`DevTools shortcut is prohibited.`); }
+                if (e.ctrlKey && ['u', 'p', 's'].includes(e.key.toLowerCase())) { e.preventDefault(); triggerExactWarning("View/Print/Save shortcuts are prohibited."); }
+                
+                if (e.key === 'PrintScreen') {
+                    e.preventDefault();
+                    navigator.clipboard.writeText('');
+                    document.getElementById('flash-overlay').style.display = 'block';
+                    setTimeout(() => document.getElementById('flash-overlay').style.display = 'none', 400);
+                    triggerExactWarning("Screenshot key ('PrintScreen') pressed.");
+                }
+            });
+
+            devToolsInterval = setInterval(() => {
+                const start = performance.now(); debugger;
+                if (performance.now() - start > 100) triggerExactWarning("Developer Tools opened.");
+            }, 1500);
+
+            function startWebcamAnalysis(stream) {
+                const hiddenVideo = document.createElement('video');
+                hiddenVideo.style.display = 'none'; hiddenVideo.srcObject = stream; hiddenVideo.play();
+                const hiddenCanvas = document.createElement('canvas');
+                hiddenCanvas.width = 50; hiddenCanvas.height = 50;
+                const ctx = hiddenCanvas.getContext('2d');
+
+                pixelCheckInterval = setInterval(() => {
+                    if (hiddenVideo.readyState === hiddenVideo.HAVE_ENOUGH_DATA) {
+                        ctx.drawImage(hiddenVideo, 0, 0, 50, 50);
+                        const frame = ctx.getImageData(0, 0, 50, 50).data;
+                        let isBlack = true;
+                        for (let i = 0; i < frame.length; i += 4) {
+                            if (frame[i] > 18 || frame[i+1] > 18 || frame[i+2] > 18) { isBlack = false; break; }
+                        }
+                        if (isBlack) triggerExactWarning("Webcam is covered or room is completely dark.");
+                    }
+                }, 5000);
+            }
+
+            document.getElementById('start-btn').addEventListener('click', async () => {
+                try {
+                    const devices = await navigator.mediaDevices.enumerateDevices();
+                    if (devices.some(d => d.label.toLowerCase().includes('obs') || d.label.toLowerCase().includes('virtual'))) {
+                        alert("SECURITY ERROR: Virtual cameras are not permitted."); return;
+                    }
+                    if (document.documentElement.requestFullscreen) { try { await document.documentElement.requestFullscreen(); } catch (e) {} }
+
+                    mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                    document.getElementById('permission-screen').classList.add('hidden');
+                    document.getElementById('exam-screen').classList.remove('hidden');
+                    document.getElementById('status-bar-container').style.display = 'flex';
+                    document.getElementById('violations-pill').innerText = tabSwitchCount;
+
+                    initialWindowWidth = window.innerWidth;
+                    initialWindowHeight = window.innerHeight;
+
+                    document.querySelectorAll('input').forEach(input => {
+                        const saved = localStorage.getItem('ans_' + input.name);
+                        if (saved) {
+                            if (input.type === 'radio' && input.value === saved) input.checked = true;
+                            if (input.type === 'text') input.value = saved;
+                        }
+                    });
+
+                    startCountdown();
+                    startWebcamAnalysis(mediaStream);
+
+                    mediaStream.getTracks().forEach(t => t.onended = () => {
+                        alert("SECURITY VIOLATION: Hardware connection lost. Auto-submitting."); submitQuiz();
+                    });
+                } catch (err) {
+                    const msg = document.getElementById('perm-message');
+                    msg.classList.remove('hidden');
+                    msg.innerHTML = "Camera & Microphone access is mandatory.";
+                }
+            });
+
+            function startCountdown() {
+                let endTime = localStorage.getItem('examEndTime');
+                if (!endTime) { endTime = Date.now() + (2 * 60 * 60 * 1000); localStorage.setItem('examEndTime', endTime); }
+                function tick() {
+                    const remaining = endTime - Date.now();
+                    if (remaining <= 0) { clearInterval(timerInterval); alert("Time is up! Submitting automatically."); submitQuiz(); }
+                    else {
+                        const h = Math.floor(remaining / 3600000), m = Math.floor((remaining % 3600000) / 60000), s = Math.floor((remaining % 60000) / 1000);
+                        document.getElementById('timer-pill').innerText = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+                    }
+                }
+                tick(); timerInterval = setInterval(tick, 1000);
+            }
+
+            const form = document.getElementById('quiz-form');
+            form.addEventListener('change', (e) => { if (e.target.name) localStorage.setItem('ans_' + e.target.name, e.target.value); });
+            form.addEventListener('submit', e => { e.preventDefault(); submitQuiz(); });
+
+            function submitQuiz() {
+                clearInterval(timerInterval); clearInterval(devToolsInterval); clearInterval(pixelCheckInterval);
+                if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
+                if (document.fullscreenElement) document.exitFullscreen();
+
+                document.getElementById('exam-screen').classList.add('hidden');
+                document.getElementById('status-bar-container').style.display = 'none';
+                document.getElementById('warning-overlay').style.display = 'none';
+                document.getElementById('result-screen').classList.remove('hidden');
+
+                const formData = new FormData(form);
+                const answers = {};
+                for (let [key, val] of formData.entries()) {
+                    if (key !== 'name' && key !== 'studentId') answers[key] = val;
+                }
+
+                const payload = {
+                    name: document.getElementById('student-name').value,
+                    studentId: document.getElementById('student-id').value,
+                    tabSwitches: tabSwitchCount,
+                    violationLogs: violationLogs,
+                    answers: answers
+                };
+
+                fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === "error") {
+                        document.getElementById('result-message').innerText = "Error: " + data.message;
+                        document.getElementById('result-message').style.color = "red";
+                    } else {
+                        document.getElementById('result-message').innerText = "Your assessment has been submitted successfully.";
+                        localStorage.setItem('examSubmitted', 'true');
+                        Object.keys(localStorage).forEach(key => { if (key.startsWith('ans_')) localStorage.removeItem(key); });
+                        
+                        // --- RENDER THE FINAL AUDIT LOG TO THE STUDENT ---
+                        const logContainer = document.getElementById('student-audit-log');
+                        const logList = document.getElementById('log-list');
+                        logContainer.classList.remove('hidden');
+                        
+                        if (violationLogs.length === 0) {
+                            logList.innerHTML = "<li style='color: green; list-style-type: none;'>✅ No violations recorded. Great job!</li>";
+                        } else {
+                            violationLogs.forEach(log => {
+                                let li = document.createElement('li');
+                                li.innerHTML = `<strong>[${log.time}]</strong> - ${log.reason}`;
+                                logList.appendChild(li);
+                            });
+                        }
+                    }
+                })
+                .catch(() => { document.getElementById('result-message').innerText = "Network error. Keep page open to retry submission."; });
+            }
+        })();
     </script>
 </body>
 </html>
