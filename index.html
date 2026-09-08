@@ -112,10 +112,9 @@
             <ul>
                 <li><strong>No Tab Switching:</strong> You cannot open other tabs, browsers, or apps.</li>
                 <li><strong>No Leaving the Window:</strong> Clicking outside the exam triggers a violation.</li>
-                <li><strong>No Exiting Fullscreen:</strong> The exam must remain in Fullscreen mode.</li>
-                <li><strong>Screen Share Required:</strong> Your screen must be shared. Dual monitors are blocked.</li>
-                <li><strong>Anti-Tampering:</strong> Attempting to bypass security code triggers an instant Last Warning.</li>
-                <li><strong>Penalty System:</strong> 7 Violations = 5 Min Lockout. 8 Violations = Permanent Termination.</li>
+                <li><strong>Environment Monitoring:</strong> Whispering and talking will be detected.</li>
+                <li><strong>Anti-Tampering:</strong> System suspension or code tampering triggers an instant Last Warning.</li>
+                <li><strong>Screen Share Required:</strong> Dual monitors are blocked.</li>
             </ul>
         </div>
 
@@ -148,9 +147,9 @@
     <script>
         (function() {
             // ==========================================
-            // 1. APPS SCRIPT WEBHOOK (PASTE YOURS HERE)
+            // 1. APPS SCRIPT WEBHOOK 
             // ==========================================
-            const AUDIT_WEBHOOK_URL = "YOUR_APPS_SCRIPT_WEB_APP_URL_HERE";
+            const AUDIT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbx_jiGrwYf8CgF3WjvET_RIP7eLN5HMcF3sfo1FZyeOuFx1ZUgy46OsFPbGntUqC6lGNg/exec";
 
             // ==========================================
             // 2. BASE64 ENCRYPTED GOOGLE FORM URL
@@ -163,12 +162,13 @@
             
             let timerInterval, penaltyInterval, mediaStream = null, screenStream = null;
             let permissionsGranted = false;
-            let screenShareDrops = 0; // Tracks the "One Last Chance" screen share allowance
+            let screenShareDrops = 0; 
             
             let initialWindowWidth = window.innerWidth;
             let initialWindowHeight = window.innerHeight;
             let lastWarningTime = 0;
             let formLoadCount = 0; 
+            let hardwareHashValue = "Not Generated";
 
             const examAgreementCheckbox = document.getElementById('exam-agreement-checkbox');
             const startBtn = document.getElementById('start-btn');
@@ -182,18 +182,59 @@
             const idInput = document.getElementById('student-id-input');
             const container = document.getElementById('exam-container');
 
+            // --- DEEP SECURITY: CANVAS HARDWARE FINGERPRINTING ---
+            function generateHardwareFingerprint() {
+                try {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    ctx.textBaseline = "top"; ctx.font = "14px 'Arial'"; 
+                    ctx.fillStyle = "#f60"; ctx.fillRect(125,1,62,20);
+                    ctx.fillStyle = "#069"; ctx.fillText("ProctorHash", 2, 15);
+                    ctx.fillStyle = "rgba(102, 204, 0, 0.7)"; ctx.fillText("ProctorHash", 4, 17);
+                    
+                    const b64 = canvas.toDataURL();
+                    let hash = 0;
+                    for (let i = 0; i < b64.length; i++) {
+                        let char = b64.charCodeAt(i);
+                        hash = ((hash << 5) - hash) + char;
+                        hash = hash & hash;
+                    }
+                    return Math.abs(hash).toString(16);
+                } catch(e) { return "Unavailable"; }
+            }
+            hardwareHashValue = generateHardwareFingerprint();
+
+            // --- DEEP SECURITY: AUDIO THRESHOLD (Whisper Detection) ---
+            function startAudioMonitoring(stream) {
+                try {
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const source = audioContext.createMediaStreamSource(stream);
+                    const analyser = audioContext.createAnalyser();
+                    analyser.fftSize = 256;
+                    source.connect(analyser);
+                    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+                    setInterval(() => {
+                        if (!isExamActive) return;
+                        analyser.getByteFrequencyData(dataArray);
+                        let sum = 0;
+                        for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+                        let average = sum / dataArray.length;
+
+                        if (average > 45) {
+                            triggerExactWarning("High audio levels detected (Speaking/Whispering is prohibited).");
+                        }
+                    }, 4000); 
+                } catch(e) {}
+            }
+
             // --- DEEP SECURITY: INTEGRITY & TAMPER PROTOCOL ---
-            
-            // Check if native JavaScript functions were maliciously rewritten
             function checkNativeIntegrity() {
                 const fns = [window.addEventListener, document.addEventListener, atob, fetch];
-                for (let fn of fns) {
-                    if (!fn.toString().includes('[native code]')) return false;
-                }
+                for (let fn of fns) { if (!fn.toString().includes('[native code]')) return false; }
                 return true;
             }
 
-            // Monitor DOM to ensure they don't use Inspect Element to delete warning boxes
             const observer = new MutationObserver((mutations) => {
                 if (!isExamActive) return;
                 mutations.forEach((mutation) => {
@@ -206,47 +247,50 @@
             });
             observer.observe(document.body, { childList: true, subtree: true });
 
-            // Triggers INSTANT LAST WARNING for severe hacking attempts
             function triggerTamperProtocol(reason) {
                 if (!isExamActive) return;
-                // Instantly force strikes up to 6, so the next command bumps it to 7 (Penalty Box)
                 if (tabSwitchCount < 6) {
-                    tabSwitchCount = 6;
+                    tabSwitchCount = 6; 
                     localStorage.setItem('gf_tabSwitches', 6);
                 }
                 triggerExactWarning("SEVERE TAMPERING DETECTED: " + reason);
             }
 
-            // Background Integrity Loops
+            let lastInternalTick = Date.now();
             setInterval(() => {
                 if (!isExamActive) return;
                 
-                // 1. Detect Undocked DevTools via debugger pause delay
-                const start = performance.now();
-                debugger;
-                if (performance.now() - start > 150) {
-                    triggerTamperProtocol("Developer Tools Code Execution Paused");
+                const now = Date.now();
+                if (now - lastInternalTick > 4000) {
+                    triggerTamperProtocol("Process Suspension / System Freeze Detected");
                 }
+                lastInternalTick = now;
+
+                const start = performance.now(); debugger;
+                if (performance.now() - start > 150) triggerTamperProtocol("Developer Tools Code Execution Paused");
                 
-                // 2. Detect Extension Overrides
                 if (!checkNativeIntegrity()) triggerTamperProtocol("JavaScript Modification / Extension Interference");
                 
-                // 3. Detect LocalStorage Rollbacks
                 if (parseInt(localStorage.getItem('gf_tabSwitches') || '0') < tabSwitchCount) {
                     triggerTamperProtocol("LocalStorage Manipulation Attempted");
                 }
 
-                // 4. Detect Docked DevTools via Window Math
                 if (window.outerWidth > 0 && window.innerHeight > 0) {
                     const widthDiff = window.outerWidth - window.innerWidth;
                     const heightDiff = window.outerHeight - window.innerHeight;
-                    if (widthDiff > 200 || heightDiff > 200) {
-                        triggerTamperProtocol("Developer Tools Docked Panel Detected");
-                    }
+                    if (widthDiff > 200 || heightDiff > 200) triggerTamperProtocol("Developer Tools Docked Panel Detected");
                 }
             }, 2500);
 
-            // --- HARDWARE VERIFICATION ---
+            setInterval(() => {
+                if (!isExamActive) return;
+                fetch(AUDIT_WEBHOOK_URL, {
+                    method: 'POST', mode: 'no-cors',
+                    body: JSON.stringify({ action: 'ping', studentId: idInput.value, time: new Date().toLocaleTimeString() })
+                }).catch(()=>{}); 
+            }, 30000);
+
+            // --- HARDWARE VERIFICATION (Virtual Machines) ---
             function detectVirtualMachine() {
                 try {
                     const canvas = document.createElement('canvas');
@@ -298,7 +342,7 @@
                 return;
             }
 
-            // --- THE SCREEN SHARE "LAST CHANCE" MANAGER ---
+            // --- SCREEN SHARE "LAST CHANCE" MANAGER ---
             function attachStreamListeners() {
                 if (mediaStream) {
                     mediaStream.getTracks().forEach(t => t.onended = () => { lockOutStudent("Exam Terminated", "Webcam/Mic connection was permanently lost.", false); });
@@ -307,10 +351,8 @@
                     screenStream.getVideoTracks()[0].onended = () => { 
                         screenShareDrops++;
                         if (screenShareDrops > 1) {
-                            // Strike 2: Permanent Death
                             lockOutStudent("Exam Terminated", "Screen sharing was stopped multiple times.", false);
                         } else {
-                            // Strike 1: One Last Chance Modal
                             isExamActive = false;
                             document.getElementById('exam-container').style.display = 'none';
                             document.getElementById('screen-share-overlay').style.display = 'flex';
@@ -328,13 +370,10 @@
                     screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
                     document.getElementById('screen-share-overlay').style.display = 'none';
                     document.getElementById('exam-container').style.display = 'block';
-                    attachStreamListeners(); // Re-attach the death listener
+                    attachStreamListeners(); 
                     isExamActive = true; 
-                } catch (e) {
-                    alert("You MUST share your screen to continue the exam.");
-                }
+                } catch (e) { alert("You MUST share your screen to continue the exam."); }
             });
-
 
             // --- CENTRAL PROCTORING HANDLER ---
             function triggerExactWarning(exactRuleMessage) {
@@ -419,6 +458,7 @@
                     mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                     screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
                     attachStreamListeners();
+                    startAudioMonitoring(mediaStream); 
 
                     document.getElementById('timeout-screen').classList.add('hidden');
                     localStorage.removeItem('gf_timeoutEndTime');
@@ -470,6 +510,7 @@
                     document.getElementById('violations-pill').innerText = tabSwitchCount;
                     
                     initialWindowWidth = window.innerWidth; initialWindowHeight = window.innerHeight;
+                    lastInternalTick = Date.now(); 
 
                     const decodedUrl = atob(ENCODED_FORM_URL);
                     const iframe = document.createElement('iframe');
@@ -486,6 +527,7 @@
                     container.appendChild(iframe);
                     startCountdown();
                     attachStreamListeners();
+                    startAudioMonitoring(mediaStream); 
                     
                     isExamActive = true; 
                 } catch (err) { alert("A system error occurred. Please refresh the page."); }
@@ -537,6 +579,7 @@
                     studentId: localStorage.getItem('gf_studentId') || "Unknown",
                     violations: tabSwitchCount,
                     violationLogs: formattedLogs,
+                    hardwareHash: hardwareHashValue,
                     status: isSuccess ? "Submitted Form Normally" : `Locked Out: ${message}`
                 };
 
