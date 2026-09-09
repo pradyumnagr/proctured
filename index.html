@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Proctored Exam Portal</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f6f9; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; user-select: none; -webkit-user-select: none; overflow-x: hidden; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f6f9; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow-x: hidden; }
         .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 90%; max-width: 650px; text-align: center; max-height: 90vh; overflow-y: auto; box-sizing: border-box; }
         
-        #status-bar-container { display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 1000; justify-content: space-between; align-items: center; background: #202124; color: white; padding: 10px 20px; font-weight: bold; font-size: 15px; }
+        #status-bar-container { display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 1000; justify-content: space-between; align-items: center; background: #202124; color: white; padding: 10px 20px; font-weight: bold; font-size: 15px; user-select: none; -webkit-user-select: none; }
         #timer-pill { background: #d93025; padding: 4px 12px; border-radius: 4px; }
         #violations-pill { background: #ea8600; padding: 4px 12px; border-radius: 4px; }
 
-        #warning-overlay, #screen-share-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.85); z-index: 99999; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
+        #warning-overlay, #screen-share-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.85); z-index: 99999; justify-content: center; align-items: center; backdrop-filter: blur(4px); user-select: none; -webkit-user-select: none; }
         .warning-box { background: #ffffff; border-top: 8px solid #d93025; padding: 30px; border-radius: 10px; max-width: 480px; width: 90%; text-align: center; }
         .warning-box h3 { color: #d93025; margin-top: 0; font-size: 22px; }
         
@@ -24,7 +24,7 @@
         .btn-ack:disabled { background: #cccccc; cursor: not-allowed; opacity: 0.7; color: #666; }
         .btn-ack:not(:disabled):hover { background: #b3261e; cursor: pointer; }
 
-        .instruction-box { background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; text-align: left; max-height: 200px; overflow-y: auto; margin-bottom: 20px; font-size: 14px; color: #333; line-height: 1.6; }
+        .instruction-box { background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; text-align: left; max-height: 200px; overflow-y: auto; margin-bottom: 20px; font-size: 14px; color: #333; line-height: 1.6; user-select: none; -webkit-user-select: none; }
         .instruction-box h4 { margin-top: 0; color: #1a73e8; font-size: 16px; margin-bottom: 10px;}
         .instruction-box ul { padding-left: 20px; margin-top: 5px; }
         .instruction-box li { margin-bottom: 8px; }
@@ -185,7 +185,7 @@
             const ENCODED_FORM_URL = "aHR0cHM6Ly9kb2NzLmdvb2dsZS5jb20vZm9ybXMvZC9lLzFGQUlwUUxTY0E5OWZ2RWxnSnRWQlhqZHlNcklQWXBTWVRVdEZRQlgwTVpPcFBXZ0NvYklyZk5nL3ZpZXdmb3JtP2VtYmVkZGVkPXRydWU=";
 
             // ==========================================
-            // 3. MULTI-SECTION CONFIGURATION
+            // 3. EXAM CONFIGURATION SETTINGS
             // ==========================================
             const TOTAL_FORM_SECTIONS = 2; 
             
@@ -225,6 +225,7 @@
             const rollError = document.getElementById('roll-error');
             const container = document.getElementById('exam-container');
 
+            // Unlock Elements
             const confessionCheckbox = document.getElementById('confession-checkbox');
             const unlockKeyInput = document.getElementById('unlock-key-input');
             const unlockBtn = document.getElementById('unlock-btn');
@@ -310,20 +311,6 @@
                 }
                 triggerExactWarning("SEVERE TAMPERING DETECTED: " + reason);
             }
-
-            // --- ANTI-TEXT SELECTION (FAST RECLAMATION LOOP) ---
-            // A long-press on Android takes ~500ms. By forcefully pulling focus back to the parent
-            // window every 350ms, we mathematically abort the text selection gesture before the OS
-            // can register it. This makes "Touch to Search" completely impossible.
-            _setInterval(() => {
-                if (isExamActive && !isTransitioning) {
-                    if (document.activeElement && document.activeElement.tagName.toLowerCase() === 'iframe') {
-                        document.activeElement.blur();
-                        window.focus();
-                        if (window.getSelection) window.getSelection().removeAllRanges();
-                    }
-                }
-            }, 350);
 
             // --- THE MASTER SECURITY LOOP ---
             _setInterval(() => {
@@ -445,6 +432,7 @@
             examAgreementCheckbox.addEventListener('change', validateInputs);
             nameInput.addEventListener('input', validateInputs);
 
+            // --- PERSISTENT LOCKOUT HANDLING ---
             if (localStorage.getItem('gf_examLocked') === 'true') {
                 document.getElementById('instruction-screen').style.display = 'none';
                 document.getElementById('result-screen').classList.remove('hidden');
@@ -665,6 +653,7 @@
                 } catch (e) { alert("Camera, Mic & Screen Share are mandatory to resume."); }
             });
 
+            // --- VIEWPORT DETECTOR (Search PIP & Overlays) ---
             if (window.visualViewport) {
                 let maxVH = window.visualViewport.height;
                 
@@ -682,13 +671,13 @@
                     if (currentVH > maxVH) maxVH = currentVH; 
                     let shrinkRatio = (maxVH - currentVH) / maxVH;
                     
-                    if (shrinkRatio > 0.02 && shrinkRatio < 0.35) {
+                    // Fixed: Strictly catches 5%-24% screen reduction (Search PIP only, ignores Virtual Keyboards)
+                    if (shrinkRatio > 0.02 && shrinkRatio < 0.24) {
                         triggerExactWarning("Illegal System Overlay Detected (Search PIP or Native Toolbar).");
                     }
                 });
             }
 
-            // --- STRICT BLUR & OVERLAY DETECTOR ---
             document.addEventListener('visibilitychange', () => {
                 if (wakeLock !== null && document.visibilityState === 'visible') requestWakeLock();
                 if (document.hidden && !isTransitioning) triggerExactWarning("Switched browser tabs or minimized window."); 
@@ -696,16 +685,12 @@
             
             window.addEventListener('blur', () => { 
                 if (isTransitioning || !isExamActive) return; 
+                // Increased to 800ms to allow Mobile OS animations (keyboards) to completely finish
                 _setTimeout(() => {
-                    if (document.activeElement && document.activeElement.tagName.toLowerCase() === 'iframe') {
-                        // Instant fallback focus stealer for desktop text selection
-                        document.activeElement.blur();
-                        window.focus();
-                        if (window.getSelection) window.getSelection().removeAllRanges();
-                    } else if (!document.hasFocus()) {
-                        triggerExactWarning("System Overlay, App Switch, or Search Detected."); 
+                    if (!document.hasFocus()) {
+                        triggerExactWarning("System Overlay or App Switch Detected."); 
                     }
-                }, 100);
+                }, 800);
             });
 
             document.addEventListener('fullscreenchange', () => { 
@@ -755,11 +740,12 @@
 
             unlockBtn.addEventListener('click', async () => {
                 
+                // --- SECURE DECRYPTION CHECK ---
                 let enteredKey = unlockKeyInput.value;
                 let isKeyCorrect = enteredKey.length === ENCRYPTED_KEY.length;
                 if (isKeyCorrect) {
                     for (let i = 0; i < enteredKey.length; i++) {
-                        // Secret +5 Shift Cipher matching
+                        // Mathematical +5 Shift Comparison
                         if (enteredKey.charCodeAt(i) + 5 !== ENCRYPTED_KEY[i]) {
                             isKeyCorrect = false;
                             break;
@@ -807,15 +793,14 @@
                     document.getElementById('exam-container').style.display = 'block';
                     document.getElementById('status-bar-container').style.display = 'flex';
                     
-                    observer.observe(document.body, { childList: true, subtree: true });
-
+                    // Re-inject the Google Form iframe if they refreshed the page
                     if (!document.getElementById("google-form-iframe")) {
                         const decodedUrl = atob(ENCODED_FORM_URL);
                         const iframe = document.createElement('iframe');
                         iframe.src = decodedUrl;
                         iframe.id = "google-form-iframe";
                         iframe.setAttribute("allow", "camera; microphone");
-                        iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms");
+                        // Sandbox attribute completely removed to fix typing bug
                         iframe.style.width = "100%"; iframe.style.height = "100%"; iframe.style.border = "none";
                         
                         iframe.addEventListener('load', () => {
@@ -859,7 +844,7 @@
                     iframe.src = decodedUrl;
                     iframe.id = "google-form-iframe";
                     iframe.setAttribute("allow", "camera; microphone");
-                    iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms");
+                    // Sandbox attribute completely removed to fix typing bug
                     iframe.style.width = "100%"; iframe.style.height = "100%"; iframe.style.border = "none";
                     
                     iframe.addEventListener('load', () => {
@@ -901,7 +886,6 @@
                 if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
                 if (screenStream) screenStream.getTracks().forEach(t => t.stop());
                 if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
-                observer.disconnect();
 
                 localStorage.setItem('gf_examLocked', 'true');
                 
