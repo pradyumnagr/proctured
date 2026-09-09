@@ -175,7 +175,7 @@
             // ==========================================
             // 3. MULTI-SECTION CONFIGURATION
             // ==========================================
-            const TOTAL_FORM_SECTIONS = 3; 
+            const TOTAL_FORM_SECTIONS = 2; 
 
             // --- STATE VARIABLES ---
             let isExamActive = false; 
@@ -668,17 +668,23 @@
                 if (document.hidden && !isTransitioning) triggerExactWarning("Switched browser tabs or minimized window."); 
             });
             
+            // Backup blur detector (mostly catches Desktop tab-switching)
             window.addEventListener('blur', () => { 
-                if (isTransitioning || !isExamActive) return; 
+                if (isTransitioning) return; 
                 _setTimeout(() => {
-                    if (!document.hasFocus()) triggerExactWarning("System Overlay or App Switch Detected."); 
-                }, 300);
+                    if (!document.hasFocus()) {
+                        triggerExactWarning("System Overlay Detected (Search PIP, notification, or background app)."); 
+                    }
+                }, 200);
             });
 
             document.addEventListener('fullscreenchange', () => { 
                 isTransitioning = true; 
                 _setTimeout(() => { isTransitioning = false; }, 3000); 
-                if (!document.fullscreenElement) triggerExactWarning("Exited Fullscreen mode."); 
+
+                if (!document.fullscreenElement) {
+                    triggerExactWarning("Exited Fullscreen mode."); 
+                }
             });
 
             window.addEventListener('resize', () => {
