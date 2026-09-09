@@ -5,10 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Proctored Exam Portal</title>
     <style>
-        /* Mobile UI Fix: Removed absolute overflow: hidden to prevent trapping UI on micro-screens */
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f6f9; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; user-select: none; -webkit-user-select: none; overflow-x: hidden; }
-        
-        /* Mobile UI Fix: Added max-height and internal scrolling so the button is always reachable */
         .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 90%; max-width: 650px; text-align: center; max-height: 90vh; overflow-y: auto; box-sizing: border-box; }
         
         #status-bar-container { display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 1000; justify-content: space-between; align-items: center; background: #202124; color: white; padding: 10px 20px; font-weight: bold; font-size: 15px; }
@@ -69,7 +66,6 @@
         <div>Security Violations: <span id="violations-pill">0</span></div>
     </div>
 
-    <!-- Security Warning Modal -->
     <div id="warning-overlay">
         <div class="warning-box">
             <h3>⚠️ SECURITY WARNING</h3>
@@ -86,7 +82,6 @@
         </div>
     </div>
 
-    <!-- ONE LAST CHANCE SCREEN SHARE MODAL -->
     <div id="screen-share-overlay">
         <div class="warning-box" style="border-top: 8px solid #ea8600;">
             <h3 style="color: #ea8600;">⚠️ SCREEN SHARE STOPPED</h3>
@@ -98,7 +93,6 @@
         </div>
     </div>
 
-    <!-- 5-MINUTE PENALTY LOCKOUT SCREEN -->
     <div id="timeout-screen" class="card hidden" style="border-top: 10px solid #d93025;">
         <h2 style="color: #d93025; margin-top: 0;">TEMPORARY LOCKOUT</h2>
         <p style="font-size: 16px; color: #333; font-weight: bold;">You have reached 7 Security Violations.</p>
@@ -110,7 +104,6 @@
         <button id="resume-final-btn" class="btn-primary" disabled>Please wait...</button>
     </div>
 
-    <!-- INSTRUCTIONS WIZARD SCREEN -->
     <div id="instruction-screen" class="card">
         <h2 style="margin-top: 0; color: #202124;">Exam Setup & Rules</h2>
         
@@ -148,13 +141,29 @@
         <div class="designer-credit">Designed by Pradyumn</div>
     </div>
 
-    <!-- Empty Google Form Container -->
     <div id="exam-container"></div>
 
-    <!-- Final Termination / Success Screen -->
+    <!-- Final Termination & Unlock Screen -->
     <div id="result-screen" class="card hidden">
         <h2 id="final-title" style="color: #1a73e8;">Processing...</h2>
         <p id="final-message">Please wait.</p>
+        
+        <!-- FACULTY OVERRIDE SECTION -->
+        <div id="unlock-section" style="display: none; margin-top: 25px; border-top: 1px solid #eee; padding-top: 25px;">
+            <p style="color: #d93025; font-size: 15px; font-weight: bold; margin-bottom: 15px;">🔒 EXAM LOCKED DUE TO VIOLATIONS</p>
+            
+            <div style="text-align: left; background: #fff3f3; padding: 12px; border-radius: 6px; border: 1px solid #ffcdd2; margin-bottom: 15px;">
+                <label style="display: flex; align-items: flex-start; cursor: pointer; font-size: 14px; color: #333; line-height: 1.4;">
+                    <input type="checkbox" id="confession-checkbox" style="margin-right: 12px; width: 18px; height: 18px; margin-top: 2px;">
+                    I accept that I cheated and violated the exam rules. I sincerely apologize to the faculty.
+                </label>
+            </div>
+            
+            <input type="password" id="unlock-key-input" placeholder="Enter Faculty Unlock Key" style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 14px; margin-bottom: 10px;">
+            
+            <button id="unlock-btn" class="btn-primary" disabled style="background: #d93025; margin-top: 5px;">Submit Apology & Unlock Exam</button>
+            <p id="unlock-error" style="color: red; font-size: 13px; display: none; margin-top: 10px; font-weight: bold;">❌ Incorrect Unlock Key!</p>
+        </div>
     </div>
 
     <script>
@@ -176,15 +185,16 @@
             const ENCODED_FORM_URL = "aHR0cHM6Ly9kb2NzLmdvb2dsZS5jb20vZm9ybXMvZC9lLzFGQUlwUUxTY0E5OWZ2RWxnSnRWQlhqZHlNcklQWXBTWVRVdEZRQlgwTVpPcFBXZ0NvYklyZk5nL3ZpZXdmb3JtP2VtYmVkZGVkPXRydWU=";
 
             // ==========================================
-            // 3. MULTI-SECTION CONFIGURATION
+            // 3. EXAM CONFIGURATION SETTINGS
             // ==========================================
             const TOTAL_FORM_SECTIONS = 2; 
+            
+            // MATH CYPHER: Translates to "pradyumnsirsorry" 
+            const ENCRYPTED_KEY = [117, 119, 102, 105, 126, 122, 114, 115, 120, 110, 119, 120, 116, 119, 119, 126]; 
 
             // --- STATE VARIABLES ---
             let isExamActive = false; 
             let isTransitioning = false; 
-            
-            // iPad Anti-Spoofing: Detects iPads claiming to be macOS
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
             
             let tabSwitchCount = parseInt(localStorage.getItem('gf_tabSwitches') || '0');
@@ -214,6 +224,12 @@
             const rollInput = document.getElementById('roll-no-input');
             const rollError = document.getElementById('roll-error');
             const container = document.getElementById('exam-container');
+
+            // Unlock Elements
+            const confessionCheckbox = document.getElementById('confession-checkbox');
+            const unlockKeyInput = document.getElementById('unlock-key-input');
+            const unlockBtn = document.getElementById('unlock-btn');
+            const unlockError = document.getElementById('unlock-error');
 
             if (isMobile) {
                 grantPermBtn.innerText = "📸 Grant Camera & Mic Access";
@@ -298,7 +314,6 @@
 
             // --- THE MASTER SECURITY LOOP ---
             _setInterval(() => {
-                // 1. HARD CSS ENFORCEMENT
                 if (!isExamActive) {
                     if (document.getElementById('exam-container').style.display === 'block') {
                         document.getElementById('exam-container').style.display = 'none';
@@ -306,21 +321,17 @@
                     return; 
                 }
 
-                // 2. TIME JUMP DETECTION
                 const now = _Date_now();
                 const timeDiff = now - lastInternalTick; 
                 lastInternalTick = now; 
                 if (timeDiff > 4500) triggerTamperProtocol("Process Suspension / System Freeze Detected");
 
-                // 3. DEBUGGER TRAP
                 const start = _performance_now(); debugger;
                 if (_performance_now() - start > 150) triggerTamperProtocol("Developer Tools Code Execution Paused");
                 
-                // 4. INTEGRITY CHECKS
                 if (!checkNativeIntegrity()) triggerTamperProtocol("JavaScript Modification / Extension Interference");
                 if (parseInt(localStorage.getItem('gf_tabSwitches') || '0') < tabSwitchCount) triggerTamperProtocol("LocalStorage Manipulation Attempted");
 
-                // 5. WINDOW MATH (Desktop Only)
                 if (!isMobile && !isTransitioning && window.outerWidth > 0 && window.innerHeight > 0) {
                     const widthDiff = window.outerWidth - window.innerWidth;
                     const heightDiff = window.outerHeight - window.innerHeight;
@@ -329,7 +340,6 @@
                     }
                 }
 
-                // 6. CONTINUOUS SCREEN SHARE POLLING (Only runs when exam is ACTIVE)
                 if (!isMobile && !isTransitioning && isExamActive) {
                     let hasActiveScreen = false;
                     if (screenStream && screenStream.getVideoTracks().length > 0) {
@@ -339,7 +349,6 @@
                     }
                     if (!hasActiveScreen) handleScreenShareDrop(); 
                 }
-
             }, 2500);
 
             _setInterval(() => {
@@ -378,13 +387,11 @@
                         }
                     }
 
-                    // CAMERA & MIC REQUEST
                     mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                     
                     if (!isMobile) {
                         permStatus.innerText = "Status: Camera, Mic & Screen Active ✅";
                     } else {
-                        // Correctly identifies mobile and doesn't crash asking for screen share
                         permStatus.innerText = "Status: Camera & Mic Active ✅";
                     }
                     
@@ -425,12 +432,14 @@
             examAgreementCheckbox.addEventListener('change', validateInputs);
             nameInput.addEventListener('input', validateInputs);
 
+            // --- PERSISTENT LOCKOUT HANDLING ---
             if (localStorage.getItem('gf_examLocked') === 'true') {
                 document.getElementById('instruction-screen').style.display = 'none';
                 document.getElementById('result-screen').classList.remove('hidden');
-                document.getElementById('final-title').innerText = "Exam Closed";
-                document.getElementById('final-message').innerText = "You have already completed or been locked out of this exam.";
-                return;
+                document.getElementById('final-title').innerText = "Exam Locked";
+                document.getElementById('final-title').style.color = "#d93025";
+                document.getElementById('final-message').innerText = "You have been locked out of this exam due to security violations.";
+                document.getElementById('unlock-section').style.display = 'block';
             }
 
             function attachMediaListeners() {
@@ -567,7 +576,6 @@
                 _setTimeout(() => { isTransitioning = false; }, 3000);
 
                 document.getElementById('warning-overlay').style.display = 'none';
-                // BUG FIX 1: Restores the exam container after warning is acknowledged!
                 document.getElementById('exam-container').style.display = 'block';
                 
                 if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
@@ -716,6 +724,99 @@
                 }
             });
 
+            // --- FACULTY OVERRIDE & UNLOCK LOGIC ---
+            function validateUnlockForm() {
+                if (confessionCheckbox.checked && unlockKeyInput.value.trim() !== '') {
+                    unlockBtn.disabled = false;
+                } else {
+                    unlockBtn.disabled = true;
+                }
+            }
+            confessionCheckbox.addEventListener('change', validateUnlockForm);
+            unlockKeyInput.addEventListener('input', validateUnlockForm);
+
+            unlockBtn.addEventListener('click', async () => {
+                
+                // --- DECRYPTION CHECK ---
+                let enteredKey = unlockKeyInput.value;
+                let isKeyCorrect = enteredKey.length === ENCRYPTED_KEY.length;
+                if (isKeyCorrect) {
+                    for (let i = 0; i < enteredKey.length; i++) {
+                        if (enteredKey.charCodeAt(i) + 5 !== ENCRYPTED_KEY[i]) {
+                            isKeyCorrect = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (!isKeyCorrect) {
+                    unlockError.style.display = 'block';
+                    return;
+                }
+                unlockError.style.display = 'none';
+
+                try {
+                    isTransitioning = true;
+                    _setTimeout(() => { isTransitioning = false; }, 3000);
+
+                    if (document.documentElement.requestFullscreen) { try { await document.documentElement.requestFullscreen(); } catch (e) {} }
+                    
+                    if (!isMobile) {
+                        screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
+                        const surface = screenStream.getVideoTracks()[0].getSettings().displaySurface;
+                        if (surface && surface !== 'monitor' && surface !== 'display') {
+                            screenStream.getTracks().forEach(t => t.stop());
+                            alert("SECURITY ERROR: You must select 'Entire Screen'.");
+                            isTransitioning = false;
+                            return;
+                        }
+                    }
+                    
+                    mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                    
+                    attachMediaListeners();
+                    attachScreenListeners();
+
+                    // Complete Clean Slate for the Student
+                    localStorage.removeItem('gf_examLocked');
+                    tabSwitchCount = 0;
+                    localStorage.setItem('gf_tabSwitches', '0');
+                    screenShareDrops = 0;
+                    localStorage.setItem('gf_screenDrops', '0');
+                    document.getElementById('violations-pill').innerText = '0';
+                    
+                    document.getElementById('result-screen').classList.add('hidden');
+                    document.getElementById('exam-container').style.display = 'block';
+                    document.getElementById('status-bar-container').style.display = 'flex';
+                    
+                    observer.observe(document.body, { childList: true, subtree: true });
+
+                    // Re-inject the Google Form iframe if they refreshed the page
+                    if (!document.getElementById("google-form-iframe")) {
+                        const decodedUrl = atob(ENCODED_FORM_URL);
+                        const iframe = document.createElement('iframe');
+                        iframe.src = decodedUrl;
+                        iframe.id = "google-form-iframe";
+                        iframe.setAttribute("allow", "camera; microphone");
+                        iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms");
+                        iframe.style.width = "100%"; iframe.style.height = "100%"; iframe.style.border = "none";
+                        
+                        iframe.addEventListener('load', () => {
+                            formLoadCount++;
+                            if (formLoadCount === (TOTAL_FORM_SECTIONS + 1)) { 
+                                lockOutStudent("Exam Submitted Successfully", "Your responses and security logs have been recorded.", true); 
+                            }
+                        });
+                        container.appendChild(iframe);
+                        startCountdown();
+                        startAudioMonitoring(mediaStream);
+                    }
+                    
+                    lastInternalTick = _Date_now(); 
+                    isExamActive = true; 
+                } catch (e) { alert("Camera, Mic & Screen Share are mandatory to unlock."); }
+            });
+
             startBtn.addEventListener('click', async () => {
                 if (!examAgreementCheckbox.checked || nameInput.value.trim() === '' || !/^\d{13}$/.test(rollInput.value) || !permissionsGranted) return;
                 
@@ -798,6 +899,16 @@
                 document.getElementById('final-title').innerText = title;
                 document.getElementById('final-title').style.color = isSuccess ? "#1a73e8" : "#d93025";
                 document.getElementById('final-message').innerText = message;
+
+                if (!isSuccess && !message.includes("expired")) {
+                    document.getElementById('unlock-section').style.display = 'block';
+                    document.getElementById('confession-checkbox').checked = false;
+                    document.getElementById('unlock-key-input').value = '';
+                    document.getElementById('unlock-btn').disabled = true;
+                    document.getElementById('unlock-error').style.display = 'none';
+                } else {
+                    document.getElementById('unlock-section').style.display = 'none';
+                }
 
                 let formattedLogs = violationLogs.map(log => `[${log.time}] ${log.reason}`).join("\n");
 
