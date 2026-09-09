@@ -5,8 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Proctored Exam Portal</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f6f9; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; user-select: none; -webkit-user-select: none; overflow: hidden; }
-        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 90%; max-width: 650px; text-align: center; }
+        /* Mobile UI Fix: Removed absolute overflow: hidden to prevent trapping UI on micro-screens */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f6f9; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; user-select: none; -webkit-user-select: none; overflow-x: hidden; }
+        
+        /* Mobile UI Fix: Added max-height and internal scrolling so the button is always reachable */
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 90%; max-width: 650px; text-align: center; max-height: 90vh; overflow-y: auto; box-sizing: border-box; }
         
         #status-bar-container { display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 1000; justify-content: space-between; align-items: center; background: #202124; color: white; padding: 10px 20px; font-weight: bold; font-size: 15px; }
         #timer-pill { background: #d93025; padding: 4px 12px; border-radius: 4px; }
@@ -212,7 +215,9 @@
             const rollError = document.getElementById('roll-error');
             const container = document.getElementById('exam-container');
 
-            if (isMobile) grantPermBtn.innerText = "📸 Grant Camera & Mic Access (Mobile)";
+            if (isMobile) {
+                grantPermBtn.innerText = "📸 Grant Camera & Mic Access";
+            }
 
             async function requestWakeLock() {
                 try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } 
@@ -362,7 +367,6 @@
                 if (detectVirtualMachine()) { alert("SECURITY ERROR: Virtual Machines and Emulators are strictly prohibited."); return; }
                 
                 try {
-                    // FIX: Screen Share MUST be requested FIRST to avoid gesture timeout
                     if (!isMobile) {
                         screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
                         const surface = screenStream.getVideoTracks()[0].getSettings().displaySurface;
@@ -380,6 +384,7 @@
                     if (!isMobile) {
                         permStatus.innerText = "Status: Camera, Mic & Screen Active ✅";
                     } else {
+                        // Correctly identifies mobile and doesn't crash asking for screen share
                         permStatus.innerText = "Status: Camera & Mic Active ✅";
                     }
                     
@@ -388,7 +393,6 @@
                     permissionsGranted = true;
                     validateInputs();
                 } catch(e) {
-                    // Clean up active streams if user cancels halfway
                     if (screenStream) screenStream.getTracks().forEach(t => t.stop());
                     if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
                     
@@ -439,7 +443,6 @@
                 }
             }
             
-            // Centralized Screen Drop Logic
             function handleScreenShareDrop() {
                 if (document.getElementById('screen-share-overlay').style.display === 'flex') return; 
                 screenShareDrops++;
@@ -518,12 +521,10 @@
                 isExamActive = false; 
             }
 
-            // WARNING OVERLAY ACKNOWLEDGMENT
             violationCheckbox.addEventListener('change', (e) => { violationAckBtn.disabled = !e.target.checked; });
             violationAckBtn.addEventListener('click', async () => {
                 if (!violationCheckbox.checked) return; 
                 
-                // 1. Verify Screen Share First
                 if (!isMobile) {
                     let needsScreen = false;
                     if (screenStream) {
@@ -547,7 +548,6 @@
                     }
                 }
 
-                // 2. Verify Camera
                 let needsCamera = false;
                 if (mediaStream) {
                     mediaStream.getTracks().forEach(t => { if (t.readyState === 'ended') needsCamera = true; });
@@ -567,6 +567,9 @@
                 _setTimeout(() => { isTransitioning = false; }, 3000);
 
                 document.getElementById('warning-overlay').style.display = 'none';
+                // BUG FIX 1: Restores the exam container after warning is acknowledged!
+                document.getElementById('exam-container').style.display = 'block';
+                
                 if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
                     try { await document.documentElement.requestFullscreen(); } catch (e) {}
                 }
@@ -642,7 +645,6 @@
                 } catch (e) { alert("Camera, Mic & Screen Share are mandatory to resume."); }
             });
 
-            // --- VIEWPORT DETECTOR (Search PIP & Overlays) ---
             if (window.visualViewport) {
                 let maxVH = window.visualViewport.height;
                 
@@ -660,7 +662,6 @@
                     if (currentVH > maxVH) maxVH = currentVH; 
                     let shrinkRatio = (maxVH - currentVH) / maxVH;
                     
-                    // Fixed mathematical range: 2% to 35% height reduction correctly catches all Search PIPs
                     if (shrinkRatio > 0.02 && shrinkRatio < 0.35) {
                         triggerExactWarning("Illegal System Overlay Detected (Search PIP or Native Toolbar).");
                     }
