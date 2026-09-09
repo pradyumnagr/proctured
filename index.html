@@ -159,7 +159,6 @@
     <script>
         (function() {
             // --- NATIVE FUNCTION CACHING (Anti-Hooking Protocol) ---
-            // Stores the real browser clocks in memory before extensions can alter them
             const _Date_now = Date.now;
             const _performance_now = performance.now.bind(performance);
             const _setInterval = setInterval;
@@ -214,10 +213,7 @@
                 try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } 
                 catch (err) { console.log("Wake Lock not supported."); }
             }
-            document.addEventListener('visibilitychange', () => {
-                if (wakeLock !== null && document.visibilityState === 'visible') requestWakeLock();
-            });
-
+            
             function generateHardwareFingerprint() {
                 try {
                     const canvas = document.createElement('canvas');
@@ -289,7 +285,7 @@
                 triggerExactWarning("SEVERE TAMPERING DETECTED: " + reason);
             }
 
-            // Secure Hardware Loop (Using Cached Clocks)
+            // Secure Hardware Loop
             _setInterval(() => {
                 const now = _Date_now();
                 const timeDiff = now - lastInternalTick; 
@@ -558,14 +554,22 @@
                 } catch (e) { alert("Camera, Mic & Screen Share are mandatory to resume."); }
             });
 
-            document.addEventListener('visibilitychange', () => { 
+            // --- THE NEW OS FOCUS TRAP ---
+            document.addEventListener('visibilitychange', () => {
+                if (wakeLock !== null && document.visibilityState === 'visible') requestWakeLock();
                 if (document.hidden && !isTransitioning) triggerExactWarning("Switched browser tabs or minimized window."); 
             });
             
             window.addEventListener('blur', () => { 
                 if (isTransitioning) return; 
-                if (document.activeElement && document.activeElement.tagName.toLowerCase() === 'iframe') return; 
-                triggerExactWarning("Window lost focus. Clicked outside the exam window."); 
+                
+                // Wait 200ms to let the browser settle.
+                // If the OS opened a Search PIP, document focus will physically leave the page.
+                _setTimeout(() => {
+                    if (!document.hasFocus()) {
+                        triggerExactWarning("System Overlay Detected (Search PIP, notification, or background app)."); 
+                    }
+                }, 200);
             });
 
             document.addEventListener('fullscreenchange', () => { 
@@ -627,13 +631,11 @@
                     iframe.src = decodedUrl;
                     iframe.id = "google-form-iframe";
                     iframe.setAttribute("allow", "camera; microphone");
-                    // NEW: Sandboxing the iframe to prevent popup escapes
                     iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms");
                     iframe.style.width = "100%"; iframe.style.height = "100%"; iframe.style.border = "none";
                     
                     iframe.addEventListener('load', () => {
                         formLoadCount++;
-                        // Restored Automatic Submission for Single-Page Forms
                         if (formLoadCount === 2) { lockOutStudent("Exam Submitted Successfully", "Your responses and security logs have been recorded.", true); }
                     });
                     
