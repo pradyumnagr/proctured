@@ -158,6 +158,13 @@
 
     <script>
         (function() {
+            // --- NATIVE FUNCTION CACHING (Anti-Hooking Protocol) ---
+            // Stores the real browser clocks in memory before extensions can alter them
+            const _Date_now = Date.now;
+            const _performance_now = performance.now.bind(performance);
+            const _setInterval = setInterval;
+            const _setTimeout = setTimeout;
+
             // ==========================================
             // 1. APPS SCRIPT WEBHOOK 
             // ==========================================
@@ -186,7 +193,7 @@
             let lastWarningTime = 0;
             let formLoadCount = 0; 
             let hardwareHashValue = "Not Generated";
-            let lastInternalTick = Date.now(); 
+            let lastInternalTick = _Date_now(); 
 
             const examAgreementCheckbox = document.getElementById('exam-agreement-checkbox');
             const startBtn = document.getElementById('start-btn');
@@ -241,7 +248,7 @@
                     source.connect(analyser);
                     const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
-                    setInterval(() => {
+                    _setInterval(() => {
                         if (!isExamActive) return;
                         analyser.getByteFrequencyData(dataArray);
                         let sum = 0;
@@ -282,8 +289,9 @@
                 triggerExactWarning("SEVERE TAMPERING DETECTED: " + reason);
             }
 
-            setInterval(() => {
-                const now = Date.now();
+            // Secure Hardware Loop (Using Cached Clocks)
+            _setInterval(() => {
+                const now = _Date_now();
                 const timeDiff = now - lastInternalTick; 
                 lastInternalTick = now; 
 
@@ -291,8 +299,8 @@
                 
                 if (timeDiff > 4500) triggerTamperProtocol("Process Suspension / System Freeze Detected");
 
-                const start = performance.now(); debugger;
-                if (performance.now() - start > 150) triggerTamperProtocol("Developer Tools Code Execution Paused");
+                const start = _performance_now(); debugger;
+                if (_performance_now() - start > 150) triggerTamperProtocol("Developer Tools Code Execution Paused");
                 
                 if (!checkNativeIntegrity()) triggerTamperProtocol("JavaScript Modification / Extension Interference");
                 
@@ -309,7 +317,7 @@
                 }
             }, 2500);
 
-            setInterval(() => {
+            _setInterval(() => {
                 if (!isExamActive) return;
                 fetch(AUDIT_WEBHOOK_URL, {
                     method: 'POST', mode: 'no-cors',
@@ -420,14 +428,14 @@
                     document.getElementById('screen-share-overlay').style.display = 'none';
                     document.getElementById('exam-container').style.display = 'block';
                     attachScreenListeners(); 
-                    lastInternalTick = Date.now(); 
+                    lastInternalTick = _Date_now(); 
                     isExamActive = true; 
                 } catch (e) { alert("You MUST share your screen to continue the exam."); }
             });
 
             function triggerExactWarning(exactRuleMessage) {
                 if (!isExamActive) return; 
-                const now = Date.now();
+                const now = _Date_now();
                 if (now - lastWarningTime < 1200) return;
                 lastWarningTime = now;
 
@@ -441,7 +449,7 @@
                 document.getElementById('violations-pill').innerText = tabSwitchCount;
 
                 if (tabSwitchCount === 7) {
-                    let timeoutEnd = Date.now() + (5 * 60 * 1000);
+                    let timeoutEnd = _Date_now() + (5 * 60 * 1000);
                     localStorage.setItem('gf_timeoutEndTime', timeoutEnd);
                     startPenaltyCountdown(timeoutEnd);
                     return;
@@ -480,14 +488,14 @@
                 }
 
                 isTransitioning = true;
-                setTimeout(() => { isTransitioning = false; }, 3000);
+                _setTimeout(() => { isTransitioning = false; }, 3000);
 
                 document.getElementById('warning-overlay').style.display = 'none';
                 if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
                     try { await document.documentElement.requestFullscreen(); } catch (e) {}
                 }
                 
-                lastInternalTick = Date.now(); 
+                lastInternalTick = _Date_now(); 
                 isExamActive = true; 
             });
 
@@ -507,7 +515,7 @@
                 resumeFinalBtn.innerText = "Please wait...";
 
                 function tick() {
-                    const remaining = endTime - Date.now();
+                    const remaining = endTime - _Date_now();
                     if (remaining <= 0) {
                         clearInterval(penaltyInterval);
                         timerDisplay.innerText = "00:00";
@@ -518,13 +526,13 @@
                         timerDisplay.innerText = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
                     }
                 }
-                tick(); penaltyInterval = setInterval(tick, 1000);
+                tick(); penaltyInterval = _setInterval(tick, 1000);
             }
 
             resumeFinalBtn.addEventListener('click', async () => {
                 try {
                     isTransitioning = true;
-                    setTimeout(() => { isTransitioning = false; }, 3000);
+                    _setTimeout(() => { isTransitioning = false; }, 3000);
 
                     if (document.documentElement.requestFullscreen) { try { await document.documentElement.requestFullscreen(); } catch (e) {} }
                     mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -545,12 +553,11 @@
                     initialWindowWidth = window.innerWidth; initialWindowHeight = window.innerHeight;
                     if (!timerInterval) startCountdown();
                     
-                    lastInternalTick = Date.now(); 
+                    lastInternalTick = _Date_now(); 
                     isExamActive = true; 
                 } catch (e) { alert("Camera, Mic & Screen Share are mandatory to resume."); }
             });
 
-            // --- BASIC SENSORS WITH TRANSITION SHIELD ---
             document.addEventListener('visibilitychange', () => { 
                 if (document.hidden && !isTransitioning) triggerExactWarning("Switched browser tabs or minimized window."); 
             });
@@ -563,7 +570,7 @@
 
             document.addEventListener('fullscreenchange', () => { 
                 isTransitioning = true; 
-                setTimeout(() => { isTransitioning = false; }, 3000); 
+                _setTimeout(() => { isTransitioning = false; }, 3000); 
 
                 if (!document.fullscreenElement) {
                     triggerExactWarning("Exited Fullscreen mode."); 
@@ -578,13 +585,11 @@
                 }
             });
             
-            // --- BLOCK RIGHT CLICK EVERYWHERE ---
             document.addEventListener('contextmenu', (e) => {
                 e.preventDefault(); 
                 if (isExamActive) triggerExactWarning("Right-clicking is strictly prohibited.");
             });
 
-            // BLOCK KEYBOARD SHORTCUTS
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) || (e.ctrlKey && ['u', 'p', 's'].includes(e.key.toLowerCase()))) {
                     e.preventDefault(); triggerExactWarning("Prohibited keyboard shortcut used.");
@@ -592,7 +597,7 @@
                 if (e.key === 'PrintScreen') {
                     e.preventDefault(); navigator.clipboard.writeText('');
                     document.getElementById('flash-overlay').style.display = 'block';
-                    setTimeout(() => document.getElementById('flash-overlay').style.display = 'none', 400);
+                    _setTimeout(() => document.getElementById('flash-overlay').style.display = 'none', 400);
                     triggerExactWarning("Screenshot attempt blocked.");
                 }
             });
@@ -605,7 +610,7 @@
 
                 try {
                     isTransitioning = true;
-                    setTimeout(() => { isTransitioning = false; }, 3000);
+                    _setTimeout(() => { isTransitioning = false; }, 3000);
 
                     if (document.documentElement.requestFullscreen) { try { await document.documentElement.requestFullscreen(); } catch (e) {} }
                     requestWakeLock(); 
@@ -622,10 +627,13 @@
                     iframe.src = decodedUrl;
                     iframe.id = "google-form-iframe";
                     iframe.setAttribute("allow", "camera; microphone");
+                    // NEW: Sandboxing the iframe to prevent popup escapes
+                    iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms");
                     iframe.style.width = "100%"; iframe.style.height = "100%"; iframe.style.border = "none";
                     
                     iframe.addEventListener('load', () => {
                         formLoadCount++;
+                        // Restored Automatic Submission for Single-Page Forms
                         if (formLoadCount === 2) { lockOutStudent("Exam Submitted Successfully", "Your responses and security logs have been recorded.", true); }
                     });
                     
@@ -635,16 +643,16 @@
                     attachScreenListeners();
                     startAudioMonitoring(mediaStream); 
                     
-                    lastInternalTick = Date.now(); 
+                    lastInternalTick = _Date_now(); 
                     isExamActive = true; 
                 } catch (err) { alert("A system error occurred. Please refresh the page."); }
             });
 
             function startCountdown() {
                 let endTime = localStorage.getItem('gf_examEndTime');
-                if (!endTime) { endTime = Date.now() + (2 * 60 * 60 * 1000); localStorage.setItem('gf_examEndTime', endTime); }
+                if (!endTime) { endTime = _Date_now() + (2 * 60 * 60 * 1000); localStorage.setItem('gf_examEndTime', endTime); }
                 function tick() {
-                    const remaining = endTime - Date.now();
+                    const remaining = endTime - _Date_now();
                     if (remaining <= 0) { 
                         clearInterval(timerInterval); lockOutStudent("Exam Terminated", "Time has expired.", false);
                     } else {
@@ -652,7 +660,7 @@
                         document.getElementById('timer-pill').innerText = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
                     }
                 }
-                tick(); timerInterval = setInterval(tick, 1000);
+                tick(); timerInterval = _setInterval(tick, 1000);
             }
 
             function lockOutStudent(title, message, isSuccess) {
