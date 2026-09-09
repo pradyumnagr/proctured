@@ -124,8 +124,7 @@
                 <li><strong>No Tab Switching:</strong> You cannot open other tabs, browsers, or apps.</li>
                 <li><strong>No Back Button:</strong> You must only move forward in the exam. Clicking 'Back' inside the form will terminate the exam.</li>
                 <li><strong>No Google Search PIP:</strong> Highlighting text to invoke mobile search triggers an instant violation.</li>
-                <li><strong>Anti-Tampering:</strong> System suspension or code tampering triggers an instant Last Warning.</li>
-                <li><strong>Screen Share Required:</strong> (Desktop only) Dual monitors are blocked.</li>
+                <li><strong>Screen Share Required:</strong> (Desktop) You must select "Entire Screen". Windows or Tabs are blocked.</li>
             </ul>
         </div>
 
@@ -175,9 +174,8 @@
 
             // ==========================================
             // 3. MULTI-SECTION CONFIGURATION
-            // Change this number to match the exact number of pages/sections in your Google Form!
             // ==========================================
-            const TOTAL_FORM_SECTIONS = 2; 
+            const TOTAL_FORM_SECTIONS = 3; 
 
             // --- STATE VARIABLES ---
             let isExamActive = false; 
@@ -189,7 +187,7 @@
             
             let timerInterval, penaltyInterval, mediaStream = null, screenStream = null;
             let permissionsGranted = false;
-            let screenShareDrops = 0; 
+            let screenShareDrops = parseInt(localStorage.getItem('gf_screenDrops') || '0'); 
             let wakeLock = null;
             
             let initialWindowWidth = window.innerWidth;
@@ -227,7 +225,6 @@
                     ctx.fillStyle = "#f60"; ctx.fillRect(125,1,62,20);
                     ctx.fillStyle = "#069"; ctx.fillText("ProctorHash", 2, 15);
                     ctx.fillStyle = "rgba(102, 204, 0, 0.7)"; ctx.fillText("ProctorHash", 4, 17);
-                    
                     const b64 = canvas.toDataURL();
                     let hash = 0;
                     for (let i = 0; i < b64.length; i++) {
@@ -272,11 +269,13 @@
             const observer = new MutationObserver((mutations) => {
                 if (!isExamActive || isTransitioning) return;
                 mutations.forEach((mutation) => {
-                    mutation.removedNodes.forEach((node) => {
-                        if (node.id === 'warning-overlay' || node.id === 'timeout-screen' || node.id === 'exam-container') {
-                            triggerTamperProtocol("DOM Manipulation / Overlay Deletion");
-                        }
-                    });
+                    if (mutation.type === 'childList') {
+                        mutation.removedNodes.forEach((node) => {
+                            if (node.id === 'warning-overlay' || node.id === 'timeout-screen' || node.id === 'exam-container' || node.id === 'screen-share-overlay') {
+                                triggerTamperProtocol("DOM Manipulation / Overlay Deletion");
+                            }
+                        });
+                    }
                 });
             });
             observer.observe(document.body, { childList: true, subtree: true });
@@ -290,34 +289,31 @@
                 triggerExactWarning("SEVERE TAMPERING DETECTED: " + reason);
             }
 
-            // --- THE NEW AGGRESSIVE OS FOCUS POLLER ---
+            // --- THE MASTER SECURITY LOOP ---
             _setInterval(() => {
-                if (isExamActive && !isTransitioning) {
-                    if (!document.hasFocus()) {
-                        triggerExactWarning("System Overlay Detected (Google Search PIP or Notification).");
+                // 1. HARD CSS ENFORCEMENT (Prevents CSS inspect element bypasses while paused)
+                if (!isExamActive) {
+                    if (document.getElementById('exam-container').style.display === 'block') {
+                        document.getElementById('exam-container').style.display = 'none';
                     }
+                    return; // Stop running the rest of the sensors if paused
                 }
-            }, 800);
 
-            // Secure Hardware Loop
-            _setInterval(() => {
+                // 2. TIME JUMP DETECTION
                 const now = _Date_now();
                 const timeDiff = now - lastInternalTick; 
                 lastInternalTick = now; 
-
-                if (!isExamActive) return; 
-                
                 if (timeDiff > 4500) triggerTamperProtocol("Process Suspension / System Freeze Detected");
 
+                // 3. DEBUGGER TRAP
                 const start = _performance_now(); debugger;
                 if (_performance_now() - start > 150) triggerTamperProtocol("Developer Tools Code Execution Paused");
                 
+                // 4. INTEGRITY CHECKS
                 if (!checkNativeIntegrity()) triggerTamperProtocol("JavaScript Modification / Extension Interference");
-                
-                if (parseInt(localStorage.getItem('gf_tabSwitches') || '0') < tabSwitchCount) {
-                    triggerTamperProtocol("LocalStorage Manipulation Attempted");
-                }
+                if (parseInt(localStorage.getItem('gf_tabSwitches') || '0') < tabSwitchCount) triggerTamperProtocol("LocalStorage Manipulation Attempted");
 
+                // 5. WINDOW MATH (Desktop Only)
                 if (!isMobile && !isTransitioning && window.outerWidth > 0 && window.innerHeight > 0) {
                     const widthDiff = window.outerWidth - window.innerWidth;
                     const heightDiff = window.outerHeight - window.innerHeight;
@@ -325,7 +321,28 @@
                         triggerTamperProtocol("Developer Tools Docked Panel Detected");
                     }
                 }
+
+                // 6. CONTINUOUS SCREEN SHARE POLLING (The Ultimate Overlay Fix)
+                if (!isMobile && !isTransitioning) {
+                    let hasActiveScreen = false;
+                    if (screenStream && screenStream.getVideoTracks().length > 0) {
+                        if (screenStream.getVideoTracks()[0].readyState === 'live') {
+                            hasActiveScreen = true;
+                        }
+                    }
+                    if (!hasActiveScreen) handleScreenShareDrop(); // Instantly block if disconnected
+                }
+
             }, 2500);
+
+            // --- OS FOCUS POLLER (For Mobile Search PIP) ---
+            _setInterval(() => {
+                if (isExamActive && !isTransitioning) {
+                    if (!document.hasFocus()) {
+                        triggerExactWarning("System Overlay Detected (Google Search PIP or Notification).");
+                    }
+                }
+            }, 800);
 
             _setInterval(() => {
                 if (!isExamActive) return;
@@ -355,6 +372,14 @@
                     
                     if (!isMobile) {
                         screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
+                        
+                        // Force "Entire Screen" Selection
+                        const surface = screenStream.getVideoTracks()[0].getSettings().displaySurface;
+                        if (surface && surface !== 'monitor' && surface !== 'display') {
+                            screenStream.getTracks().forEach(t => t.stop());
+                            alert("SECURITY ERROR: You must select 'Entire Screen'. Windows or Tabs are strictly prohibited.");
+                            return; // Halt permission
+                        }
                         permStatus.innerText = "Status: Camera, Mic & Screen Active ✅";
                     } else {
                         permStatus.innerText = "Status: Camera & Mic Active ✅";
@@ -372,7 +397,6 @@
 
             function validateInputs() {
                 const isRollValid = /^\d{13}$/.test(rollInput.value);
-                
                 if (rollInput.value.length > 0 && !isRollValid) {
                     rollError.style.display = 'block';
                 } else {
@@ -392,7 +416,6 @@
                 this.value = this.value.replace(/\D/g, ''); 
                 validateInputs();
             });
-
             examAgreementCheckbox.addEventListener('change', validateInputs);
             nameInput.addEventListener('input', validateInputs);
 
@@ -413,28 +436,44 @@
                     });
                 }
             }
+            
+            // Centralized Screen Drop Logic
+            function handleScreenShareDrop() {
+                if (document.getElementById('screen-share-overlay').style.display === 'flex') return; 
+                screenShareDrops++;
+                localStorage.setItem('gf_screenDrops', screenShareDrops);
+                
+                if (screenShareDrops > 1) {
+                    lockOutStudent("Exam Terminated", "Screen sharing was stopped multiple times.", false);
+                } else {
+                    isExamActive = false;
+                    document.getElementById('exam-container').style.display = 'none';
+                    document.getElementById('screen-share-overlay').style.display = 'flex';
+                    
+                    const timestamp = new Date().toLocaleTimeString();
+                    violationLogs.push({ time: timestamp, reason: "Screen Sharing Stopped (Warning Issued)" });
+                    localStorage.setItem('gf_violationLogs', JSON.stringify(violationLogs));
+                }
+            }
+
             function attachScreenListeners() {
                 if (screenStream && !isMobile) {
-                    screenStream.getVideoTracks()[0].onended = () => { 
-                        screenShareDrops++;
-                        if (screenShareDrops > 1) {
-                            lockOutStudent("Exam Terminated", "Screen sharing was stopped multiple times.", false);
-                        } else {
-                            isExamActive = false;
-                            document.getElementById('exam-container').style.display = 'none';
-                            document.getElementById('screen-share-overlay').style.display = 'flex';
-                            
-                            const timestamp = new Date().toLocaleTimeString();
-                            violationLogs.push({ time: timestamp, reason: "Screen Sharing Stopped (Warning Issued)" });
-                            localStorage.setItem('gf_violationLogs', JSON.stringify(violationLogs));
-                        }
-                    };
+                    screenStream.getVideoTracks()[0].onended = handleScreenShareDrop;
                 }
             }
 
             restartScreenBtn.addEventListener('click', async () => {
                 try {
                     screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
+                    
+                    // Force Entire Screen on Restart
+                    const surface = screenStream.getVideoTracks()[0].getSettings().displaySurface;
+                    if (surface && surface !== 'monitor' && surface !== 'display') {
+                        screenStream.getTracks().forEach(t => t.stop());
+                        alert("SECURITY ERROR: You must select 'Entire Screen'. Windows or Tabs are strictly prohibited.");
+                        return;
+                    }
+
                     document.getElementById('screen-share-overlay').style.display = 'none';
                     document.getElementById('exam-container').style.display = 'block';
                     attachScreenListeners(); 
@@ -478,10 +517,12 @@
                 isExamActive = false; 
             }
 
+            // WARNING OVERLAY ACKNOWLEDGMENT
             violationCheckbox.addEventListener('change', (e) => { violationAckBtn.disabled = !e.target.checked; });
             violationAckBtn.addEventListener('click', async () => {
                 if (!violationCheckbox.checked) return; 
                 
+                // 1. Verify Camera
                 let needsCamera = false;
                 if (mediaStream) {
                     mediaStream.getTracks().forEach(t => { if (t.readyState === 'ended') needsCamera = true; });
@@ -494,6 +535,30 @@
                     } catch(e) {
                         alert("You MUST allow camera/mic access to resume the exam.");
                         return; 
+                    }
+                }
+
+                // 2. Verify Screen Share is still alive! (Fixes the Overlay Overlap Bypass)
+                if (!isMobile) {
+                    let needsScreen = false;
+                    if (screenStream) {
+                        screenStream.getVideoTracks().forEach(t => { if (t.readyState === 'ended') needsScreen = true; });
+                    } else { needsScreen = true; }
+
+                    if (needsScreen) {
+                        try {
+                            screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
+                            const surface = screenStream.getVideoTracks()[0].getSettings().displaySurface;
+                            if (surface && surface !== 'monitor' && surface !== 'display') {
+                                screenStream.getTracks().forEach(t => t.stop());
+                                alert("SECURITY ERROR: You must select 'Entire Screen'. Windows or Tabs are strictly prohibited.");
+                                return;
+                            }
+                            attachScreenListeners();
+                        } catch(e) {
+                            alert("You MUST share your ENTIRE SCREEN to resume the exam.");
+                            return; 
+                        }
                     }
                 }
 
@@ -549,6 +614,13 @@
                     
                     if (!isMobile) {
                         screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
+                        const surface = screenStream.getVideoTracks()[0].getSettings().displaySurface;
+                        if (surface && surface !== 'monitor' && surface !== 'display') {
+                            screenStream.getTracks().forEach(t => t.stop());
+                            alert("SECURITY ERROR: You must select 'Entire Screen'. Windows or Tabs are strictly prohibited.");
+                            isTransitioning = false;
+                            return;
+                        }
                     }
                     
                     attachMediaListeners();
@@ -568,7 +640,7 @@
                 } catch (e) { alert("Camera, Mic & Screen Share are mandatory to resume."); }
             });
 
-            // --- THE NEW SEARCH PIP VIEWPORT DETECTOR ---
+            // --- VIEWPORT DETECTOR (Search PIP & Overlays) ---
             if (window.visualViewport) {
                 let maxVH = window.visualViewport.height;
                 
@@ -582,19 +654,15 @@
 
                 window.visualViewport.addEventListener('resize', () => {
                     if (!isExamActive || isTransitioning) return;
-                    
                     let currentVH = window.visualViewport.height;
                     if (currentVH > maxVH) maxVH = currentVH; 
-                    
                     let shrinkRatio = (maxVH - currentVH) / maxVH;
-                    
                     if (shrinkRatio > 0.04 && shrinkRatio < 0.28) {
                         triggerExactWarning("Illegal System Overlay Detected (Search PIP or Native Toolbar).");
                     }
                 });
             }
 
-            // --- THE STRICT BLUR DETECTOR ---
             document.addEventListener('visibilitychange', () => {
                 if (wakeLock !== null && document.visibilityState === 'visible') requestWakeLock();
                 if (document.hidden && !isTransitioning) triggerExactWarning("Switched browser tabs or minimized window."); 
@@ -603,19 +671,14 @@
             window.addEventListener('blur', () => { 
                 if (isTransitioning || !isExamActive) return; 
                 _setTimeout(() => {
-                    if (!document.hasFocus()) {
-                        triggerExactWarning("System Overlay or App Switch Detected."); 
-                    }
+                    if (!document.hasFocus()) triggerExactWarning("System Overlay or App Switch Detected."); 
                 }, 300);
             });
 
             document.addEventListener('fullscreenchange', () => { 
                 isTransitioning = true; 
                 _setTimeout(() => { isTransitioning = false; }, 3000); 
-
-                if (!document.fullscreenElement) {
-                    triggerExactWarning("Exited Fullscreen mode."); 
-                }
+                if (!document.fullscreenElement) triggerExactWarning("Exited Fullscreen mode."); 
             });
 
             window.addEventListener('resize', () => {
@@ -671,10 +734,8 @@
                     iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms");
                     iframe.style.width = "100%"; iframe.style.height = "100%"; iframe.style.border = "none";
                     
-                    // --- THE FULLY AUTOMATED SUBMIT TRACKER ---
                     iframe.addEventListener('load', () => {
                         formLoadCount++;
-                        // If the form has loaded more times than it has sections, it means they reached the Final Submit page!
                         if (formLoadCount === (TOTAL_FORM_SECTIONS + 1)) { 
                             lockOutStudent("Exam Submitted Successfully", "Your responses and security logs have been recorded.", true); 
                         }
