@@ -550,6 +550,7 @@
                 } catch (e) { alert("Camera, Mic & Screen Share are mandatory to resume."); }
             });
 
+            // --- BASIC SENSORS WITH TRANSITION SHIELD ---
             document.addEventListener('visibilitychange', () => { 
                 if (document.hidden && !isTransitioning) triggerExactWarning("Switched browser tabs or minimized window."); 
             });
@@ -576,7 +577,14 @@
                     initialWindowWidth = window.innerWidth; initialWindowHeight = window.innerHeight;
                 }
             });
+            
+            // --- BLOCK RIGHT CLICK EVERYWHERE ---
+            document.addEventListener('contextmenu', (e) => {
+                e.preventDefault(); 
+                if (isExamActive) triggerExactWarning("Right-clicking is strictly prohibited.");
+            });
 
+            // BLOCK KEYBOARD SHORTCUTS
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) || (e.ctrlKey && ['u', 'p', 's'].includes(e.key.toLowerCase()))) {
                     e.preventDefault(); triggerExactWarning("Prohibited keyboard shortcut used.");
