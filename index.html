@@ -185,7 +185,7 @@
             const ENCODED_FORM_URL = "aHR0cHM6Ly9kb2NzLmdvb2dsZS5jb20vZm9ybXMvZC9lLzFGQUlwUUxTY0E5OWZ2RWxnSnRWQlhqZHlNcklQWXBTWVRVdEZRQlgwTVpPcFBXZ0NvYklyZk5nL3ZpZXdmb3JtP2VtYmVkZGVkPXRydWU=";
 
             // ==========================================
-            // 3. EXAM CONFIGURATION SETTINGS
+            // 3. MULTI-SECTION CONFIGURATION
             // ==========================================
             const TOTAL_FORM_SECTIONS = 2; 
             
@@ -225,7 +225,6 @@
             const rollError = document.getElementById('roll-error');
             const container = document.getElementById('exam-container');
 
-            // Unlock Elements
             const confessionCheckbox = document.getElementById('confession-checkbox');
             const unlockKeyInput = document.getElementById('unlock-key-input');
             const unlockBtn = document.getElementById('unlock-btn');
@@ -311,6 +310,20 @@
                 }
                 triggerExactWarning("SEVERE TAMPERING DETECTED: " + reason);
             }
+
+            // --- ANTI-TEXT SELECTION (FAST RECLAMATION LOOP) ---
+            // A long-press on Android takes ~500ms. By forcefully pulling focus back to the parent
+            // window every 350ms, we mathematically abort the text selection gesture before the OS
+            // can register it. This makes "Touch to Search" completely impossible.
+            _setInterval(() => {
+                if (isExamActive && !isTransitioning) {
+                    if (document.activeElement && document.activeElement.tagName.toLowerCase() === 'iframe') {
+                        document.activeElement.blur();
+                        window.focus();
+                        if (window.getSelection) window.getSelection().removeAllRanges();
+                    }
+                }
+            }, 350);
 
             // --- THE MASTER SECURITY LOOP ---
             _setInterval(() => {
@@ -432,7 +445,6 @@
             examAgreementCheckbox.addEventListener('change', validateInputs);
             nameInput.addEventListener('input', validateInputs);
 
-            // --- PERSISTENT LOCKOUT HANDLING ---
             if (localStorage.getItem('gf_examLocked') === 'true') {
                 document.getElementById('instruction-screen').style.display = 'none';
                 document.getElementById('result-screen').classList.remove('hidden');
@@ -676,6 +688,7 @@
                 });
             }
 
+            // --- STRICT BLUR & OVERLAY DETECTOR ---
             document.addEventListener('visibilitychange', () => {
                 if (wakeLock !== null && document.visibilityState === 'visible') requestWakeLock();
                 if (document.hidden && !isTransitioning) triggerExactWarning("Switched browser tabs or minimized window."); 
@@ -684,10 +697,15 @@
             window.addEventListener('blur', () => { 
                 if (isTransitioning || !isExamActive) return; 
                 _setTimeout(() => {
-                    if (!document.hasFocus()) {
-                        triggerExactWarning("System Overlay or App Switch Detected."); 
+                    if (document.activeElement && document.activeElement.tagName.toLowerCase() === 'iframe') {
+                        // Instant fallback focus stealer for desktop text selection
+                        document.activeElement.blur();
+                        window.focus();
+                        if (window.getSelection) window.getSelection().removeAllRanges();
+                    } else if (!document.hasFocus()) {
+                        triggerExactWarning("System Overlay, App Switch, or Search Detected."); 
                     }
-                }, 300);
+                }, 100);
             });
 
             document.addEventListener('fullscreenchange', () => { 
@@ -737,11 +755,11 @@
 
             unlockBtn.addEventListener('click', async () => {
                 
-                // --- DECRYPTION CHECK ---
                 let enteredKey = unlockKeyInput.value;
                 let isKeyCorrect = enteredKey.length === ENCRYPTED_KEY.length;
                 if (isKeyCorrect) {
                     for (let i = 0; i < enteredKey.length; i++) {
+                        // Secret +5 Shift Cipher matching
                         if (enteredKey.charCodeAt(i) + 5 !== ENCRYPTED_KEY[i]) {
                             isKeyCorrect = false;
                             break;
@@ -791,7 +809,6 @@
                     
                     observer.observe(document.body, { childList: true, subtree: true });
 
-                    // Re-inject the Google Form iframe if they refreshed the page
                     if (!document.getElementById("google-form-iframe")) {
                         const decodedUrl = atob(ENCODED_FORM_URL);
                         const iframe = document.createElement('iframe');
