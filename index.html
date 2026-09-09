@@ -5,12 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Proctored Exam Portal</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f6f9; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; user-select: none; -webkit-user-select: none; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f6f9; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; user-select: none; -webkit-user-select: none; overflow: hidden; }
         .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 90%; max-width: 650px; text-align: center; }
         
-        #status-bar-container { display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 1000; justify-content: space-between; background: #202124; color: white; padding: 10px 20px; font-weight: bold; font-size: 15px; }
+        #status-bar-container { display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 1000; justify-content: space-between; align-items: center; background: #202124; color: white; padding: 10px 20px; font-weight: bold; font-size: 15px; }
         #timer-pill { background: #d93025; padding: 4px 12px; border-radius: 4px; }
         #violations-pill { background: #ea8600; padding: 4px 12px; border-radius: 4px; }
+        #end-exam-btn { background: #34a853; color: white; border: none; padding: 6px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s; }
+        #end-exam-btn:hover { background: #2d8c46; }
 
         #warning-overlay, #screen-share-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.85); z-index: 99999; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
         .warning-box { background: #ffffff; border-top: 8px solid #d93025; padding: 30px; border-radius: 10px; max-width: 480px; width: 90%; text-align: center; }
@@ -42,7 +44,7 @@
         #penalty-timer { font-size: 48px; font-weight: bold; color: #d93025; font-family: monospace; display: block; margin: 20px 0; }
         .screenshot-flash { background-color: red !important; display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 99998; }
         
-        #exam-container { display: none; width: 100vw; height: 100vh; padding-top: 40px; box-sizing: border-box; }
+        #exam-container { display: none; width: 100vw; height: 100vh; padding-top: 40px; box-sizing: border-box; overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .hidden { display: none !important; }
         .designer-credit { margin-top: 25px; font-family: 'Brush Script MT', cursive; font-size: 15px; color: #888; font-style: italic; }
     </style>
@@ -65,6 +67,7 @@
     <div id="status-bar-container">
         <div>Time Remaining: <span id="timer-pill">02:00:00</span></div>
         <div>Security Violations: <span id="violations-pill">0</span></div>
+        <button id="end-exam-btn">Finish Exam</button>
     </div>
 
     <!-- Security Warning Modal -->
@@ -123,7 +126,7 @@
             <h4>2. Strict Proctoring Rules</h4>
             <ul>
                 <li><strong>No Tab Switching:</strong> You cannot open other tabs, browsers, or apps.</li>
-                <li><strong>No Leaving the Window:</strong> Clicking outside the exam triggers a violation.</li>
+                <li><strong>No Google Search PIP:</strong> Highlighting text to invoke mobile search triggers an instant violation.</li>
                 <li><strong>Environment Monitoring:</strong> Whispering and talking will be detected.</li>
                 <li><strong>Anti-Tampering:</strong> System suspension or code tampering triggers an instant Last Warning.</li>
                 <li><strong>Screen Share Required:</strong> (Desktop only) Dual monitors are blocked.</li>
@@ -190,7 +193,6 @@
             let initialWindowWidth = window.innerWidth;
             let initialWindowHeight = window.innerHeight;
             let lastWarningTime = 0;
-            let formLoadCount = 0; 
             let hardwareHashValue = "Not Generated";
             let lastInternalTick = _Date_now(); 
 
@@ -206,6 +208,7 @@
             const rollInput = document.getElementById('roll-no-input');
             const rollError = document.getElementById('roll-error');
             const container = document.getElementById('exam-container');
+            const endExamBtn = document.getElementById('end-exam-btn');
 
             if (isMobile) grantPermBtn.innerText = "📸 Grant Camera & Mic Access (Mobile)";
 
@@ -554,22 +557,49 @@
                 } catch (e) { alert("Camera, Mic & Screen Share are mandatory to resume."); }
             });
 
-            // --- THE NEW OS FOCUS TRAP ---
+            // --- THE NEW SEARCH PIP VIEWPORT DETECTOR ---
+            if (window.visualViewport) {
+                let maxVH = window.visualViewport.height;
+                
+                // Prevent false strikes if user rotates their phone
+                window.addEventListener('orientationchange', () => {
+                    isTransitioning = true;
+                    _setTimeout(() => { 
+                        maxVH = window.visualViewport.height; 
+                        isTransitioning = false; 
+                    }, 1000);
+                });
+
+                window.visualViewport.addEventListener('resize', () => {
+                    if (!isExamActive || isTransitioning) return;
+                    
+                    let currentVH = window.visualViewport.height;
+                    if (currentVH > maxVH) maxVH = currentVH; // Keep track of the full screen height
+                    
+                    let shrinkRatio = (maxVH - currentVH) / maxVH;
+                    
+                    // Android Search PIP shrinks screen by 5% to 25%. 
+                    // Virtual keyboard shrinks it by > 28% (allowed for typing).
+                    if (shrinkRatio > 0.04 && shrinkRatio < 0.28) {
+                        triggerExactWarning("Illegal System Overlay Detected (Search PIP or Native Toolbar).");
+                    }
+                });
+            }
+
+            // --- THE STRICT BLUR DETECTOR ---
             document.addEventListener('visibilitychange', () => {
                 if (wakeLock !== null && document.visibilityState === 'visible') requestWakeLock();
                 if (document.hidden && !isTransitioning) triggerExactWarning("Switched browser tabs or minimized window."); 
             });
             
             window.addEventListener('blur', () => { 
-                if (isTransitioning) return; 
-                
-                // Wait 200ms to let the browser settle.
-                // If the OS opened a Search PIP, document focus will physically leave the page.
+                if (isTransitioning || !isExamActive) return; 
+                // Removed the iframe bypass loophole. If blur fires, the OS took focus.
                 _setTimeout(() => {
                     if (!document.hasFocus()) {
-                        triggerExactWarning("System Overlay Detected (Search PIP, notification, or background app)."); 
+                        triggerExactWarning("System Overlay or App Switch Detected."); 
                     }
-                }, 200);
+                }, 300);
             });
 
             document.addEventListener('fullscreenchange', () => { 
@@ -606,6 +636,13 @@
                 }
             });
 
+            // --- MANUAL END EXAM BUTTON ---
+            endExamBtn.addEventListener('click', () => {
+                if (confirm("IMPORTANT: Did you click 'Submit' inside the Google Form yet?\n\nIf yes, click OK to close the exam and securely submit your security logs.")) {
+                    lockOutStudent("Exam Completed", "Your responses and security logs have been successfully recorded.", true);
+                }
+            });
+
             startBtn.addEventListener('click', async () => {
                 if (!examAgreementCheckbox.checked || nameInput.value.trim() === '' || !/^\d{13}$/.test(rollInput.value) || !permissionsGranted) return;
                 
@@ -633,11 +670,6 @@
                     iframe.setAttribute("allow", "camera; microphone");
                     iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms");
                     iframe.style.width = "100%"; iframe.style.height = "100%"; iframe.style.border = "none";
-                    
-                    iframe.addEventListener('load', () => {
-                        formLoadCount++;
-                        if (formLoadCount === 2) { lockOutStudent("Exam Submitted Successfully", "Your responses and security logs have been recorded.", true); }
-                    });
                     
                     container.appendChild(iframe);
                     startCountdown();
