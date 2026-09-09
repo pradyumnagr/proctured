@@ -180,7 +180,9 @@
             // --- STATE VARIABLES ---
             let isExamActive = false; 
             let isTransitioning = false; 
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            // iPad Anti-Spoofing: Detects iPads claiming to be macOS
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
             
             let tabSwitchCount = parseInt(localStorage.getItem('gf_tabSwitches') || '0');
             let violationLogs = JSON.parse(localStorage.getItem('gf_violationLogs') || '[]');
@@ -291,12 +293,12 @@
 
             // --- THE MASTER SECURITY LOOP ---
             _setInterval(() => {
-                // 1. HARD CSS ENFORCEMENT (Prevents CSS inspect element bypasses while paused)
+                // 1. HARD CSS ENFORCEMENT
                 if (!isExamActive) {
                     if (document.getElementById('exam-container').style.display === 'block') {
                         document.getElementById('exam-container').style.display = 'none';
                     }
-                    return; // Stop running the rest of the sensors if paused
+                    return; 
                 }
 
                 // 2. TIME JUMP DETECTION
@@ -322,27 +324,18 @@
                     }
                 }
 
-                // 6. CONTINUOUS SCREEN SHARE POLLING (The Ultimate Overlay Fix)
-                if (!isMobile && !isTransitioning) {
+                // 6. CONTINUOUS SCREEN SHARE POLLING (Only runs when exam is ACTIVE)
+                if (!isMobile && !isTransitioning && isExamActive) {
                     let hasActiveScreen = false;
                     if (screenStream && screenStream.getVideoTracks().length > 0) {
                         if (screenStream.getVideoTracks()[0].readyState === 'live') {
                             hasActiveScreen = true;
                         }
                     }
-                    if (!hasActiveScreen) handleScreenShareDrop(); // Instantly block if disconnected
+                    if (!hasActiveScreen) handleScreenShareDrop(); 
                 }
 
             }, 2500);
-
-            // --- OS FOCUS POLLER (For Mobile Search PIP) ---
-            _setInterval(() => {
-                if (isExamActive && !isTransitioning) {
-                    if (!document.hasFocus()) {
-                        triggerExactWarning("System Overlay Detected (Google Search PIP or Notification).");
-                    }
-                }
-            }, 800);
 
             _setInterval(() => {
                 if (!isExamActive) return;
@@ -367,19 +360,24 @@
 
             grantPermBtn.addEventListener('click', async () => {
                 if (detectVirtualMachine()) { alert("SECURITY ERROR: Virtual Machines and Emulators are strictly prohibited."); return; }
+                
                 try {
-                    mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                    
+                    // FIX: Screen Share MUST be requested FIRST to avoid gesture timeout
                     if (!isMobile) {
                         screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
-                        
-                        // Force "Entire Screen" Selection
                         const surface = screenStream.getVideoTracks()[0].getSettings().displaySurface;
                         if (surface && surface !== 'monitor' && surface !== 'display') {
                             screenStream.getTracks().forEach(t => t.stop());
+                            screenStream = null;
                             alert("SECURITY ERROR: You must select 'Entire Screen'. Windows or Tabs are strictly prohibited.");
-                            return; // Halt permission
+                            return; 
                         }
+                    }
+
+                    // CAMERA & MIC REQUEST
+                    mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                    
+                    if (!isMobile) {
                         permStatus.innerText = "Status: Camera, Mic & Screen Active ✅";
                     } else {
                         permStatus.innerText = "Status: Camera & Mic Active ✅";
@@ -390,6 +388,10 @@
                     permissionsGranted = true;
                     validateInputs();
                 } catch(e) {
+                    // Clean up active streams if user cancels halfway
+                    if (screenStream) screenStream.getTracks().forEach(t => t.stop());
+                    if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
+                    
                     permStatus.innerText = "Status: Access Denied ❌ You MUST grant permissions.";
                     permStatus.style.color = "red";
                 }
@@ -466,7 +468,6 @@
                 try {
                     screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
                     
-                    // Force Entire Screen on Restart
                     const surface = screenStream.getVideoTracks()[0].getSettings().displaySurface;
                     if (surface && surface !== 'monitor' && surface !== 'display') {
                         screenStream.getTracks().forEach(t => t.stop());
@@ -522,23 +523,7 @@
             violationAckBtn.addEventListener('click', async () => {
                 if (!violationCheckbox.checked) return; 
                 
-                // 1. Verify Camera
-                let needsCamera = false;
-                if (mediaStream) {
-                    mediaStream.getTracks().forEach(t => { if (t.readyState === 'ended') needsCamera = true; });
-                } else { needsCamera = true; }
-
-                if (needsCamera) {
-                    try {
-                        mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                        attachMediaListeners(); 
-                    } catch(e) {
-                        alert("You MUST allow camera/mic access to resume the exam.");
-                        return; 
-                    }
-                }
-
-                // 2. Verify Screen Share is still alive! (Fixes the Overlay Overlap Bypass)
+                // 1. Verify Screen Share First
                 if (!isMobile) {
                     let needsScreen = false;
                     if (screenStream) {
@@ -559,6 +544,22 @@
                             alert("You MUST share your ENTIRE SCREEN to resume the exam.");
                             return; 
                         }
+                    }
+                }
+
+                // 2. Verify Camera
+                let needsCamera = false;
+                if (mediaStream) {
+                    mediaStream.getTracks().forEach(t => { if (t.readyState === 'ended') needsCamera = true; });
+                } else { needsCamera = true; }
+
+                if (needsCamera) {
+                    try {
+                        mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                        attachMediaListeners(); 
+                    } catch(e) {
+                        alert("You MUST allow camera/mic access to resume the exam.");
+                        return; 
                     }
                 }
 
@@ -610,7 +611,6 @@
                     _setTimeout(() => { isTransitioning = false; }, 3000);
 
                     if (document.documentElement.requestFullscreen) { try { await document.documentElement.requestFullscreen(); } catch (e) {} }
-                    mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                     
                     if (!isMobile) {
                         screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
@@ -622,6 +622,8 @@
                             return;
                         }
                     }
+                    
+                    mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                     
                     attachMediaListeners();
                     attachScreenListeners();
@@ -657,7 +659,9 @@
                     let currentVH = window.visualViewport.height;
                     if (currentVH > maxVH) maxVH = currentVH; 
                     let shrinkRatio = (maxVH - currentVH) / maxVH;
-                    if (shrinkRatio > 0.04 && shrinkRatio < 0.28) {
+                    
+                    // Fixed mathematical range: 2% to 35% height reduction correctly catches all Search PIPs
+                    if (shrinkRatio > 0.02 && shrinkRatio < 0.35) {
                         triggerExactWarning("Illegal System Overlay Detected (Search PIP or Native Toolbar).");
                     }
                 });
@@ -668,14 +672,13 @@
                 if (document.hidden && !isTransitioning) triggerExactWarning("Switched browser tabs or minimized window."); 
             });
             
-            // Backup blur detector (mostly catches Desktop tab-switching)
             window.addEventListener('blur', () => { 
-                if (isTransitioning) return; 
+                if (isTransitioning || !isExamActive) return; 
                 _setTimeout(() => {
                     if (!document.hasFocus()) {
-                        triggerExactWarning("System Overlay Detected (Search PIP, notification, or background app)."); 
+                        triggerExactWarning("System Overlay or App Switch Detected."); 
                     }
-                }, 200);
+                }, 300);
             });
 
             document.addEventListener('fullscreenchange', () => { 
