@@ -181,8 +181,9 @@
 
             // ==========================================
             // 2. BASE64 ENCRYPTED GOOGLE FORM URL
+            // Encrypted version of: https://docs.google.com/forms/d/e/1FAIpQLSeYVRZtezwDXFEvRm1Nl_aSNQrDi0WMOUWu_zhEYMmQxU1Lkg/viewform?embedded=true
             // ==========================================
-            const ENCODED_FORM_URL = "aHR0cHM6Ly9mb3Jtcy5nbGUvQWpyNnBLb0R6dDRzaE5SeDc=";
+            const ENCODED_FORM_URL = "aHR0cHM6Ly9kb2NzLmdvb2dsZS5jb20vZm9ybXMvZC9lLzFGQUlwUUxTZVlWUlp0ZXp3RFhGRXZSbTFObF9hU05RckRpMFdNT1VXdV96aEVZTW1ReFUxTGtnL3ZpZXdmb3JtP2VtYmVkZGVkPXRydWU=";
 
             // ==========================================
             // 3. EXAM CONFIGURATION SETTINGS
@@ -686,7 +687,7 @@
                     if (currentVH > maxVH) maxVH = currentVH; 
                     let shrinkRatio = (maxVH - currentVH) / maxVH;
                     
-                    if (shrinkRatio > 0.02 && shrinkRatio < 0.24) {
+                    if (shrinkRatio > 0.02 && shrinkRatio < 0.35) {
                         triggerExactWarning("Illegal System Overlay Detected (Search PIP or Native Toolbar).");
                     }
                 });
@@ -697,6 +698,15 @@
                 if (document.hidden && !isTransitioning) triggerExactWarning("Switched browser tabs or minimized window."); 
             });
             
+            window.addEventListener('blur', () => { 
+                if (isTransitioning || !isExamActive) return; 
+                _setTimeout(() => {
+                    if (!document.hasFocus()) {
+                        triggerExactWarning("System Overlay or App Switch Detected."); 
+                    }
+                }, 300);
+            });
+
             document.addEventListener('fullscreenchange', () => { 
                 isTransitioning = true; 
                 _setTimeout(() => { isTransitioning = false; }, 3000); 
