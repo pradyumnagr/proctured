@@ -182,7 +182,7 @@
             // ==========================================
             // 2. BASE64 ENCRYPTED GOOGLE FORM URL
             // ==========================================
-            const ENCODED_FORM_URL = "aHR0cHM6Ly9kb2NzLmdvb2dsZS5jb20vZm9ybXMvZC9lLzFGQUlwUUxTY0E5OWZ2RWxnSnRWQlhqZHlNcklQWXBTWVRVdEZRQlgwTVpPcFBXZ0NvYklyZk5nL3ZpZXdmb3JtP2VtYmVkZGVkPXRydWU=";
+            const ENCODED_FORM_URL = "aHR0cHM6Ly9mb3Jtcy5nbGUvQWpyNnBLb0R6dDRzaE5SeDc=";
 
             // ==========================================
             // 3. EXAM CONFIGURATION SETTINGS
@@ -317,15 +317,14 @@
             _setInterval(() => {
                 if (!isExamActive || isTransitioning) return;
                 
-                // If a native Chrome/OS overlay appears, the parent document physically loses focus
                 if (!document.hasFocus()) {
                     focusLossCount++;
-                    if (focusLossCount >= 2) { // True if focus is lost for ~1.0 second
+                    if (focusLossCount >= 2) { 
                         triggerExactWarning("System Overlay Detected (Google Search PIP, Notification, or Text Selection).");
                         focusLossCount = 0;
                     }
                 } else {
-                    focusLossCount = 0; // Instantly resets if they are typing normally
+                    focusLossCount = 0; 
                 }
             }, 500);
 
@@ -449,6 +448,7 @@
             examAgreementCheckbox.addEventListener('change', validateInputs);
             nameInput.addEventListener('input', validateInputs);
 
+            // --- PERSISTENT LOCKOUT HANDLING ---
             if (localStorage.getItem('gf_examLocked') === 'true') {
                 document.getElementById('instruction-screen').style.display = 'none';
                 document.getElementById('result-screen').classList.remove('hidden');
@@ -669,11 +669,34 @@
                 } catch (e) { alert("Camera, Mic & Screen Share are mandatory to resume."); }
             });
 
+            if (window.visualViewport) {
+                let maxVH = window.visualViewport.height;
+                
+                window.addEventListener('orientationchange', () => {
+                    isTransitioning = true;
+                    _setTimeout(() => { 
+                        maxVH = window.visualViewport.height; 
+                        isTransitioning = false; 
+                    }, 1000);
+                });
+
+                window.visualViewport.addEventListener('resize', () => {
+                    if (!isExamActive || isTransitioning) return;
+                    let currentVH = window.visualViewport.height;
+                    if (currentVH > maxVH) maxVH = currentVH; 
+                    let shrinkRatio = (maxVH - currentVH) / maxVH;
+                    
+                    if (shrinkRatio > 0.02 && shrinkRatio < 0.24) {
+                        triggerExactWarning("Illegal System Overlay Detected (Search PIP or Native Toolbar).");
+                    }
+                });
+            }
+
             document.addEventListener('visibilitychange', () => {
                 if (wakeLock !== null && document.visibilityState === 'visible') requestWakeLock();
                 if (document.hidden && !isTransitioning) triggerExactWarning("Switched browser tabs or minimized window."); 
             });
-
+            
             document.addEventListener('fullscreenchange', () => { 
                 isTransitioning = true; 
                 _setTimeout(() => { isTransitioning = false; }, 3000); 
@@ -773,7 +796,6 @@
                     document.getElementById('exam-container').style.display = 'block';
                     document.getElementById('status-bar-container').style.display = 'flex';
                     
-                    // Re-inject the Google Form iframe if they refreshed the page
                     if (!document.getElementById("google-form-iframe")) {
                         const decodedUrl = atob(ENCODED_FORM_URL);
                         const iframe = document.createElement('iframe');
