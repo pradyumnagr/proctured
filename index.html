@@ -181,7 +181,7 @@
 
             // ==========================================
             // 2. BASE64 ENCRYPTED GOOGLE FORM URL
-            // Encrypted version of the LONG safe url: https://docs.google.com/forms/d/e/1FAIpQLSeYVRZtezwDXFEvRm1Nl_aSNQrDi0WMOUWu_zhEYMmQxU1Lkg/viewform?embedded=true
+            // Encrypted version of: https://docs.google.com/forms/d/e/1FAIpQLSeYVRZtezwDXFEvRm1Nl_aSNQrDi0WMOUWu_zhEYMmQxU1Lkg/viewform?embedded=true
             // ==========================================
             const ENCODED_FORM_URL = "aHR0cHM6Ly9kb2NzLmdvb2dsZS5jb20vZm9ybXMvZC9lLzFGQUlwUUxTZVlWUlp0ZXp3RFhGRXZSbTFObF9hU05RckRpMFdNT1VXdV96aEVZTW1ReFUxTGtnL3ZpZXdmb3JtP2VtYmVkZGVkPXRydWU=";
 
@@ -247,4 +247,699 @@
                     const ctx = canvas.getContext('2d');
                     ctx.textBaseline = "top"; ctx.font = "14px 'Arial'"; 
                     ctx.fillStyle = "#f60"; ctx.fillRect(125,1,62,20);
-                    ctx.fillStyle = "#069
+                    ctx.fillStyle = "#069"; ctx.fillText("ProctorHash", 2, 15);
+                    ctx.fillStyle = "rgba(102, 204, 0, 0.7)"; ctx.fillText("ProctorHash", 4, 17);
+                    const b64 = canvas.toDataURL();
+                    let hash = 0;
+                    for (let i = 0; i < b64.length; i++) {
+                        let char = b64.charCodeAt(i);
+                        hash = ((hash << 5) - hash) + char;
+                        hash = hash & hash;
+                    }
+                    return Math.abs(hash).toString(16);
+                } catch(e) { return "Unavailable"; }
+            }
+            hardwareHashValue = generateHardwareFingerprint();
+
+            function startAudioMonitoring(stream) {
+                try {
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const source = audioContext.createMediaStreamSource(stream);
+                    const analyser = audioContext.createAnalyser();
+                    analyser.fftSize = 256;
+                    source.connect(analyser);
+                    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+                    _setInterval(() => {
+                        if (!isExamActive) return;
+                        analyser.getByteFrequencyData(dataArray);
+                        let sum = 0;
+                        for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+                        let average = sum / dataArray.length;
+
+                        if (average > 45) {
+                            triggerExactWarning("High audio levels detected (Speaking/Whispering is prohibited).");
+                        }
+                    }, 4000); 
+                } catch(e) {}
+            }
+
+            function checkNativeIntegrity() {
+                const fns = [window.addEventListener, document.addEventListener, atob, fetch];
+                for (let fn of fns) { if (!fn.toString().includes('[native code]')) return false; }
+                return true;
+            }
+
+            const observer = new MutationObserver((mutations) => {
+                if (!isExamActive || isTransitioning) return;
+                mutations.forEach((mutation) => {
+                    if (mutation.type === 'childList') {
+                        mutation.removedNodes.forEach((node) => {
+                            if (node.id === 'warning-overlay' || node.id === 'timeout-screen' || node.id === 'exam-container' || node.id === 'screen-share-overlay') {
+                                triggerTamperProtocol("DOM Manipulation / Overlay Deletion");
+                            }
+                        });
+                    }
+                });
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+
+            function triggerTamperProtocol(reason) {
+                if (!isExamActive) return;
+                if (tabSwitchCount < 6) {
+                    tabSwitchCount = 6; 
+                    localStorage.setItem('gf_tabSwitches', 6);
+                }
+                triggerExactWarning("SEVERE TAMPERING DETECTED: " + reason);
+            }
+
+            // --- HIGH FREQUENCY OS FOCUS POLLER (Catches Android PIP/Text Selection) ---
+            let focusLossCount = 0;
+            _setInterval(() => {
+                if (!isExamActive || isTransitioning) return;
+                
+                if (!document.hasFocus()) {
+                    focusLossCount++;
+                    if (focusLossCount >= 2) { 
+                        triggerExactWarning("System Overlay Detected (Google Search PIP, Notification, or Text Selection).");
+                        focusLossCount = 0;
+                    }
+                } else {
+                    focusLossCount = 0; 
+                }
+            }, 500);
+
+            // --- THE MASTER SECURITY LOOP ---
+            _setInterval(() => {
+                if (!isExamActive) {
+                    if (document.getElementById('exam-container').style.display === 'block') {
+                        document.getElementById('exam-container').style.display = 'none';
+                    }
+                    return; 
+                }
+
+                const now = _Date_now();
+                const timeDiff = now - lastInternalTick; 
+                lastInternalTick = now; 
+                if (timeDiff > 4500) triggerTamperProtocol("Process Suspension / System Freeze Detected");
+
+                const start = _performance_now(); debugger;
+                if (_performance_now() - start > 150) triggerTamperProtocol("Developer Tools Code Execution Paused");
+                
+                if (!checkNativeIntegrity()) triggerTamperProtocol("JavaScript Modification / Extension Interference");
+                if (parseInt(localStorage.getItem('gf_tabSwitches') || '0') < tabSwitchCount) triggerTamperProtocol("LocalStorage Manipulation Attempted");
+
+                if (!isMobile && !isTransitioning && window.outerWidth > 0 && window.innerHeight > 0) {
+                    const widthDiff = window.outerWidth - window.innerWidth;
+                    const heightDiff = window.outerHeight - window.innerHeight;
+                    if (widthDiff > 330 || heightDiff > 330) {
+                        triggerTamperProtocol("Developer Tools Docked Panel Detected");
+                    }
+                }
+
+                if (!isMobile && !isTransitioning && isExamActive) {
+                    let hasActiveScreen = false;
+                    if (screenStream && screenStream.getVideoTracks().length > 0) {
+                        if (screenStream.getVideoTracks()[0].readyState === 'live') {
+                            hasActiveScreen = true;
+                        }
+                    }
+                    if (!hasActiveScreen) handleScreenShareDrop(); 
+                }
+            }, 2500);
+
+            _setInterval(() => {
+                if (!isExamActive) return;
+                fetch(AUDIT_WEBHOOK_URL, {
+                    method: 'POST', mode: 'no-cors',
+                    body: JSON.stringify({ action: 'ping', studentId: rollInput.value, time: new Date().toLocaleTimeString() })
+                }).catch(()=>{}); 
+            }, 30000);
+
+            function detectVirtualMachine() {
+                try {
+                    const canvas = document.createElement('canvas');
+                    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                    if (!gl) return false;
+                    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                    if (!debugInfo) return false;
+                    const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL).toLowerCase();
+                    if (renderer.includes('swiftshader') || renderer.includes('llvmpipe') || renderer.includes('vmware') || renderer.includes('virtualbox')) return true;
+                    return false;
+                } catch (e) { return false; }
+            }
+
+            grantPermBtn.addEventListener('click', async () => {
+                if (detectVirtualMachine()) { alert("SECURITY ERROR: Virtual Machines and Emulators are strictly prohibited."); return; }
+                
+                try {
+                    if (!isMobile) {
+                        screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
+                        const surface = screenStream.getVideoTracks()[0].getSettings().displaySurface;
+                        if (surface && surface !== 'monitor' && surface !== 'display') {
+                            screenStream.getTracks().forEach(t => t.stop());
+                            screenStream = null;
+                            alert("SECURITY ERROR: You must select 'Entire Screen'. Windows or Tabs are strictly prohibited.");
+                            return; 
+                        }
+                    }
+
+                    mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                    
+                    if (!isMobile) {
+                        permStatus.innerText = "Status: Camera, Mic & Screen Active ✅";
+                    } else {
+                        permStatus.innerText = "Status: Camera & Mic Active ✅";
+                    }
+                    
+                    permStatus.style.color = "green";
+                    grantPermBtn.style.display = "none";
+                    permissionsGranted = true;
+                    validateInputs();
+                } catch(e) {
+                    if (screenStream) screenStream.getTracks().forEach(t => t.stop());
+                    if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
+                    
+                    permStatus.innerText = "Status: Access Denied ❌ You MUST grant permissions.";
+                    permStatus.style.color = "red";
+                }
+            });
+
+            function validateInputs() {
+                const isRollValid = /^\d{13}$/.test(rollInput.value);
+                if (rollInput.value.length > 0 && !isRollValid) {
+                    rollError.style.display = 'block';
+                } else {
+                    rollError.style.display = 'none';
+                }
+
+                if (examAgreementCheckbox.checked && nameInput.value.trim() !== '' && isRollValid && permissionsGranted) {
+                    startBtn.disabled = false;
+                    startBtn.innerText = "Begin Exam Now";
+                } else {
+                    startBtn.disabled = true;
+                    startBtn.innerText = "Complete All Steps Above to Start";
+                }
+            }
+
+            rollInput.addEventListener('input', function() {
+                this.value = this.value.replace(/\D/g, ''); 
+                validateInputs();
+            });
+            examAgreementCheckbox.addEventListener('change', validateInputs);
+            nameInput.addEventListener('input', validateInputs);
+
+            // --- PERSISTENT LOCKOUT HANDLING ---
+            if (localStorage.getItem('gf_examLocked') === 'true') {
+                document.getElementById('instruction-screen').style.display = 'none';
+                document.getElementById('result-screen').classList.remove('hidden');
+                document.getElementById('final-title').innerText = "Exam Locked";
+                document.getElementById('final-title').style.color = "#d93025";
+                document.getElementById('final-message').innerText = "You have been locked out of this exam due to security violations.";
+                document.getElementById('unlock-section').style.display = 'block';
+            }
+
+            function attachMediaListeners() {
+                if (mediaStream) {
+                    mediaStream.getTracks().forEach(t => {
+                        t.onended = () => { 
+                            if (isExamActive) triggerExactWarning("Camera/Mic disconnected or screen locked."); 
+                        };
+                    });
+                }
+            }
+            
+            function handleScreenShareDrop() {
+                if (document.getElementById('screen-share-overlay').style.display === 'flex') return; 
+                screenShareDrops++;
+                localStorage.setItem('gf_screenDrops', screenShareDrops);
+                
+                if (screenShareDrops > 1) {
+                    lockOutStudent("Exam Terminated", "Screen sharing was stopped multiple times.", false);
+                } else {
+                    isExamActive = false;
+                    document.getElementById('exam-container').style.display = 'none';
+                    document.getElementById('screen-share-overlay').style.display = 'flex';
+                    
+                    const timestamp = new Date().toLocaleTimeString();
+                    violationLogs.push({ time: timestamp, reason: "Screen Sharing Stopped (Warning Issued)" });
+                    localStorage.setItem('gf_violationLogs', JSON.stringify(violationLogs));
+                }
+            }
+
+            function attachScreenListeners() {
+                if (screenStream && !isMobile) {
+                    screenStream.getVideoTracks()[0].onended = handleScreenShareDrop;
+                }
+            }
+
+            restartScreenBtn.addEventListener('click', async () => {
+                try {
+                    screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
+                    
+                    const surface = screenStream.getVideoTracks()[0].getSettings().displaySurface;
+                    if (surface && surface !== 'monitor' && surface !== 'display') {
+                        screenStream.getTracks().forEach(t => t.stop());
+                        alert("SECURITY ERROR: You must select 'Entire Screen'. Windows or Tabs are strictly prohibited.");
+                        return;
+                    }
+
+                    document.getElementById('screen-share-overlay').style.display = 'none';
+                    document.getElementById('exam-container').style.display = 'block';
+                    attachScreenListeners(); 
+                    lastInternalTick = _Date_now(); 
+                    isExamActive = true; 
+                } catch (e) { alert("You MUST share your screen to continue the exam."); }
+            });
+
+            function triggerExactWarning(exactRuleMessage) {
+                if (!isExamActive) return; 
+                const now = _Date_now();
+                if (now - lastWarningTime < 1200) return;
+                lastWarningTime = now;
+
+                tabSwitchCount++;
+                localStorage.setItem('gf_tabSwitches', tabSwitchCount);
+                
+                const timestamp = new Date().toLocaleTimeString();
+                violationLogs.push({ time: timestamp, reason: exactRuleMessage });
+                localStorage.setItem('gf_violationLogs', JSON.stringify(violationLogs));
+                
+                document.getElementById('violations-pill').innerText = tabSwitchCount;
+
+                if (tabSwitchCount === 7) {
+                    let timeoutEnd = _Date_now() + (5 * 60 * 1000);
+                    localStorage.setItem('gf_timeoutEndTime', timeoutEnd);
+                    startPenaltyCountdown(timeoutEnd);
+                    return;
+                }
+                
+                if (tabSwitchCount > 7) {
+                    lockOutStudent("Exam Terminated", "Maximum security violations reached (Strike 8).", false);
+                    return;
+                }
+
+                document.getElementById('warning-detail').innerHTML = `<strong>Rule Broken:</strong><br>${exactRuleMessage}`;
+                document.getElementById('warning-strike-count').innerText = `Recorded Infraction #${tabSwitchCount} of 6 permitted before temporary lockout.`;
+                violationCheckbox.checked = false;
+                violationAckBtn.disabled = true;
+                document.getElementById('warning-overlay').style.display = 'flex';
+                isExamActive = false; 
+            }
+
+            violationCheckbox.addEventListener('change', (e) => { violationAckBtn.disabled = !e.target.checked; });
+            violationAckBtn.addEventListener('click', async () => {
+                if (!violationCheckbox.checked) return; 
+                
+                if (!isMobile) {
+                    let needsScreen = false;
+                    if (screenStream) {
+                        screenStream.getVideoTracks().forEach(t => { if (t.readyState === 'ended') needsScreen = true; });
+                    } else { needsScreen = true; }
+
+                    if (needsScreen) {
+                        try {
+                            screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
+                            const surface = screenStream.getVideoTracks()[0].getSettings().displaySurface;
+                            if (surface && surface !== 'monitor' && surface !== 'display') {
+                                screenStream.getTracks().forEach(t => t.stop());
+                                alert("SECURITY ERROR: You must select 'Entire Screen'. Windows or Tabs are strictly prohibited.");
+                                return;
+                            }
+                            attachScreenListeners();
+                        } catch(e) {
+                            alert("You MUST share your ENTIRE SCREEN to resume the exam.");
+                            return; 
+                        }
+                    }
+                }
+
+                let needsCamera = false;
+                if (mediaStream) {
+                    mediaStream.getTracks().forEach(t => { if (t.readyState === 'ended') needsCamera = true; });
+                } else { needsCamera = true; }
+
+                if (needsCamera) {
+                    try {
+                        mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                        attachMediaListeners(); 
+                    } catch(e) {
+                        alert("You MUST allow camera/mic access to resume the exam.");
+                        return; 
+                    }
+                }
+
+                isTransitioning = true;
+                _setTimeout(() => { isTransitioning = false; }, 3000);
+
+                document.getElementById('warning-overlay').style.display = 'none';
+                document.getElementById('exam-container').style.display = 'block';
+                
+                if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+                    try { await document.documentElement.requestFullscreen(); } catch (e) {}
+                }
+                
+                lastInternalTick = _Date_now(); 
+                isExamActive = true; 
+            });
+
+            function startPenaltyCountdown(endTime) {
+                isExamActive = false; 
+                document.getElementById('exam-container').style.display = 'none';
+                document.getElementById('status-bar-container').style.display = 'none';
+                document.getElementById('warning-overlay').style.display = 'none';
+                
+                if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+                if (screenStream) { screenStream.getTracks().forEach(t => t.stop()); screenStream = null; }
+                if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+
+                document.getElementById('timeout-screen').classList.remove('hidden');
+                const timerDisplay = document.getElementById('penalty-timer');
+                resumeFinalBtn.disabled = true;
+                resumeFinalBtn.innerText = "Please wait...";
+
+                function tick() {
+                    const remaining = endTime - _Date_now();
+                    if (remaining <= 0) {
+                        clearInterval(penaltyInterval);
+                        timerDisplay.innerText = "00:00";
+                        resumeFinalBtn.disabled = false;
+                        resumeFinalBtn.innerText = "Acknowledge & Resume Final Chance";
+                    } else {
+                        const m = Math.floor(remaining / 60000), s = Math.floor((remaining % 60000) / 1000);
+                        timerDisplay.innerText = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+                    }
+                }
+                tick(); penaltyInterval = _setInterval(tick, 1000);
+            }
+
+            resumeFinalBtn.addEventListener('click', async () => {
+                try {
+                    isTransitioning = true;
+                    _setTimeout(() => { isTransitioning = false; }, 3000);
+
+                    if (document.documentElement.requestFullscreen) { try { await document.documentElement.requestFullscreen(); } catch (e) {} }
+                    
+                    if (!isMobile) {
+                        screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
+                        const surface = screenStream.getVideoTracks()[0].getSettings().displaySurface;
+                        if (surface && surface !== 'monitor' && surface !== 'display') {
+                            screenStream.getTracks().forEach(t => t.stop());
+                            alert("SECURITY ERROR: You must select 'Entire Screen'. Windows or Tabs are strictly prohibited.");
+                            isTransitioning = false;
+                            return;
+                        }
+                    }
+                    
+                    mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                    
+                    attachMediaListeners();
+                    attachScreenListeners();
+                    startAudioMonitoring(mediaStream); 
+
+                    document.getElementById('timeout-screen').classList.add('hidden');
+                    localStorage.removeItem('gf_timeoutEndTime');
+                    document.getElementById('exam-container').style.display = 'block';
+                    document.getElementById('status-bar-container').style.display = 'flex';
+                    
+                    initialWindowWidth = window.innerWidth; initialWindowHeight = window.innerHeight;
+                    if (!timerInterval) startCountdown();
+                    
+                    lastInternalTick = _Date_now(); 
+                    isExamActive = true; 
+                } catch (e) { alert("Camera, Mic & Screen Share are mandatory to resume."); }
+            });
+
+            if (window.visualViewport) {
+                let maxVH = window.visualViewport.height;
+                
+                window.addEventListener('orientationchange', () => {
+                    isTransitioning = true;
+                    _setTimeout(() => { 
+                        maxVH = window.visualViewport.height; 
+                        isTransitioning = false; 
+                    }, 1000);
+                });
+
+                window.visualViewport.addEventListener('resize', () => {
+                    if (!isExamActive || isTransitioning) return;
+                    let currentVH = window.visualViewport.height;
+                    if (currentVH > maxVH) maxVH = currentVH; 
+                    let shrinkRatio = (maxVH - currentVH) / maxVH;
+                    
+                    if (shrinkRatio > 0.02 && shrinkRatio < 0.35) {
+                        triggerExactWarning("Illegal System Overlay Detected (Search PIP or Native Toolbar).");
+                    }
+                });
+            }
+
+            document.addEventListener('visibilitychange', () => {
+                if (wakeLock !== null && document.visibilityState === 'visible') requestWakeLock();
+                if (document.hidden && !isTransitioning) triggerExactWarning("Switched browser tabs or minimized window."); 
+            });
+            
+            window.addEventListener('blur', () => { 
+                if (isTransitioning || !isExamActive) return; 
+                _setTimeout(() => {
+                    if (!document.hasFocus()) {
+                        triggerExactWarning("System Overlay or App Switch Detected."); 
+                    }
+                }, 300);
+            });
+
+            document.addEventListener('fullscreenchange', () => { 
+                isTransitioning = true; 
+                _setTimeout(() => { isTransitioning = false; }, 3000); 
+
+                if (!document.fullscreenElement) {
+                    triggerExactWarning("Exited Fullscreen mode."); 
+                }
+            });
+
+            window.addEventListener('resize', () => {
+                if (document.fullscreenElement || isTransitioning) return; 
+                if (window.innerWidth < (initialWindowWidth * 0.85) || window.innerHeight < (initialWindowHeight * 0.85)) {
+                    triggerExactWarning("Split-screen mode or window resizing detected.");
+                    initialWindowWidth = window.innerWidth; initialWindowHeight = window.innerHeight;
+                }
+            });
+            
+            document.addEventListener('contextmenu', (e) => {
+                e.preventDefault(); 
+                if (isExamActive) triggerExactWarning("Right-clicking is strictly prohibited.");
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) || (e.ctrlKey && ['u', 'p', 's'].includes(e.key.toLowerCase()))) {
+                    e.preventDefault(); triggerExactWarning("Prohibited keyboard shortcut used.");
+                }
+                if (e.key === 'PrintScreen') {
+                    e.preventDefault(); navigator.clipboard.writeText('');
+                    document.getElementById('flash-overlay').style.display = 'block';
+                    _setTimeout(() => document.getElementById('flash-overlay').style.display = 'none', 400);
+                    triggerExactWarning("Screenshot attempt blocked.");
+                }
+            });
+
+            // --- FACULTY OVERRIDE & UNLOCK LOGIC ---
+            function validateUnlockForm() {
+                if (confessionCheckbox.checked && unlockKeyInput.value.trim() !== '') {
+                    unlockBtn.disabled = false;
+                } else {
+                    unlockBtn.disabled = true;
+                }
+            }
+            confessionCheckbox.addEventListener('change', validateUnlockForm);
+            unlockKeyInput.addEventListener('input', validateUnlockForm);
+
+            unlockBtn.addEventListener('click', async () => {
+                
+                // --- SECURE DECRYPTION CHECK ---
+                let enteredKey = unlockKeyInput.value;
+                let isKeyCorrect = enteredKey.length === ENCRYPTED_KEY.length;
+                if (isKeyCorrect) {
+                    for (let i = 0; i < enteredKey.length; i++) {
+                        if (enteredKey.charCodeAt(i) + 5 !== ENCRYPTED_KEY[i]) {
+                            isKeyCorrect = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (!isKeyCorrect) {
+                    unlockError.style.display = 'block';
+                    return;
+                }
+                unlockError.style.display = 'none';
+
+                try {
+                    isTransitioning = true;
+                    _setTimeout(() => { isTransitioning = false; }, 3000);
+
+                    if (document.documentElement.requestFullscreen) { try { await document.documentElement.requestFullscreen(); } catch (e) {} }
+                    
+                    if (!isMobile) {
+                        screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
+                        const surface = screenStream.getVideoTracks()[0].getSettings().displaySurface;
+                        if (surface && surface !== 'monitor' && surface !== 'display') {
+                            screenStream.getTracks().forEach(t => t.stop());
+                            alert("SECURITY ERROR: You must select 'Entire Screen'.");
+                            isTransitioning = false;
+                            return;
+                        }
+                    }
+                    
+                    mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                    
+                    attachMediaListeners();
+                    attachScreenListeners();
+
+                    // Complete Clean Slate for the Student
+                    localStorage.removeItem('gf_examLocked');
+                    tabSwitchCount = 0;
+                    localStorage.setItem('gf_tabSwitches', '0');
+                    screenShareDrops = 0;
+                    localStorage.setItem('gf_screenDrops', '0');
+                    document.getElementById('violations-pill').innerText = '0';
+                    
+                    document.getElementById('result-screen').classList.add('hidden');
+                    document.getElementById('exam-container').style.display = 'block';
+                    document.getElementById('status-bar-container').style.display = 'flex';
+                    
+                    if (!document.getElementById("google-form-iframe")) {
+                        const decodedUrl = atob(ENCODED_FORM_URL);
+                        const iframe = document.createElement('iframe');
+                        iframe.src = decodedUrl;
+                        iframe.id = "google-form-iframe";
+                        iframe.setAttribute("allow", "camera; microphone");
+                        iframe.style.width = "100%"; iframe.style.height = "100%"; iframe.style.border = "none";
+                        
+                        iframe.addEventListener('load', () => {
+                            formLoadCount++;
+                            if (formLoadCount === (TOTAL_FORM_SECTIONS + 1)) { 
+                                lockOutStudent("Exam Submitted Successfully", "Your responses and security logs have been recorded.", true); 
+                            }
+                        });
+                        container.appendChild(iframe);
+                        startCountdown();
+                        startAudioMonitoring(mediaStream);
+                    }
+                    
+                    lastInternalTick = _Date_now(); 
+                    isExamActive = true; 
+                } catch (e) { alert("Camera, Mic & Screen Share are mandatory to unlock."); }
+            });
+
+            startBtn.addEventListener('click', async () => {
+                if (!examAgreementCheckbox.checked || nameInput.value.trim() === '' || !/^\d{13}$/.test(rollInput.value) || !permissionsGranted) return;
+                
+                localStorage.setItem('gf_studentName', nameInput.value);
+                localStorage.setItem('gf_studentId', rollInput.value);
+
+                try {
+                    isTransitioning = true;
+                    _setTimeout(() => { isTransitioning = false; }, 3000);
+
+                    if (document.documentElement.requestFullscreen) { try { await document.documentElement.requestFullscreen(); } catch (e) {} }
+                    requestWakeLock(); 
+                    
+                    document.getElementById('instruction-screen').style.display = 'none';
+                    document.getElementById('exam-container').style.display = 'block';
+                    document.getElementById('status-bar-container').style.display = 'flex';
+                    document.getElementById('violations-pill').innerText = tabSwitchCount;
+                    
+                    initialWindowWidth = window.innerWidth; initialWindowHeight = window.innerHeight;
+
+                    const decodedUrl = atob(ENCODED_FORM_URL);
+                    const iframe = document.createElement('iframe');
+                    iframe.src = decodedUrl;
+                    iframe.id = "google-form-iframe";
+                    iframe.setAttribute("allow", "camera; microphone");
+                    iframe.style.width = "100%"; iframe.style.height = "100%"; iframe.style.border = "none";
+                    
+                    iframe.addEventListener('load', () => {
+                        formLoadCount++;
+                        if (formLoadCount === (TOTAL_FORM_SECTIONS + 1)) { 
+                            lockOutStudent("Exam Submitted Successfully", "Your responses and security logs have been recorded.", true); 
+                        }
+                    });
+                    
+                    container.appendChild(iframe);
+                    startCountdown();
+                    attachMediaListeners();
+                    attachScreenListeners();
+                    startAudioMonitoring(mediaStream); 
+                    
+                    lastInternalTick = _Date_now(); 
+                    isExamActive = true; 
+                } catch (err) { alert("A system error occurred. Please refresh the page."); }
+            });
+
+            function startCountdown() {
+                let endTime = localStorage.getItem('gf_examEndTime');
+                if (!endTime) { endTime = _Date_now() + (2 * 60 * 60 * 1000); localStorage.setItem('gf_examEndTime', endTime); }
+                function tick() {
+                    const remaining = endTime - _Date_now();
+                    if (remaining <= 0) { 
+                        clearInterval(timerInterval); lockOutStudent("Exam Terminated", "Time has expired.", false);
+                    } else {
+                        const h = Math.floor(remaining / 3600000), m = Math.floor((remaining % 3600000) / 60000), s = Math.floor((remaining % 60000) / 1000);
+                        document.getElementById('timer-pill').innerText = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+                    }
+                }
+                tick(); timerInterval = _setInterval(tick, 1000);
+            }
+
+            function lockOutStudent(title, message, isSuccess) {
+                isExamActive = false; 
+                clearInterval(timerInterval);
+                if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
+                if (screenStream) screenStream.getTracks().forEach(t => t.stop());
+                if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+
+                localStorage.setItem('gf_examLocked', 'true');
+                
+                document.getElementById('instruction-screen').style.display = 'none';
+                document.getElementById('exam-container').style.display = 'none';
+                document.getElementById('status-bar-container').style.display = 'none';
+                document.getElementById('warning-overlay').style.display = 'none';
+                document.getElementById('timeout-screen').style.display = 'none';
+                document.getElementById('screen-share-overlay').style.display = 'none';
+                
+                document.getElementById('result-screen').classList.remove('hidden');
+                document.getElementById('final-title').innerText = title;
+                document.getElementById('final-title').style.color = isSuccess ? "#1a73e8" : "#d93025";
+                document.getElementById('final-message').innerText = message;
+
+                if (!isSuccess && !message.includes("expired")) {
+                    document.getElementById('unlock-section').style.display = 'block';
+                    document.getElementById('confession-checkbox').checked = false;
+                    document.getElementById('unlock-key-input').value = '';
+                    document.getElementById('unlock-btn').disabled = true;
+                    document.getElementById('unlock-error').style.display = 'none';
+                } else {
+                    document.getElementById('unlock-section').style.display = 'none';
+                }
+
+                let formattedLogs = violationLogs.map(log => `[${log.time}] ${log.reason}`).join("\n");
+
+                const payload = {
+                    name: localStorage.getItem('gf_studentName') || "Unknown",
+                    studentId: localStorage.getItem('gf_studentId') || "Unknown",
+                    violations: tabSwitchCount,
+                    violationLogs: formattedLogs,
+                    hardwareHash: hardwareHashValue,
+                    status: isSuccess ? "Submitted Form Normally" : `Locked Out: ${message}`
+                };
+
+                fetch(AUDIT_WEBHOOK_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            }
+        })();
+    </script>
+</body>
+</html>
