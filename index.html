@@ -45,6 +45,11 @@
         #exam-container { display: none; width: 100vw; height: 100vh; padding-top: 40px; box-sizing: border-box; overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .hidden { display: none !important; }
         .designer-credit { margin-top: 25px; font-family: 'Brush Script MT', cursive; font-size: 15px; color: #888; font-style: italic; }
+
+        /* Admin Dashboard Styles */
+        #admin-form-url { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px; font-family: monospace; }
+        #admin-sections { width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px; }
+        #generated-link-output { width: 100%; height: 100px; margin-top: 20px; padding: 12px; border-radius: 6px; border: 2px solid #1a73e8; display: none; font-family: monospace; resize: none; box-sizing: border-box; font-size: 13px; background: #e8f0fe;}
     </style>
 </head>
 <body>
@@ -66,6 +71,71 @@
         <div>Security Violations: <span id="violations-pill">0</span></div>
     </div>
 
+    <!-- ERROR SCREEN (No valid URL) -->
+    <div id="no-exam-screen" class="card hidden" style="border-top: 8px solid #ea8600;">
+        <h2 style="margin-top: 0; color: #ea8600;">⚠️ Invalid Exam Link</h2>
+        <p style="font-size: 15px; color: #333;">You have accessed the base portal without an assigned exam.</p>
+        <p style="color: #555; background: #fff3f3; padding: 15px; border-radius: 6px; font-weight: bold;">
+            Please click on the exact, complete URL provided by your instructor to begin your test.
+        </p>
+    </div>
+
+    <!-- FACULTY ADMIN PANEL -->
+    <div id="admin-screen" class="card hidden" style="border-top: 8px solid #1a73e8;">
+        <h2 style="margin-top: 0; color: #1a73e8;">👨‍🏫 Faculty Dashboard</h2>
+        <p style="font-size: 14px; color: #555; text-align: left; margin-bottom: 20px;">Paste your <strong>Long Google Form URL</strong> below to generate a secure, encrypted link for your students. Each link generates an isolated proctoring session automatically.</p>
+        
+        <div style="text-align: left;">
+            <label style="font-weight: bold; font-size: 13px; display: block; margin-bottom: 5px;">1. Paste Long Google Form URL:</label>
+            <input type="text" id="admin-form-url" placeholder="https://docs.google.com/forms/d/e/.../viewform">
+            
+            <label style="font-weight: bold; font-size: 13px; display: block; margin-bottom: 5px;">2. Total Form Sections (Required for Auto-Submit):</label>
+            <input type="number" id="admin-sections" value="2" min="1">
+            
+            <button id="generate-link-btn" class="btn-primary">Generate Encrypted Student Link</button>
+            <textarea id="generated-link-output" readonly placeholder="Your secure link will appear here..."></textarea>
+        </div>
+    </div>
+
+    <!-- STUDENT INSTRUCTION SCREEN -->
+    <div id="instruction-screen" class="card hidden">
+        <h2 style="margin-top: 0; color: #202124;">Exam Setup & Rules</h2>
+        
+        <div class="input-group">
+            <label>1. Student Details:</label>
+            <input type="text" id="student-name-input" placeholder="Full Name" required style="margin-bottom: 8px;">
+            <input type="text" id="roll-no-input" placeholder="13-Digit Roll Number" maxlength="13" required>
+            <p id="roll-error" style="color: #d93025; font-size: 12px; margin-top: 5px; display: none; font-weight: bold;">Roll number must be exactly 13 digits.</p>
+        </div>
+
+        <div class="instruction-box">
+            <h4>2. Strict Proctoring Rules</h4>
+            <ul>
+                <li><strong>No Tab Switching:</strong> You cannot open other tabs, browsers, or apps.</li>
+                <li><strong>No Back Button:</strong> You must only move forward in the exam. Clicking 'Back' inside the form will terminate the exam.</li>
+                <li><strong>No Google Search PIP:</strong> Highlighting text to invoke mobile search triggers an instant violation.</li>
+                <li><strong>Screen Share Required:</strong> (Desktop) You must select "Entire Screen". Windows or Tabs are blocked.</li>
+            </ul>
+        </div>
+
+        <div class="system-check-box">
+            <label style="display: block; color: #1a73e8; font-weight: bold; margin-bottom: 8px;">3. System Check (Required):</label>
+            <button id="grant-perm-btn" type="button" style="background: #1a73e8; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%;">📸 Grant Camera & Screen Share Access</button>
+            <p id="perm-status" style="font-size: 13px; color: #555; margin-top: 8px; margin-bottom: 0; font-weight: bold;">Status: Waiting for permission...</p>
+        </div>
+
+        <div style="text-align: left; margin-bottom: 20px;">
+            <label class="ack-label">
+                <input type="checkbox" id="exam-agreement-checkbox" class="ack-checkbox">
+                <strong>4. I agree to the proctoring terms and am ready to begin.</strong>
+            </label>
+        </div>
+
+        <button id="start-btn" class="btn-primary" disabled>Complete All Steps Above to Start</button>
+        <div class="designer-credit">Designed by Pradyumn</div>
+    </div>
+
+    <!-- OVERLAYS & EXAM CONTAINER -->
     <div id="warning-overlay">
         <div class="warning-box">
             <h3>⚠️ SECURITY WARNING</h3>
@@ -104,43 +174,6 @@
         <button id="resume-final-btn" class="btn-primary" disabled>Please wait...</button>
     </div>
 
-    <div id="instruction-screen" class="card">
-        <h2 style="margin-top: 0; color: #202124;">Exam Setup & Rules</h2>
-        
-        <div class="input-group">
-            <label>1. Student Details:</label>
-            <input type="text" id="student-name-input" placeholder="Full Name" required style="margin-bottom: 8px;">
-            <input type="text" id="roll-no-input" placeholder="13-Digit Roll Number" maxlength="13" required>
-            <p id="roll-error" style="color: #d93025; font-size: 12px; margin-top: 5px; display: none; font-weight: bold;">Roll number must be exactly 13 digits.</p>
-        </div>
-
-        <div class="instruction-box">
-            <h4>2. Strict Proctoring Rules</h4>
-            <ul>
-                <li><strong>No Tab Switching:</strong> You cannot open other tabs, browsers, or apps.</li>
-                <li><strong>No Back Button:</strong> You must only move forward in the exam. Clicking 'Back' inside the form will terminate the exam.</li>
-                <li><strong>No Google Search PIP:</strong> Highlighting text to invoke mobile search triggers an instant violation.</li>
-                <li><strong>Screen Share Required:</strong> (Desktop) You must select "Entire Screen". Windows or Tabs are blocked.</li>
-            </ul>
-        </div>
-
-        <div class="system-check-box">
-            <label style="display: block; color: #1a73e8; font-weight: bold; margin-bottom: 8px;">3. System Check (Required):</label>
-            <button id="grant-perm-btn" type="button" style="background: #1a73e8; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%;">📸 Grant Camera & Screen Share Access</button>
-            <p id="perm-status" style="font-size: 13px; color: #555; margin-top: 8px; margin-bottom: 0; font-weight: bold;">Status: Waiting for permission...</p>
-        </div>
-
-        <div style="text-align: left; margin-bottom: 20px;">
-            <label class="ack-label">
-                <input type="checkbox" id="exam-agreement-checkbox" class="ack-checkbox">
-                <strong>4. I agree to the proctoring terms and am ready to begin.</strong>
-            </label>
-        </div>
-
-        <button id="start-btn" class="btn-primary" disabled>Complete All Steps Above to Start</button>
-        <div class="designer-credit">Designed by Pradyumn</div>
-    </div>
-
     <div id="exam-container"></div>
 
     <!-- Final Termination & Unlock Screen -->
@@ -148,7 +181,6 @@
         <h2 id="final-title" style="color: #1a73e8;">Processing...</h2>
         <p id="final-message">Please wait.</p>
         
-        <!-- FACULTY OVERRIDE SECTION -->
         <div id="unlock-section" style="display: none; margin-top: 25px; border-top: 1px solid #eee; padding-top: 25px;">
             <p style="color: #d93025; font-size: 15px; font-weight: bold; margin-bottom: 15px;">🔒 EXAM LOCKED DUE TO VIOLATIONS</p>
             
@@ -175,35 +207,90 @@
             const _setTimeout = setTimeout;
 
             // ==========================================
-            // 1. APPS SCRIPT WEBHOOK 
+            // APPS SCRIPT WEBHOOK 
             // ==========================================
             const AUDIT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbx_jiGrwYf8CgF3WjvET_RIP7eLN5HMcF3sfo1FZyeOuFx1ZUgy46OsFPbGntUqC6lGNg/exec";
 
-            // ==========================================
-            // 2. BASE64 ENCRYPTED GOOGLE FORM URL
-            // Encrypted version of: https://docs.google.com/forms/d/e/1FAIpQLSeYVRZtezwDXFEvRm1Nl_aSNQrDi0WMOUWu_zhEYMmQxU1Lkg/viewform?embedded=true
-            // ==========================================
-            const ENCODED_FORM_URL = "aHR0cHM6Ly9kb2NzLmdvb2dsZS5jb20vZm9ybXMvZC9lLzFGQUlwUUxTZVlWUlp0ZXp3RFhGRXZSbTFObF9hU05RckRpMFdNT1VXdV96aEVZTW1ReFUxTGtnL3ZpZXdmb3JtP2VtYmVkZGVkPXRydWU=";
-
-            // ==========================================
-            // 3. EXAM CONFIGURATION SETTINGS
-            // ==========================================
-            const TOTAL_FORM_SECTIONS = 2; 
-            
-            // MATH CYPHER: Translates to "pradyumnsirsorry" 
+            // MATH CYPHER FOR UNLOCK KEY: "pradyumnsirsorry" 
             const ENCRYPTED_KEY = [117, 119, 102, 105, 126, 122, 114, 115, 120, 110, 119, 120, 116, 119, 119, 126]; 
 
-            // --- STATE VARIABLES ---
+            // --- ROUTER & SESSION INITIALIZATION ---
+            const urlParams = new URLSearchParams(window.location.search);
+            const adminMode = urlParams.get('admin');
+            const examDataHash = urlParams.get('exam');
+
+            let PREFIX = "default_";
+            let DECODED_FORM_URL = "";
+            let TOTAL_FORM_SECTIONS = 0;
+
+            // --- ADMIN DASHBOARD LOGIC ---
+            if (adminMode === "pradyumn") {
+                document.getElementById('admin-screen').classList.remove('hidden');
+                
+                document.getElementById('generate-link-btn').addEventListener('click', () => {
+                    let rawUrl = document.getElementById('admin-form-url').value.trim();
+                    let sections = parseInt(document.getElementById('admin-sections').value);
+                    
+                    if (!rawUrl.includes('docs.google.com/forms')) {
+                        alert('Error: Please use the FULL docs.google.com/forms link, not the forms.gle shortlink.');
+                        return;
+                    }
+                    if (!rawUrl.includes('embedded=true')) {
+                        rawUrl += rawUrl.includes('?') ? '&embedded=true' : '?embedded=true';
+                    }
+                    
+                    let payloadData = JSON.stringify({ u: rawUrl, s: sections });
+                    let encryptedPayload = btoa(encodeURIComponent(payloadData));
+                    let finalLink = window.location.origin + window.location.pathname + "?exam=" + encryptedPayload;
+                    
+                    let outputBox = document.getElementById('generated-link-output');
+                    outputBox.value = finalLink;
+                    outputBox.style.display = 'block';
+                    outputBox.select();
+                });
+                return; // Stop student code from running
+            }
+
+            // --- STUDENT EXAM LINK VALIDATION ---
+            if (!examDataHash) {
+                document.getElementById('no-exam-screen').classList.remove('hidden');
+                return; // Stop student code from running
+            }
+
+            try {
+                const parsedData = JSON.parse(decodeURIComponent(atob(examDataHash)));
+                DECODED_FORM_URL = parsedData.u;
+                TOTAL_FORM_SECTIONS = parsedData.s;
+                
+                // Create unique memory isolated Session ID based on the URL
+                let urlHash = 0;
+                for (let i = 0; i < DECODED_FORM_URL.length; i++) {
+                    urlHash = ((urlHash << 5) - urlHash) + DECODED_FORM_URL.charCodeAt(i);
+                    urlHash |= 0;
+                }
+                PREFIX = "ex_" + Math.abs(urlHash) + "_";
+                
+                // Show the start screen!
+                document.getElementById('instruction-screen').classList.remove('hidden');
+            } catch(e) {
+                document.getElementById('no-exam-screen').classList.remove('hidden');
+                return; // Stop student code from running
+            }
+
+            // =========================================================
+            // --- THE CORE STUDENT APP (Only runs if link is valid) ---
+            // =========================================================
+
             let isExamActive = false; 
             let isTransitioning = false; 
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
             
-            let tabSwitchCount = parseInt(localStorage.getItem('gf_tabSwitches') || '0');
-            let violationLogs = JSON.parse(localStorage.getItem('gf_violationLogs') || '[]');
+            let tabSwitchCount = parseInt(localStorage.getItem(PREFIX + 'tabSwitches') || '0');
+            let violationLogs = JSON.parse(localStorage.getItem(PREFIX + 'violationLogs') || '[]');
             
             let timerInterval, penaltyInterval, mediaStream = null, screenStream = null;
             let permissionsGranted = false;
-            let screenShareDrops = parseInt(localStorage.getItem('gf_screenDrops') || '0'); 
+            let screenShareDrops = parseInt(localStorage.getItem(PREFIX + 'screenDrops') || '0'); 
             let wakeLock = null;
             
             let initialWindowWidth = window.innerWidth;
@@ -226,7 +313,6 @@
             const rollError = document.getElementById('roll-error');
             const container = document.getElementById('exam-container');
 
-            // Unlock Elements
             const confessionCheckbox = document.getElementById('confession-checkbox');
             const unlockKeyInput = document.getElementById('unlock-key-input');
             const unlockBtn = document.getElementById('unlock-btn');
@@ -238,7 +324,7 @@
 
             async function requestWakeLock() {
                 try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } 
-                catch (err) { console.log("Wake Lock not supported."); }
+                catch (err) {}
             }
             
             function generateHardwareFingerprint() {
@@ -308,7 +394,7 @@
                 if (!isExamActive) return;
                 if (tabSwitchCount < 6) {
                     tabSwitchCount = 6; 
-                    localStorage.setItem('gf_tabSwitches', 6);
+                    localStorage.setItem(PREFIX + 'tabSwitches', 6);
                 }
                 triggerExactWarning("SEVERE TAMPERING DETECTED: " + reason);
             }
@@ -320,8 +406,6 @@
                 
                 if (!document.hasFocus()) {
                     focusLossCount++;
-                    // INCREASED DELAY: Wait 1.5 seconds (3 checks) before striking.
-                    // This gives Android Chrome enough time to handle the keyboard popup safely.
                     if (focusLossCount >= 3) { 
                         triggerExactWarning("System Overlay Detected (Google Search PIP, Notification, or Text Selection).");
                         focusLossCount = 0;
@@ -349,7 +433,7 @@
                 if (_performance_now() - start > 150) triggerTamperProtocol("Developer Tools Code Execution Paused");
                 
                 if (!checkNativeIntegrity()) triggerTamperProtocol("JavaScript Modification / Extension Interference");
-                if (parseInt(localStorage.getItem('gf_tabSwitches') || '0') < tabSwitchCount) triggerTamperProtocol("LocalStorage Manipulation Attempted");
+                if (parseInt(localStorage.getItem(PREFIX + 'tabSwitches') || '0') < tabSwitchCount) triggerTamperProtocol("LocalStorage Manipulation Attempted");
 
                 if (!isMobile && !isTransitioning && window.outerWidth > 0 && window.innerHeight > 0) {
                     const widthDiff = window.outerWidth - window.innerWidth;
@@ -435,6 +519,10 @@
                     rollError.style.display = 'none';
                 }
 
+                // Global Name/Roll memory across different exams
+                if (localStorage.getItem('gf_globalName') && nameInput.value === '') nameInput.value = localStorage.getItem('gf_globalName');
+                if (localStorage.getItem('gf_globalRoll') && rollInput.value === '') rollInput.value = localStorage.getItem('gf_globalRoll');
+
                 if (examAgreementCheckbox.checked && nameInput.value.trim() !== '' && isRollValid && permissionsGranted) {
                     startBtn.disabled = false;
                     startBtn.innerText = "Begin Exam Now";
@@ -450,9 +538,10 @@
             });
             examAgreementCheckbox.addEventListener('change', validateInputs);
             nameInput.addEventListener('input', validateInputs);
+            validateInputs(); // Run once on load to populate saved names
 
             // --- PERSISTENT LOCKOUT HANDLING ---
-            if (localStorage.getItem('gf_examLocked') === 'true') {
+            if (localStorage.getItem(PREFIX + 'examLocked') === 'true') {
                 document.getElementById('instruction-screen').style.display = 'none';
                 document.getElementById('result-screen').classList.remove('hidden');
                 document.getElementById('final-title').innerText = "Exam Locked";
@@ -474,7 +563,7 @@
             function handleScreenShareDrop() {
                 if (document.getElementById('screen-share-overlay').style.display === 'flex') return; 
                 screenShareDrops++;
-                localStorage.setItem('gf_screenDrops', screenShareDrops);
+                localStorage.setItem(PREFIX + 'screenDrops', screenShareDrops);
                 
                 if (screenShareDrops > 1) {
                     lockOutStudent("Exam Terminated", "Screen sharing was stopped multiple times.", false);
@@ -485,7 +574,7 @@
                     
                     const timestamp = new Date().toLocaleTimeString();
                     violationLogs.push({ time: timestamp, reason: "Screen Sharing Stopped (Warning Issued)" });
-                    localStorage.setItem('gf_violationLogs', JSON.stringify(violationLogs));
+                    localStorage.setItem(PREFIX + 'violationLogs', JSON.stringify(violationLogs));
                 }
             }
 
@@ -521,17 +610,17 @@
                 lastWarningTime = now;
 
                 tabSwitchCount++;
-                localStorage.setItem('gf_tabSwitches', tabSwitchCount);
+                localStorage.setItem(PREFIX + 'tabSwitches', tabSwitchCount);
                 
                 const timestamp = new Date().toLocaleTimeString();
                 violationLogs.push({ time: timestamp, reason: exactRuleMessage });
-                localStorage.setItem('gf_violationLogs', JSON.stringify(violationLogs));
+                localStorage.setItem(PREFIX + 'violationLogs', JSON.stringify(violationLogs));
                 
                 document.getElementById('violations-pill').innerText = tabSwitchCount;
 
                 if (tabSwitchCount === 7) {
                     let timeoutEnd = _Date_now() + (5 * 60 * 1000);
-                    localStorage.setItem('gf_timeoutEndTime', timeoutEnd);
+                    localStorage.setItem(PREFIX + 'timeoutEndTime', timeoutEnd);
                     startPenaltyCountdown(timeoutEnd);
                     return;
                 }
@@ -660,7 +749,7 @@
                     startAudioMonitoring(mediaStream); 
 
                     document.getElementById('timeout-screen').classList.add('hidden');
-                    localStorage.removeItem('gf_timeoutEndTime');
+                    localStorage.removeItem(PREFIX + 'timeoutEndTime');
                     document.getElementById('exam-container').style.display = 'block';
                     document.getElementById('status-bar-container').style.display = 'flex';
                     
@@ -672,7 +761,7 @@
                 } catch (e) { alert("Camera, Mic & Screen Share are mandatory to resume."); }
             });
 
-            // --- VIEWPORT DETECTOR (Debounced to fix the Keyboard Animation Trap) ---
+            // --- VIEWPORT DETECTOR (Debounced) ---
             if (window.visualViewport) {
                 let maxVH = window.visualViewport.height;
                 let resizeTimeout; 
@@ -694,7 +783,6 @@
                         if (currentVH > maxVH) maxVH = currentVH; 
                         let shrinkRatio = (maxVH - currentVH) / maxVH;
                         
-                        // Validates ONLY after the keyboard animation has fully stopped.
                         if (shrinkRatio > 0.02 && shrinkRatio < 0.24) {
                             triggerExactWarning("Illegal System Overlay Detected (Search PIP or Native Toolbar).");
                         }
@@ -803,12 +891,12 @@
                     attachMediaListeners();
                     attachScreenListeners();
 
-                    // Complete Clean Slate for the Student
-                    localStorage.removeItem('gf_examLocked');
+                    // Complete Clean Slate for THIS SPECIFIC EXAM only
+                    localStorage.removeItem(PREFIX + 'examLocked');
                     tabSwitchCount = 0;
-                    localStorage.setItem('gf_tabSwitches', '0');
+                    localStorage.setItem(PREFIX + 'tabSwitches', '0');
                     screenShareDrops = 0;
-                    localStorage.setItem('gf_screenDrops', '0');
+                    localStorage.setItem(PREFIX + 'screenDrops', '0');
                     document.getElementById('violations-pill').innerText = '0';
                     
                     document.getElementById('result-screen').classList.add('hidden');
@@ -817,9 +905,8 @@
                     
                     // Re-inject the Google Form iframe if they refreshed the page
                     if (!document.getElementById("google-form-iframe")) {
-                        const decodedUrl = atob(ENCODED_FORM_URL);
                         const iframe = document.createElement('iframe');
-                        iframe.src = decodedUrl;
+                        iframe.src = DECODED_FORM_URL;
                         iframe.id = "google-form-iframe";
                         iframe.setAttribute("allow", "camera; microphone");
                         iframe.style.width = "100%"; iframe.style.height = "100%"; iframe.style.border = "none";
@@ -843,8 +930,9 @@
             startBtn.addEventListener('click', async () => {
                 if (!examAgreementCheckbox.checked || nameInput.value.trim() === '' || !/^\d{13}$/.test(rollInput.value) || !permissionsGranted) return;
                 
-                localStorage.setItem('gf_studentName', nameInput.value);
-                localStorage.setItem('gf_studentId', rollInput.value);
+                // Save globally so it auto-fills, but logs locally
+                localStorage.setItem('gf_globalName', nameInput.value);
+                localStorage.setItem('gf_globalRoll', rollInput.value);
 
                 try {
                     isTransitioning = true;
@@ -860,9 +948,8 @@
                     
                     initialWindowWidth = window.innerWidth; initialWindowHeight = window.innerHeight;
 
-                    const decodedUrl = atob(ENCODED_FORM_URL);
                     const iframe = document.createElement('iframe');
-                    iframe.src = decodedUrl;
+                    iframe.src = DECODED_FORM_URL;
                     iframe.id = "google-form-iframe";
                     iframe.setAttribute("allow", "camera; microphone");
                     iframe.style.width = "100%"; iframe.style.height = "100%"; iframe.style.border = "none";
@@ -886,8 +973,8 @@
             });
 
             function startCountdown() {
-                let endTime = localStorage.getItem('gf_examEndTime');
-                if (!endTime) { endTime = _Date_now() + (2 * 60 * 60 * 1000); localStorage.setItem('gf_examEndTime', endTime); }
+                let endTime = localStorage.getItem(PREFIX + 'examEndTime');
+                if (!endTime) { endTime = _Date_now() + (2 * 60 * 60 * 1000); localStorage.setItem(PREFIX + 'examEndTime', endTime); }
                 function tick() {
                     const remaining = endTime - _Date_now();
                     if (remaining <= 0) { 
@@ -908,7 +995,7 @@
                 if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
                 observer.disconnect();
 
-                localStorage.setItem('gf_examLocked', 'true');
+                localStorage.setItem(PREFIX + 'examLocked', 'true');
                 
                 document.getElementById('instruction-screen').style.display = 'none';
                 document.getElementById('exam-container').style.display = 'none';
@@ -935,8 +1022,8 @@
                 let formattedLogs = violationLogs.map(log => `[${log.time}] ${log.reason}`).join("\n");
 
                 const payload = {
-                    name: localStorage.getItem('gf_studentName') || "Unknown",
-                    studentId: localStorage.getItem('gf_studentId') || "Unknown",
+                    name: localStorage.getItem('gf_globalName') || "Unknown",
+                    studentId: localStorage.getItem('gf_globalRoll') || "Unknown",
                     violations: tabSwitchCount,
                     violationLogs: formattedLogs,
                     hardwareHash: hardwareHashValue,
