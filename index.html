@@ -12,6 +12,13 @@
         #timer-pill { background: #d93025; padding: 4px 12px; border-radius: 4px; }
         #violations-pill { background: #ea8600; padding: 4px 12px; border-radius: 4px; }
 
+        /* Psychological Deterrent: Pulsing Record Dot */
+        @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(1.2); } 100% { opacity: 1; transform: scale(1); } }
+        .pulse-dot { width: 12px; height: 12px; background-color: #ff4444; border-radius: 50%; animation: pulse 1.5s infinite; }
+
+        /* Network Drop Shield */
+        #offline-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000000; z-index: 9999999; justify-content: center; align-items: center; color: white; flex-direction: column; text-align: center; padding: 20px; box-sizing: border-box; }
+
         #warning-overlay, #screen-share-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.85); z-index: 99999; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
         .warning-box { background: #ffffff; border-top: 8px solid #d93025; padding: 30px; border-radius: 10px; max-width: 480px; width: 90%; text-align: center; }
         .warning-box h3 { color: #d93025; margin-top: 0; font-size: 22px; }
@@ -66,9 +73,20 @@
 
     <div class="screenshot-flash" id="flash-overlay"></div>
 
+    <!-- Network Drop Shield -->
+    <div id="offline-overlay">
+        <h1 style="color: #d93025; font-size: 45px; margin-bottom: 10px; margin-top: 0;">⚠️ OFFLINE</h1>
+        <p style="font-size: 20px; font-weight: bold;">Exam Paused: Internet connection lost.</p>
+        <p style="font-size: 16px; color: #ccc; max-width: 400px; line-height: 1.5;">Your exam questions have been temporarily hidden. Please reconnect to Wi-Fi or Cellular Data to automatically resume.</p>
+    </div>
+
     <div id="status-bar-container">
-        <div>Time Remaining: <span id="timer-pill">02:00:00</span></div>
-        <div>Security Violations: <span id="violations-pill">0</span></div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <div class="pulse-dot"></div>
+            <span style="color: #ff4444; font-weight: 900; letter-spacing: 1px; font-size: 13px;">LIVE REC</span>
+        </div>
+        <div>Time: <span id="timer-pill">02:00:00</span></div>
+        <div>Strikes: <span id="violations-pill">0</span></div>
     </div>
 
     <!-- ERROR SCREEN (No valid URL) -->
@@ -78,6 +96,17 @@
         <p style="color: #555; background: #fff3f3; padding: 15px; border-radius: 6px; font-weight: bold;">
             Please click on the exact, complete URL provided by your instructor to begin your test.
         </p>
+    </div>
+
+    <!-- SECURE ADMIN LOGIN SCREEN -->
+    <div id="admin-login-screen" class="card hidden" style="border-top: 8px solid #202124;">
+        <h2 style="margin-top: 0; color: #202124;">🔒 Admin Authentication</h2>
+        <p style="font-size: 14px; color: #555; margin-bottom: 20px;">Please enter the master admin password to access the generator dashboard.</p>
+        <div style="text-align: left;">
+            <input type="password" id="admin-password-input" placeholder="Enter Admin Password" style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 14px; margin-bottom: 10px;">
+            <button id="admin-login-btn" class="btn-primary" style="background: #202124;">Access Dashboard</button>
+            <p id="admin-login-error" style="color: red; font-size: 13px; display: none; margin-top: 10px; font-weight: bold; text-align: center;">❌ Incorrect Password!</p>
+        </div>
     </div>
 
     <!-- FACULTY ADMIN PANEL -->
@@ -213,20 +242,41 @@
 
             // MATH CYPHER FOR UNLOCK KEY: "pradyumnsirsorry" 
             const ENCRYPTED_KEY = [117, 119, 102, 105, 126, 122, 114, 115, 120, 110, 119, 120, 116, 119, 119, 126]; 
+            
+            // MATH CYPHER FOR ADMIN LOGIN: "pradyumnadmin"
+            const ADMIN_ENCRYPTED_KEY = [117, 119, 102, 105, 126, 122, 114, 115, 102, 105, 114, 110, 115];
 
             // --- ROUTER & SESSION INITIALIZATION ---
             const urlParams = new URLSearchParams(window.location.search);
-            const adminMode = urlParams.get('admin');
             const examDataHash = urlParams.get('exam');
 
             let PREFIX = "default_";
             let DECODED_FORM_URL = "";
             let TOTAL_FORM_SECTIONS = 0;
 
-            // --- ADMIN DASHBOARD LOGIC ---
-            if (adminMode === "pradyumn") {
-                document.getElementById('admin-screen').classList.remove('hidden');
+            // --- SECURE ADMIN DASHBOARD LOGIC ---
+            if (urlParams.has('admin')) {
+                document.getElementById('admin-login-screen').classList.remove('hidden');
                 
+                document.getElementById('admin-login-btn').addEventListener('click', () => {
+                    let pwd = document.getElementById('admin-password-input').value;
+                    let isValid = pwd.length === ADMIN_ENCRYPTED_KEY.length;
+                    if (isValid) {
+                        for (let i = 0; i < pwd.length; i++) {
+                            if (pwd.charCodeAt(i) + 5 !== ADMIN_ENCRYPTED_KEY[i]) {
+                                isValid = false; break;
+                            }
+                        }
+                    }
+                    
+                    if (isValid) {
+                        document.getElementById('admin-login-screen').classList.add('hidden');
+                        document.getElementById('admin-screen').classList.remove('hidden');
+                    } else {
+                        document.getElementById('admin-login-error').style.display = 'block';
+                    }
+                });
+
                 document.getElementById('generate-link-btn').addEventListener('click', () => {
                     let rawUrl = document.getElementById('admin-form-url').value.trim();
                     let sections = parseInt(document.getElementById('admin-sections').value);
@@ -321,6 +371,53 @@
             if (isMobile) {
                 grantPermBtn.innerText = "📸 Grant Camera & Mic Access";
             }
+
+            // --- NETWORK DROP SHIELD (Offline Tracker) ---
+            window.addEventListener('offline', () => {
+                if (isExamActive) document.getElementById('offline-overlay').style.display = 'flex';
+            });
+            window.addEventListener('online', () => {
+                document.getElementById('offline-overlay').style.display = 'none';
+                flushWebhookQueue(); // Process any logs that failed while offline
+            });
+
+            // --- WEBHOOK RETRY QUEUE ENGINE ---
+            function sendWebhook(payload) {
+                if (!navigator.onLine) {
+                    queueWebhook(payload);
+                    return;
+                }
+                fetch(AUDIT_WEBHOOK_URL, {
+                    method: 'POST', mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }).catch(() => {
+                    queueWebhook(payload); // Failsafe if network drops exactly during fetch
+                });
+            }
+
+            function queueWebhook(payload) {
+                let queue = JSON.parse(localStorage.getItem(PREFIX + 'webhookQueue') || '[]');
+                queue.push(payload);
+                localStorage.setItem(PREFIX + 'webhookQueue', JSON.stringify(queue));
+            }
+
+            function flushWebhookQueue() {
+                if (!navigator.onLine) return;
+                let queue = JSON.parse(localStorage.getItem(PREFIX + 'webhookQueue') || '[]');
+                if (queue.length === 0) return;
+                
+                let remainingQueue = [];
+                queue.forEach(payload => {
+                    fetch(AUDIT_WEBHOOK_URL, {
+                        method: 'POST', mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    }).catch(() => remainingQueue.push(payload));
+                });
+                localStorage.setItem(PREFIX + 'webhookQueue', JSON.stringify(remainingQueue));
+            }
+            _setInterval(flushWebhookQueue, 10000); // Check background queue every 10 seconds
 
             async function requestWakeLock() {
                 try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } 
@@ -456,10 +553,7 @@
 
             _setInterval(() => {
                 if (!isExamActive) return;
-                fetch(AUDIT_WEBHOOK_URL, {
-                    method: 'POST', mode: 'no-cors',
-                    body: JSON.stringify({ action: 'ping', studentId: rollInput.value, time: new Date().toLocaleTimeString() })
-                }).catch(()=>{}); 
+                sendWebhook({ action: 'ping', studentId: rollInput.value, time: new Date().toLocaleTimeString() });
             }, 30000);
 
             function detectVirtualMachine() {
@@ -1030,12 +1124,7 @@
                     status: isSuccess ? "Submitted Form Normally" : `Locked Out: ${message}`
                 };
 
-                fetch(AUDIT_WEBHOOK_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
+                sendWebhook(payload);
             }
         })();
     </script>
