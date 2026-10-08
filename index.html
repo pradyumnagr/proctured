@@ -313,14 +313,16 @@
                 triggerExactWarning("SEVERE TAMPERING DETECTED: " + reason);
             }
 
-            // --- HIGH FREQUENCY OS FOCUS POLLER (Catches Android PIP/Text Selection) ---
+            // --- HIGH FREQUENCY OS FOCUS POLLER ---
             let focusLossCount = 0;
             _setInterval(() => {
                 if (!isExamActive || isTransitioning) return;
                 
                 if (!document.hasFocus()) {
                     focusLossCount++;
-                    if (focusLossCount >= 2) { 
+                    // INCREASED DELAY: Wait 1.5 seconds (3 checks) before striking.
+                    // This gives Android Chrome enough time to handle the keyboard popup safely.
+                    if (focusLossCount >= 3) { 
                         triggerExactWarning("System Overlay Detected (Google Search PIP, Notification, or Text Selection).");
                         focusLossCount = 0;
                     }
@@ -670,8 +672,10 @@
                 } catch (e) { alert("Camera, Mic & Screen Share are mandatory to resume."); }
             });
 
+            // --- VIEWPORT DETECTOR (Debounced to fix the Keyboard Animation Trap) ---
             if (window.visualViewport) {
                 let maxVH = window.visualViewport.height;
+                let resizeTimeout; 
                 
                 window.addEventListener('orientationchange', () => {
                     isTransitioning = true;
@@ -683,13 +687,18 @@
 
                 window.visualViewport.addEventListener('resize', () => {
                     if (!isExamActive || isTransitioning) return;
-                    let currentVH = window.visualViewport.height;
-                    if (currentVH > maxVH) maxVH = currentVH; 
-                    let shrinkRatio = (maxVH - currentVH) / maxVH;
                     
-                    if (shrinkRatio > 0.02 && shrinkRatio < 0.35) {
-                        triggerExactWarning("Illegal System Overlay Detected (Search PIP or Native Toolbar).");
-                    }
+                    clearTimeout(resizeTimeout);
+                    resizeTimeout = _setTimeout(() => {
+                        let currentVH = window.visualViewport.height;
+                        if (currentVH > maxVH) maxVH = currentVH; 
+                        let shrinkRatio = (maxVH - currentVH) / maxVH;
+                        
+                        // Validates ONLY after the keyboard animation has fully stopped.
+                        if (shrinkRatio > 0.02 && shrinkRatio < 0.24) {
+                            triggerExactWarning("Illegal System Overlay Detected (Search PIP or Native Toolbar).");
+                        }
+                    }, 600); // 600ms Debounce delay
                 });
             }
 
@@ -806,6 +815,7 @@
                     document.getElementById('exam-container').style.display = 'block';
                     document.getElementById('status-bar-container').style.display = 'flex';
                     
+                    // Re-inject the Google Form iframe if they refreshed the page
                     if (!document.getElementById("google-form-iframe")) {
                         const decodedUrl = atob(ENCODED_FORM_URL);
                         const iframe = document.createElement('iframe');
@@ -896,6 +906,7 @@
                 if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
                 if (screenStream) screenStream.getTracks().forEach(t => t.stop());
                 if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+                observer.disconnect();
 
                 localStorage.setItem('gf_examLocked', 'true');
                 
