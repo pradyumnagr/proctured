@@ -83,11 +83,10 @@
 
     <div id="lobby-screen" class="card hidden">
         <h2 style="margin-top: 0; color: #1a73e8;">🎓 Welcome to the Exam Portal</h2>
-        <p style="font-size: 15px; color: #333; margin-bottom: 25px;">Please enter the Exam Access Code provided by your instructor to begin.</p>
+        <p style="font-size: 15px; color: #333; margin-bottom: 25px;">Click below to connect to the server and fetch your active exam.</p>
         <div style="text-align: left;">
-            <input type="text" id="access-code-input" placeholder="Paste Exam Code Here..." style="width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; font-size: 16px; font-family: monospace; text-align: center; letter-spacing: 1px;">
-            <button id="join-exam-btn" class="btn-primary">Verify & Join Exam</button>
-            <p id="lobby-error" style="color: #d93025; font-size: 13px; display: none; margin-top: 15px; font-weight: bold; text-align: center;">❌ Invalid Access Code. Please check and try again.</p>
+            <button id="join-exam-btn" class="btn-primary">Connect & Join Exam</button>
+            <p id="lobby-error" style="color: #d93025; font-size: 13px; display: none; margin-top: 15px; font-weight: bold; text-align: center;">❌ Failed to connect to server.</p>
         </div>
         <div class="designer-credit">Designed by Pradyumn</div>
     </div>
@@ -104,7 +103,7 @@
 
     <div id="admin-screen" class="card hidden" style="border-top: 8px solid #1a73e8;">
         <h2 style="margin-top: 0; color: #1a73e8;">👨‍🏫 Faculty Dashboard</h2>
-        <p style="font-size: 14px; color: #555; text-align: left; margin-bottom: 20px;">Paste your <strong>Long Google Form URL</strong> below to generate a secure Exam Access Code for your students.</p>
+        <p style="font-size: 14px; color: #555; text-align: left; margin-bottom: 20px;">Push a new Google Form URL to the Cloudflare Edge Server. All students will instantly receive this exam.</p>
         
         <div style="text-align: left;">
             <label style="font-weight: bold; font-size: 13px; display: block; margin-bottom: 5px;">1. Paste Long Google Form URL:</label>
@@ -113,15 +112,7 @@
             <label style="font-weight: bold; font-size: 13px; display: block; margin-bottom: 5px;">2. Total Form Sections (Required for Auto-Submit):</label>
             <input type="number" id="admin-sections" value="2" min="1" style="width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px;">
             
-            <button id="generate-link-btn" class="btn-primary">Generate Access Code</button>
-            
-            <div id="admin-output-container" style="display:none; margin-top: 25px; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e0e0e0;">
-                <label style="font-weight: bold; font-size: 13px; color: #1a73e8; display: block; margin-bottom: 5px;">Provide this Code to your students:</label>
-                <input type="text" id="generated-code-output" readonly style="width: 100%; padding: 12px; margin-bottom: 15px; font-family: monospace; font-weight: bold; background: #e8f0fe; border: 2px solid #1a73e8; border-radius: 6px; font-size: 15px; box-sizing: border-box;">
-                
-                <label style="font-weight: bold; font-size: 12px; color: #555; display: block; margin-bottom: 5px;">Or send them the direct link:</label>
-                <textarea id="generated-link-output" readonly style="width: 100%; height: 60px; padding: 10px; font-family: monospace; background: #fff; border: 1px solid #ccc; border-radius: 4px; resize: none; font-size: 12px; box-sizing: border-box;"></textarea>
-            </div>
+            <button id="generate-link-btn" class="btn-primary">Push Live to Server</button>
         </div>
     </div>
 
@@ -232,9 +223,10 @@
             const _setTimeout = setTimeout;
 
             // ==========================================
-            // APPS SCRIPT WEBHOOK 
+            // APPS SCRIPT WEBHOOK & CLOUDFLARE SERVER
             // ==========================================
             const AUDIT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbx_jiGrwYf8CgF3WjvET_RIP7eLN5HMcF3sfo1FZyeOuFx1ZUgy46OsFPbGntUqC6lGNg/exec";
+            const CLOUDFLARE_WORKER_URL = "https://exam-router.pradyumn.workers.dev";
 
             // MATH CYPHER FOR UNLOCK KEY: "pradyumnsirsorry" 
             const ENCRYPTED_KEY = [117, 119, 102, 105, 126, 122, 114, 115, 120, 110, 119, 120, 116, 119, 119, 126]; 
@@ -312,7 +304,8 @@
                     }
                 });
 
-                document.getElementById('generate-link-btn').addEventListener('click', () => {
+                // ADMIN PUSH TO CLOUDFLARE
+                document.getElementById('generate-link-btn').addEventListener('click', async () => {
                     let rawUrl = document.getElementById('admin-form-url').value.trim();
                     let sections = parseInt(document.getElementById('admin-sections').value);
                     
@@ -324,35 +317,75 @@
                         rawUrl += rawUrl.includes('?') ? '&embedded=true' : '?embedded=true';
                     }
                     
-                    let payloadData = JSON.stringify({ u: rawUrl, s: sections });
-                    let encryptedPayload = btoa(encodeURIComponent(payloadData));
-                    let finalLink = window.location.origin + window.location.pathname + "?exam=" + encryptedPayload;
+                    const btn = document.getElementById('generate-link-btn');
+                    btn.innerText = "Pushing to Edge Server...";
+                    btn.disabled = true;
                     
-                    document.getElementById('generated-code-output').value = encryptedPayload;
-                    document.getElementById('generated-link-output').value = finalLink;
-                    document.getElementById('admin-output-container').style.display = 'block';
+                    try {
+                        const res = await fetch(CLOUDFLARE_WORKER_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                adminPassword: "pradyumnadmin", // Securely checks at the edge
+                                formUrl: rawUrl,
+                                sections: sections
+                            })
+                        });
+                        
+                        if (res.ok) {
+                            alert("✅ SUCCESS: The exam URL is now live globally!");
+                        } else {
+                            alert("❌ ERROR: Unauthorized or Server Error. Check password.");
+                        }
+                    } catch (e) {
+                        alert("❌ ERROR: Could not connect to Cloudflare server.");
+                    } finally {
+                        btn.innerText = "Push Live to Server";
+                        btn.disabled = false;
+                    }
                 });
 
-            } else if (urlParams.has('exam')) {
-                // Direct Link loaded
-                initStudentSession(urlParams.get('exam'));
             } else {
                 // Clean URL loaded, show Lobby
                 document.getElementById('lobby-screen').classList.remove('hidden');
-                document.getElementById('join-exam-btn').addEventListener('click', () => {
-                    let code = document.getElementById('access-code-input').value.trim();
-                    initStudentSession(code);
+                
+                // STUDENT FETCH FROM CLOUDFLARE
+                document.getElementById('join-exam-btn').addEventListener('click', async () => {
+                    const btn = document.getElementById('join-exam-btn');
+                    const errorMsg = document.getElementById('lobby-error');
+                    btn.innerText = "Connecting to Server...";
+                    btn.disabled = true;
+                    errorMsg.style.display = 'none';
+
+                    try {
+                        const res = await fetch(CLOUDFLARE_WORKER_URL);
+                        const data = await res.json();
+
+                        if (data.error) {
+                            errorMsg.innerText = "❌ No exam is currently active. Please wait.";
+                            errorMsg.style.display = 'block';
+                            btn.innerText = "Connect & Join Exam";
+                            btn.disabled = false;
+                            return;
+                        }
+
+                        // Pass fetched data into initialization
+                        initStudentSession(data.formUrl, data.sections);
+
+                    } catch (e) {
+                        errorMsg.innerText = "❌ Failed to reach exam server. Check your connection.";
+                        errorMsg.style.display = 'block';
+                        btn.innerText = "Connect & Join Exam";
+                        btn.disabled = false;
+                    }
                 });
             }
 
             // --- EXAM INITIALIZER ---
-            function initStudentSession(codeData) {
+            function initStudentSession(fetchedUrl, fetchedSections) {
                 try {
-                    const parsedData = JSON.parse(decodeURIComponent(atob(codeData)));
-                    if(!parsedData.u || !parsedData.s) throw new Error();
-                    
-                    DECODED_FORM_URL = parsedData.u;
-                    TOTAL_FORM_SECTIONS = parsedData.s;
+                    DECODED_FORM_URL = fetchedUrl;
+                    TOTAL_FORM_SECTIONS = fetchedSections;
                     
                     // Create unique memory isolated Session ID based on the URL
                     let urlHash = 0;
@@ -381,20 +414,9 @@
                         validateInputs(); // refresh names
                     }
 
-                    // Silent URL update (protects against refresh kicks without making URL ugly)
-                    const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?exam=' + codeData;
-                    window.history.replaceState({path:newUrl}, '', newUrl);
-
                 } catch(e) {
-                    if(document.getElementById('lobby-screen').classList.contains('hidden') === false) {
-                        document.getElementById('lobby-error').style.display = 'block';
-                    } else {
-                        // They tried a bad link directly
-                        document.getElementById('lobby-screen').classList.add('hidden');
-                        document.getElementById('instruction-screen').classList.add('hidden');
-                        alert("Invalid Exam Link. Returning to Lobby.");
-                        window.location.href = window.location.origin + window.location.pathname;
-                    }
+                    alert("A critical initialization error occurred.");
+                    window.location.reload();
                 }
             }
 
@@ -1045,7 +1067,7 @@
                     _setTimeout(() => { isTransitioning = false; }, 3000);
 
                     if (document.documentElement.requestFullscreen) { try { await document.documentElement.requestFullscreen(); } catch (e) {} }
-                    requestWakeLock(); 
+                    // if ('wakeLock' in navigator) requestWakeLock(); // Removed undefined function call for stability
                     
                     document.getElementById('instruction-screen').style.display = 'none';
                     document.getElementById('exam-container').style.display = 'block';
