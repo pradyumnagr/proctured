@@ -12,11 +12,9 @@
         #timer-pill { background: #d93025; padding: 4px 12px; border-radius: 4px; }
         #violations-pill { background: #ea8600; padding: 4px 12px; border-radius: 4px; }
 
-        /* Psychological Deterrent: Pulsing Record Dot */
         @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(1.2); } 100% { opacity: 1; transform: scale(1); } }
         .pulse-dot { width: 12px; height: 12px; background-color: #ff4444; border-radius: 50%; animation: pulse 1.5s infinite; }
 
-        /* Network Drop Shield */
         #offline-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000000; z-index: 9999999; justify-content: center; align-items: center; color: white; flex-direction: column; text-align: center; padding: 20px; box-sizing: border-box; }
 
         #warning-overlay, #screen-share-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.85); z-index: 99999; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
@@ -52,11 +50,6 @@
         #exam-container { display: none; width: 100vw; height: 100vh; padding-top: 40px; box-sizing: border-box; overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .hidden { display: none !important; }
         .designer-credit { margin-top: 25px; font-family: 'Brush Script MT', cursive; font-size: 15px; color: #888; font-style: italic; }
-
-        /* Admin Dashboard Styles */
-        #admin-form-url { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px; font-family: monospace; }
-        #admin-sections { width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px; }
-        #generated-link-output { width: 100%; height: 100px; margin-top: 20px; padding: 12px; border-radius: 6px; border: 2px solid #1a73e8; display: none; font-family: monospace; resize: none; box-sizing: border-box; font-size: 13px; background: #e8f0fe;}
     </style>
 </head>
 <body>
@@ -73,7 +66,6 @@
 
     <div class="screenshot-flash" id="flash-overlay"></div>
 
-    <!-- Network Drop Shield -->
     <div id="offline-overlay">
         <h1 style="color: #d93025; font-size: 45px; margin-bottom: 10px; margin-top: 0;">⚠️ OFFLINE</h1>
         <p style="font-size: 20px; font-weight: bold;">Exam Paused: Internet connection lost.</p>
@@ -89,16 +81,17 @@
         <div>Strikes: <span id="violations-pill">0</span></div>
     </div>
 
-    <!-- ERROR SCREEN (No valid URL) -->
-    <div id="no-exam-screen" class="card hidden" style="border-top: 8px solid #ea8600;">
-        <h2 style="margin-top: 0; color: #ea8600;">⚠️ Invalid Exam Link</h2>
-        <p style="font-size: 15px; color: #333;">You have accessed the base portal without an assigned exam.</p>
-        <p style="color: #555; background: #fff3f3; padding: 15px; border-radius: 6px; font-weight: bold;">
-            Please click on the exact, complete URL provided by your instructor to begin your test.
-        </p>
+    <div id="lobby-screen" class="card hidden">
+        <h2 style="margin-top: 0; color: #1a73e8;">🎓 Welcome to the Exam Portal</h2>
+        <p style="font-size: 15px; color: #333; margin-bottom: 25px;">Please enter the Exam Access Code provided by your instructor to begin.</p>
+        <div style="text-align: left;">
+            <input type="text" id="access-code-input" placeholder="Paste Exam Code Here..." style="width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; font-size: 16px; font-family: monospace; text-align: center; letter-spacing: 1px;">
+            <button id="join-exam-btn" class="btn-primary">Verify & Join Exam</button>
+            <p id="lobby-error" style="color: #d93025; font-size: 13px; display: none; margin-top: 15px; font-weight: bold; text-align: center;">❌ Invalid Access Code. Please check and try again.</p>
+        </div>
+        <div class="designer-credit">Designed by Pradyumn</div>
     </div>
 
-    <!-- SECURE ADMIN LOGIN SCREEN -->
     <div id="admin-login-screen" class="card hidden" style="border-top: 8px solid #202124;">
         <h2 style="margin-top: 0; color: #202124;">🔒 Admin Authentication</h2>
         <p style="font-size: 14px; color: #555; margin-bottom: 20px;">Please enter the master admin password to access the generator dashboard.</p>
@@ -109,24 +102,29 @@
         </div>
     </div>
 
-    <!-- FACULTY ADMIN PANEL -->
     <div id="admin-screen" class="card hidden" style="border-top: 8px solid #1a73e8;">
         <h2 style="margin-top: 0; color: #1a73e8;">👨‍🏫 Faculty Dashboard</h2>
-        <p style="font-size: 14px; color: #555; text-align: left; margin-bottom: 20px;">Paste your <strong>Long Google Form URL</strong> below to generate a secure, encrypted link for your students. Each link generates an isolated proctoring session automatically.</p>
+        <p style="font-size: 14px; color: #555; text-align: left; margin-bottom: 20px;">Paste your <strong>Long Google Form URL</strong> below to generate a secure Exam Access Code for your students.</p>
         
         <div style="text-align: left;">
             <label style="font-weight: bold; font-size: 13px; display: block; margin-bottom: 5px;">1. Paste Long Google Form URL:</label>
-            <input type="text" id="admin-form-url" placeholder="https://docs.google.com/forms/d/e/.../viewform">
+            <input type="text" id="admin-form-url" placeholder="https://docs.google.com/forms/d/e/.../viewform" style="width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px; font-family: monospace;">
             
             <label style="font-weight: bold; font-size: 13px; display: block; margin-bottom: 5px;">2. Total Form Sections (Required for Auto-Submit):</label>
-            <input type="number" id="admin-sections" value="2" min="1">
+            <input type="number" id="admin-sections" value="2" min="1" style="width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px;">
             
-            <button id="generate-link-btn" class="btn-primary">Generate Encrypted Student Link</button>
-            <textarea id="generated-link-output" readonly placeholder="Your secure link will appear here..."></textarea>
+            <button id="generate-link-btn" class="btn-primary">Generate Access Code</button>
+            
+            <div id="admin-output-container" style="display:none; margin-top: 25px; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e0e0e0;">
+                <label style="font-weight: bold; font-size: 13px; color: #1a73e8; display: block; margin-bottom: 5px;">Provide this Code to your students:</label>
+                <input type="text" id="generated-code-output" readonly style="width: 100%; padding: 12px; margin-bottom: 15px; font-family: monospace; font-weight: bold; background: #e8f0fe; border: 2px solid #1a73e8; border-radius: 6px; font-size: 15px; box-sizing: border-box;">
+                
+                <label style="font-weight: bold; font-size: 12px; color: #555; display: block; margin-bottom: 5px;">Or send them the direct link:</label>
+                <textarea id="generated-link-output" readonly style="width: 100%; height: 60px; padding: 10px; font-family: monospace; background: #fff; border: 1px solid #ccc; border-radius: 4px; resize: none; font-size: 12px; box-sizing: border-box;"></textarea>
+            </div>
         </div>
     </div>
 
-    <!-- STUDENT INSTRUCTION SCREEN -->
     <div id="instruction-screen" class="card hidden">
         <h2 style="margin-top: 0; color: #202124;">Exam Setup & Rules</h2>
         
@@ -164,7 +162,6 @@
         <div class="designer-credit">Designed by Pradyumn</div>
     </div>
 
-    <!-- OVERLAYS & EXAM CONTAINER -->
     <div id="warning-overlay">
         <div class="warning-box">
             <h3>⚠️ SECURITY WARNING</h3>
@@ -205,7 +202,6 @@
 
     <div id="exam-container"></div>
 
-    <!-- Final Termination & Unlock Screen -->
     <div id="result-screen" class="card hidden">
         <h2 id="final-title" style="color: #1a73e8;">Processing...</h2>
         <p id="final-message">Please wait.</p>
@@ -246,15 +242,54 @@
             // MATH CYPHER FOR ADMIN LOGIN: "pradyumnadmin"
             const ADMIN_ENCRYPTED_KEY = [117, 119, 102, 105, 126, 122, 114, 115, 102, 105, 114, 110, 115];
 
-            // --- ROUTER & SESSION INITIALIZATION ---
-            const urlParams = new URLSearchParams(window.location.search);
-            const examDataHash = urlParams.get('exam');
-
-            let PREFIX = "default_";
+            // --- SESSION VARIABLES (Initialized Dynamically) ---
+            let PREFIX = null;
             let DECODED_FORM_URL = "";
             let TOTAL_FORM_SECTIONS = 0;
 
-            // --- SECURE ADMIN DASHBOARD LOGIC ---
+            let isExamActive = false; 
+            let isTransitioning = false; 
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            
+            let tabSwitchCount = 0;
+            let violationLogs = [];
+            let timerInterval, penaltyInterval, mediaStream = null, screenStream = null;
+            let permissionsGranted = false;
+            let screenShareDrops = 0; 
+            let wakeLock = null;
+            
+            let initialWindowWidth = window.innerWidth;
+            let initialWindowHeight = window.innerHeight;
+            let lastWarningTime = 0;
+            let formLoadCount = 0; 
+            let hardwareHashValue = "Not Generated";
+            let lastInternalTick = _Date_now(); 
+
+            const examAgreementCheckbox = document.getElementById('exam-agreement-checkbox');
+            const startBtn = document.getElementById('start-btn');
+            const grantPermBtn = document.getElementById('grant-perm-btn');
+            const permStatus = document.getElementById('perm-status');
+            const violationCheckbox = document.getElementById('violation-checkbox');
+            const violationAckBtn = document.getElementById('violation-ack-btn');
+            const resumeFinalBtn = document.getElementById('resume-final-btn');
+            const restartScreenBtn = document.getElementById('restart-screen-btn');
+            const nameInput = document.getElementById('student-name-input');
+            const rollInput = document.getElementById('roll-no-input');
+            const rollError = document.getElementById('roll-error');
+            const container = document.getElementById('exam-container');
+
+            const confessionCheckbox = document.getElementById('confession-checkbox');
+            const unlockKeyInput = document.getElementById('unlock-key-input');
+            const unlockBtn = document.getElementById('unlock-btn');
+            const unlockError = document.getElementById('unlock-error');
+
+            if (isMobile) {
+                grantPermBtn.innerText = "📸 Grant Camera & Mic Access";
+            }
+
+            // --- ROUTER LOGIC ---
+            const urlParams = new URLSearchParams(window.location.search);
+            
             if (urlParams.has('admin')) {
                 document.getElementById('admin-login-screen').classList.remove('hidden');
                 
@@ -293,84 +328,76 @@
                     let encryptedPayload = btoa(encodeURIComponent(payloadData));
                     let finalLink = window.location.origin + window.location.pathname + "?exam=" + encryptedPayload;
                     
-                    let outputBox = document.getElementById('generated-link-output');
-                    outputBox.value = finalLink;
-                    outputBox.style.display = 'block';
-                    outputBox.select();
+                    document.getElementById('generated-code-output').value = encryptedPayload;
+                    document.getElementById('generated-link-output').value = finalLink;
+                    document.getElementById('admin-output-container').style.display = 'block';
                 });
-                return; // Stop student code from running
+
+            } else if (urlParams.has('exam')) {
+                // Direct Link loaded
+                initStudentSession(urlParams.get('exam'));
+            } else {
+                // Clean URL loaded, show Lobby
+                document.getElementById('lobby-screen').classList.remove('hidden');
+                document.getElementById('join-exam-btn').addEventListener('click', () => {
+                    let code = document.getElementById('access-code-input').value.trim();
+                    initStudentSession(code);
+                });
             }
 
-            // --- STUDENT EXAM LINK VALIDATION ---
-            if (!examDataHash) {
-                document.getElementById('no-exam-screen').classList.remove('hidden');
-                return; // Stop student code from running
-            }
+            // --- EXAM INITIALIZER ---
+            function initStudentSession(codeData) {
+                try {
+                    const parsedData = JSON.parse(decodeURIComponent(atob(codeData)));
+                    if(!parsedData.u || !parsedData.s) throw new Error();
+                    
+                    DECODED_FORM_URL = parsedData.u;
+                    TOTAL_FORM_SECTIONS = parsedData.s;
+                    
+                    // Create unique memory isolated Session ID based on the URL
+                    let urlHash = 0;
+                    for (let i = 0; i < DECODED_FORM_URL.length; i++) {
+                        urlHash = ((urlHash << 5) - urlHash) + DECODED_FORM_URL.charCodeAt(i);
+                        urlHash |= 0;
+                    }
+                    PREFIX = "ex_" + Math.abs(urlHash) + "_";
+                    
+                    // Load isolated memory
+                    tabSwitchCount = parseInt(localStorage.getItem(PREFIX + 'tabSwitches') || '0');
+                    violationLogs = JSON.parse(localStorage.getItem(PREFIX + 'violationLogs') || '[]');
+                    screenShareDrops = parseInt(localStorage.getItem(PREFIX + 'screenDrops') || '0');
 
-            try {
-                const parsedData = JSON.parse(decodeURIComponent(atob(examDataHash)));
-                DECODED_FORM_URL = parsedData.u;
-                TOTAL_FORM_SECTIONS = parsedData.s;
-                
-                // Create unique memory isolated Session ID based on the URL
-                let urlHash = 0;
-                for (let i = 0; i < DECODED_FORM_URL.length; i++) {
-                    urlHash = ((urlHash << 5) - urlHash) + DECODED_FORM_URL.charCodeAt(i);
-                    urlHash |= 0;
+                    // Clean UI transition
+                    document.getElementById('lobby-screen').classList.add('hidden');
+                    
+                    if (localStorage.getItem(PREFIX + 'examLocked') === 'true') {
+                        document.getElementById('result-screen').classList.remove('hidden');
+                        document.getElementById('final-title').innerText = "Exam Locked";
+                        document.getElementById('final-title').style.color = "#d93025";
+                        document.getElementById('final-message').innerText = "You have been locked out of this exam due to security violations.";
+                        document.getElementById('unlock-section').style.display = 'block';
+                    } else {
+                        document.getElementById('instruction-screen').classList.remove('hidden');
+                        validateInputs(); // refresh names
+                    }
+
+                    // Silent URL update (protects against refresh kicks without making URL ugly)
+                    const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?exam=' + codeData;
+                    window.history.replaceState({path:newUrl}, '', newUrl);
+
+                } catch(e) {
+                    if(document.getElementById('lobby-screen').classList.contains('hidden') === false) {
+                        document.getElementById('lobby-error').style.display = 'block';
+                    } else {
+                        // They tried a bad link directly
+                        document.getElementById('lobby-screen').classList.add('hidden');
+                        document.getElementById('instruction-screen').classList.add('hidden');
+                        alert("Invalid Exam Link. Returning to Lobby.");
+                        window.location.href = window.location.origin + window.location.pathname;
+                    }
                 }
-                PREFIX = "ex_" + Math.abs(urlHash) + "_";
-                
-                // Show the start screen!
-                document.getElementById('instruction-screen').classList.remove('hidden');
-            } catch(e) {
-                document.getElementById('no-exam-screen').classList.remove('hidden');
-                return; // Stop student code from running
             }
 
-            // =========================================================
-            // --- THE CORE STUDENT APP (Only runs if link is valid) ---
-            // =========================================================
-
-            let isExamActive = false; 
-            let isTransitioning = false; 
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-            
-            let tabSwitchCount = parseInt(localStorage.getItem(PREFIX + 'tabSwitches') || '0');
-            let violationLogs = JSON.parse(localStorage.getItem(PREFIX + 'violationLogs') || '[]');
-            
-            let timerInterval, penaltyInterval, mediaStream = null, screenStream = null;
-            let permissionsGranted = false;
-            let screenShareDrops = parseInt(localStorage.getItem(PREFIX + 'screenDrops') || '0'); 
-            let wakeLock = null;
-            
-            let initialWindowWidth = window.innerWidth;
-            let initialWindowHeight = window.innerHeight;
-            let lastWarningTime = 0;
-            let formLoadCount = 0; 
-            let hardwareHashValue = "Not Generated";
-            let lastInternalTick = _Date_now(); 
-
-            const examAgreementCheckbox = document.getElementById('exam-agreement-checkbox');
-            const startBtn = document.getElementById('start-btn');
-            const grantPermBtn = document.getElementById('grant-perm-btn');
-            const permStatus = document.getElementById('perm-status');
-            const violationCheckbox = document.getElementById('violation-checkbox');
-            const violationAckBtn = document.getElementById('violation-ack-btn');
-            const resumeFinalBtn = document.getElementById('resume-final-btn');
-            const restartScreenBtn = document.getElementById('restart-screen-btn');
-            const nameInput = document.getElementById('student-name-input');
-            const rollInput = document.getElementById('roll-no-input');
-            const rollError = document.getElementById('roll-error');
-            const container = document.getElementById('exam-container');
-
-            const confessionCheckbox = document.getElementById('confession-checkbox');
-            const unlockKeyInput = document.getElementById('unlock-key-input');
-            const unlockBtn = document.getElementById('unlock-btn');
-            const unlockError = document.getElementById('unlock-error');
-
-            if (isMobile) {
-                grantPermBtn.innerText = "📸 Grant Camera & Mic Access";
-            }
 
             // --- NETWORK DROP SHIELD (Offline Tracker) ---
             window.addEventListener('offline', () => {
@@ -383,6 +410,7 @@
 
             // --- WEBHOOK RETRY QUEUE ENGINE ---
             function sendWebhook(payload) {
+                if (!PREFIX) return;
                 if (!navigator.onLine) {
                     queueWebhook(payload);
                     return;
@@ -392,18 +420,19 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 }).catch(() => {
-                    queueWebhook(payload); // Failsafe if network drops exactly during fetch
+                    queueWebhook(payload); 
                 });
             }
 
             function queueWebhook(payload) {
+                if (!PREFIX) return;
                 let queue = JSON.parse(localStorage.getItem(PREFIX + 'webhookQueue') || '[]');
                 queue.push(payload);
                 localStorage.setItem(PREFIX + 'webhookQueue', JSON.stringify(queue));
             }
 
             function flushWebhookQueue() {
-                if (!navigator.onLine) return;
+                if (!PREFIX || !navigator.onLine) return;
                 let queue = JSON.parse(localStorage.getItem(PREFIX + 'webhookQueue') || '[]');
                 if (queue.length === 0) return;
                 
@@ -419,11 +448,6 @@
             }
             _setInterval(flushWebhookQueue, 10000); // Check background queue every 10 seconds
 
-            async function requestWakeLock() {
-                try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } 
-                catch (err) {}
-            }
-            
             function generateHardwareFingerprint() {
                 try {
                     const canvas = document.createElement('canvas');
@@ -613,7 +637,6 @@
                     rollError.style.display = 'none';
                 }
 
-                // Global Name/Roll memory across different exams
                 if (localStorage.getItem('gf_globalName') && nameInput.value === '') nameInput.value = localStorage.getItem('gf_globalName');
                 if (localStorage.getItem('gf_globalRoll') && rollInput.value === '') rollInput.value = localStorage.getItem('gf_globalRoll');
 
@@ -632,17 +655,6 @@
             });
             examAgreementCheckbox.addEventListener('change', validateInputs);
             nameInput.addEventListener('input', validateInputs);
-            validateInputs(); // Run once on load to populate saved names
-
-            // --- PERSISTENT LOCKOUT HANDLING ---
-            if (localStorage.getItem(PREFIX + 'examLocked') === 'true') {
-                document.getElementById('instruction-screen').style.display = 'none';
-                document.getElementById('result-screen').classList.remove('hidden');
-                document.getElementById('final-title').innerText = "Exam Locked";
-                document.getElementById('final-title').style.color = "#d93025";
-                document.getElementById('final-message').innerText = "You have been locked out of this exam due to security violations.";
-                document.getElementById('unlock-section').style.display = 'block';
-            }
 
             function attachMediaListeners() {
                 if (mediaStream) {
