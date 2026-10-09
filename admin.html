@@ -119,21 +119,21 @@
             <div class="card">
                 <div class="header">
                     <h1>👥 Master Student Registry</h1>
-                    <span style="font-size: 13px; color: var(--text-secondary);">Stored securely in Local Storage</span>
+                    <span style="font-size: 13px; color: var(--text-secondary);">Stored securely in Cloudflare KV</span>
                 </div>
                 
                 <div class="db-info-box">
                     <div>
                         <strong style="font-size: 18px; color: var(--success);" id="db-total-count">0</strong> Students Enrolled
                     </div>
-                    <button class="btn-danger btn-small" onclick="clearDatabase()">🗑️ Clear DB</button>
+                    <button class="btn-danger btn-small" onclick="clearDatabase()">🗑️ Clear Cloud DB</button>
                 </div>
 
                 <div class="form-group" style="margin-bottom: 15px;">
                     <label>Bulk Import Students (Format: Roll Number, Name, DOB, Year, Section, Course, Branch)</label>
                     <textarea id="db-import-area" rows="6" placeholder="1300000000001, John Doe, 25/10/2004, 3RD YEAR, SEC-A, B.Tech, Computer Science and Engineering&#10;1300000000002, Alice Smith, 14/01/2005, 3RD YEAR, SEC-B, B.Tech, Computer Science and Engineering"></textarea>
                 </div>
-                <button class="btn-primary" onclick="saveMasterDatabase()">💾 Save to Master Database</button>
+                <button id="btn-save-db" class="btn-primary" onclick="saveMasterDatabase()">💾 Save to Master Database</button>
 
                 <h3 style="margin-top: 30px; font-size: 16px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">Database Preview</h3>
                 <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
@@ -198,10 +198,10 @@
                     </div>
                     <div class="form-group" style="grid-column: 1 / -1;">
                         <label style="color: var(--primary); font-size: 15px;">🎯 Target Audience (Requires saved Global Database):</label>
-                        <select id="target-audience" style="border: 2px solid var(--primary); font-weight: bold; background: #e8f0fe;">
-                            <option value="OPEN">Open Exam (No Identity Verification)</option>
+                        <select id="target-audience" style="border: 2px solid var(--primary); font-weight: bold; background: #e8f0fe; padding: 10px;">
+                            <option value="OPEN">Open Exam (No Identity Verification / Fallback)</option>
                             <option value="ALL">Allow All Registered Students in Database</option>
-                            <!-- Sections populated via JS -->
+                            <!-- Sections populated dynamically -->
                         </select>
                     </div>
                 </div>
@@ -279,27 +279,51 @@
             document.getElementById(`btn-${tabId}`).classList.add('active');
         }
 
-        // ==== AUTHENTICATION ====
+        // ==== AUTHENTICATION & INITIALIZATION ====
         document.getElementById('auth-btn').addEventListener('click', async () => {
             const key = document.getElementById('auth-input').value.trim();
+            const btn = document.getElementById('auth-btn');
+            btn.innerText = "Authenticating...";
+            
             try {
                 const res = await fetch(`${getEndpoint()}/admin/sessions`, { headers: { "x-admin-key": key } });
-                if (res.status === 401) return document.getElementById('auth-error').classList.remove('hidden');
+                if (res.status === 401) {
+                    btn.innerText = "Authenticate";
+                    return document.getElementById('auth-error').classList.remove('hidden');
+                }
                 
                 adminToken = key;
                 document.getElementById('auth-overlay').classList.add('hidden');
                 document.getElementById('main-panel').classList.remove('hidden');
                 
-                refreshDBUI(); // Load Master DB
+                // Fetch Master DB directly from Cloudflare KV upon login
+                await fetchCloudflareDatabase();
+                
                 fetchServerState();
                 setInterval(fetchTelemetry, 5000);
-            } catch (e) { alert("Network Error"); }
+            } catch (e) { alert("Network Error"); btn.innerText = "Authenticate"; }
         });
 
+        async function fetchCloudflareDatabase() {
+            try {
+                const res = await fetch(`${getEndpoint()}/admin/db`, { headers: { "x-admin-key": adminToken } });
+                const db = await res.json();
+                if (db && Object.keys(db).length > 0) {
+                    globalDatabase = db;
+                    localStorage.setItem('faculty_global_db', JSON.stringify(globalDatabase));
+                }
+            } catch (e) { console.log("No remote DB found. Using LocalStorage fallback."); }
+            refreshDBUI();
+        }
+
         // ==== DATABASE MANAGER LOGIC ====
-        function saveMasterDatabase() {
+        async function saveMasterDatabase() {
             const rawText = document.getElementById('db-import-area').value.trim();
             if (!rawText) return alert("Please paste the CSV data first.");
+            
+            const btn = document.getElementById('btn-save-db');
+            btn.innerText = "Uploading to Cloudflare KV...";
+            btn.disabled = true;
 
             const lines = rawText.split('\n');
             let addedCount = 0;
@@ -315,7 +339,7 @@
                             year: parts[3].trim(),
                             section: parts[4].trim(),
                             course: parts[5].trim(),
-                            branch: parts.slice(6).join(',').trim()
+                            branch: parts.slice(6).join(',').trim() // Joins any extra commas in the branch name
                         };
                         addedCount++;
                     }
@@ -323,15 +347,34 @@
             }
             
             localStorage.setItem('faculty_global_db', JSON.stringify(globalDatabase));
-            document.getElementById('db-import-area').value = ""; // clear area
-            alert(`✅ Successfully imported/updated ${addedCount} student records.`);
+            
+            try {
+                await fetch(`${getEndpoint()}/admin/db`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ adminPassword: adminToken, database: globalDatabase })
+                });
+                document.getElementById('db-import-area').value = ""; // clear area
+                alert(`✅ Successfully saved ${addedCount} student records directly to Cloudflare KV.`);
+            } catch(e) { alert("Failed to save to Cloudflare."); }
+            
+            btn.innerText = "💾 Save to Master Database";
+            btn.disabled = false;
             refreshDBUI();
         }
 
-        function clearDatabase() {
-            if(!confirm("Are you sure you want to delete the entire local database?")) return;
+        async function clearDatabase() {
+            if(!confirm("Are you sure you want to permanently delete the database from Cloudflare KV?")) return;
             globalDatabase = {};
             localStorage.setItem('faculty_global_db', JSON.stringify(globalDatabase));
+            
+            try {
+                await fetch(`${getEndpoint()}/admin/db`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ adminPassword: adminToken, database: globalDatabase })
+                });
+            } catch(e){}
             refreshDBUI();
         }
 
@@ -359,13 +402,13 @@
                 if (rolls.length > 100) tbody.innerHTML += `<tr><td colspan="7" style="text-align: center; font-style: italic; color: gray;">... and ${rolls.length - 100} more rows hidden.</td></tr>`;
             }
 
-            // Populate Deployment Target Dropdown
+            // Populate Deployment Target Dropdown Dynamically
             let sections = new Set();
             rolls.forEach(r => sections.add(globalDatabase[r].section));
             
             let targetSelect = document.getElementById('target-audience');
             targetSelect.innerHTML = `
-                <option value="OPEN">Open Exam (No Restrictions / Fallback)</option>
+                <option value="OPEN">Open Exam (No Identity Verification / Fallback)</option>
                 <option value="ALL">Allow All Registered Students (${rolls.length} students)</option>
             `;
             [...sections].sort().forEach(sec => {
@@ -411,7 +454,7 @@
                         maxStrikes: parseInt(document.getElementById('target-strikes').value),
                         audioLimit: parseInt(document.getElementById('target-audio').value),
                         requireScreenShare: document.getElementById('target-screenshare').value === "true",
-                        allowedStudents: payloadRegistry // The filtered DB gets sent!
+                        allowedStudents: payloadRegistry // Pushes the DB filtering specifically for THIS exam
                     })
                 });
                 alert("✅ Configuration Deployed Globally!");
