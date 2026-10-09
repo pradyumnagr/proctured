@@ -90,34 +90,6 @@
         <div class="designer-credit">Designed by Pradyumn</div>
     </div>
 
-    <div id="admin-login-screen" class="card hidden" style="border-top: 8px solid #202124;">
-        <h2 style="margin-top: 0; color: #202124;">🔒 Admin Authentication</h2>
-        <p style="font-size: 14px; color: #555; margin-bottom: 20px;">Please enter the master admin password to access the generator dashboard.</p>
-        <div style="text-align: left;">
-            <input type="password" id="admin-password-input" placeholder="Enter Admin Password" style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 14px; margin-bottom: 10px;">
-            <button id="admin-login-btn" class="btn-primary" style="background: #202124;">Access Dashboard</button>
-            <p id="admin-login-error" style="color: red; font-size: 13px; display: none; margin-top: 10px; font-weight: bold; text-align: center;">❌ Incorrect Password!</p>
-        </div>
-    </div>
-
-    <div id="admin-screen" class="card hidden" style="border-top: 8px solid #1a73e8;">
-        <h2 style="margin-top: 0; color: #1a73e8;">👨‍🏫 Faculty Dashboard</h2>
-        <p id="current-status-label" style="font-size: 14px; padding: 10px; border-radius: 6px; background: #f1f3f4; font-weight: bold; margin-bottom: 20px;">🔄 Checking server for active exams...</p>
-        
-        <div style="text-align: left;">
-            <label style="font-weight: bold; font-size: 13px; display: block; margin-bottom: 5px;">1. Active Google Form URL:</label>
-            <input type="text" id="admin-form-url" placeholder="https://docs.google.com/forms/d/e/.../viewform" style="width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px; font-family: monospace;">
-            
-            <label style="font-weight: bold; font-size: 13px; display: block; margin-bottom: 5px;">2. Total Form Sections (Required for Auto-Submit):</label>
-            <input type="number" id="admin-sections" value="2" min="1" style="width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px;">
-            
-            <div style="display: flex; gap: 10px;">
-                <button id="generate-link-btn" class="btn-primary" style="flex: 1;">Push Live</button>
-                <button id="delete-exam-btn" class="btn-primary" style="flex: 1; background: #d93025;">Delete Exam</button>
-            </div>
-        </div>
-    </div>
-
     <div id="instruction-screen" class="card hidden">
         <h2 style="margin-top: 0; color: #202124;">Exam Setup & Rules</h2>
         
@@ -160,7 +132,7 @@
             <h3>⚠️ SECURITY WARNING</h3>
             <p id="warning-detail" style="font-size: 15px;">Violation details go here.</p>
             <p style="color: #777; font-size: 13px;" id="warning-strike-count"></p>
-            <p style="color: #d93025; font-weight: bold; font-size: 14px; margin: 20px 0;">WARNING: Reaching 7 violations will trigger a 5-minute lockout. An 8th violation will permanently terminate the exam.</p>
+            <p style="color: #d93025; font-weight: bold; font-size: 14px; margin: 20px 0;">WARNING: Reaching the threshold will trigger a lockout or termination.</p>
             <div class="ack-container">
                 <label class="ack-label">
                     <input type="checkbox" id="violation-checkbox" class="ack-checkbox">
@@ -184,12 +156,9 @@
 
     <div id="timeout-screen" class="card hidden" style="border-top: 10px solid #d93025;">
         <h2 style="color: #d93025; margin-top: 0;">TEMPORARY LOCKOUT</h2>
-        <p style="font-size: 16px; color: #333; font-weight: bold;">You have reached 7 Security Violations.</p>
+        <p style="font-size: 16px; color: #333; font-weight: bold;">You have reached the maximum Security Violations.</p>
         <p style="color: #555; font-size: 14px; margin-bottom: 5px;">Your exam has been paused as a penalty.</p>
         <span id="penalty-timer">05:00</span>
-        <p style="color: #d93025; font-weight: bold; font-size: 14px; background: #fff3f3; padding: 10px; border-radius: 6px; margin-bottom: 25px;">
-            ⚠️ Once you resume, if you trigger ONE MORE violation, your exam will be permanently closed.
-        </p>
         <button id="resume-final-btn" class="btn-primary" disabled>Please wait...</button>
     </div>
 
@@ -205,7 +174,7 @@
             <div style="text-align: left; background: #fff3f3; padding: 12px; border-radius: 6px; border: 1px solid #ffcdd2; margin-bottom: 15px;">
                 <label style="display: flex; align-items: flex-start; cursor: pointer; font-size: 14px; color: #333; line-height: 1.4;">
                     <input type="checkbox" id="confession-checkbox" style="margin-right: 12px; width: 18px; height: 18px; margin-top: 2px;">
-                    I accept that I cheated and violated the exam rules. I sincerely apologize to the faculty.
+                    I accept that I violated the exam rules. I sincerely apologize to the faculty.
                 </label>
             </div>
             
@@ -218,31 +187,25 @@
 
     <script>
         (function() {
-            // --- NATIVE FUNCTION CACHING ---
             const _Date_now = Date.now;
             const _performance_now = performance.now.bind(performance);
             const _setInterval = setInterval;
             const _setTimeout = setTimeout;
 
-            // ==========================================
-            // APPS SCRIPT WEBHOOK & ENCRYPTED SERVER
-            // ==========================================
             const AUDIT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbx_jiGrwYf8CgF3WjvET_RIP7eLN5HMcF3sfo1FZyeOuFx1ZUgy46OsFPbGntUqC6lGNg/exec";
-            
-            // The Cloudflare URL is mathematically encrypted (+5 shift) to hide it from source code inspection
-            const SERVER_ENCRYPTED = [109, 121, 121, 117, 120, 63, 52, 52, 106, 125, 102, 114, 50, 119, 116, 122, 121, 106, 119, 51, 117, 119, 102, 105, 126, 122, 114, 115, 51, 124, 116, 119, 112, 106, 119, 120, 51, 105, 106, 123];
-            const getEndpoint = () => String.fromCharCode(...SERVER_ENCRYPTED.map(c => c - 5));
+            const CIPHER = [109, 121, 121, 117, 120, 63, 52, 52, 106, 125, 102, 114, 50, 119, 116, 122, 121, 106, 119, 51, 117, 119, 102, 105, 126, 122, 114, 115, 51, 124, 116, 119, 112, 106, 119, 120, 51, 105, 106, 123];
+            const getEndpoint = () => String.fromCharCode(...CIPHER.map(c => c - 5));
 
-            // MATH CYPHER FOR UNLOCK KEY: "pradyumnsirsorry" 
             const ENCRYPTED_KEY = [117, 119, 102, 105, 126, 122, 114, 115, 120, 110, 119, 120, 116, 119, 119, 126]; 
-            
-            // MATH CYPHER FOR ADMIN LOGIN: "pradyumnadmin"
-            const ADMIN_ENCRYPTED_KEY = [117, 119, 102, 105, 126, 122, 114, 115, 102, 105, 114, 110, 115];
 
-            // --- SESSION VARIABLES (Initialized Dynamically) ---
             let PREFIX = null;
             let DECODED_FORM_URL = "";
             let TOTAL_FORM_SECTIONS = 0;
+            let ALLOWED_ROLLS = "";
+            let MAX_STRIKES = 7;
+            let AUDIO_THRESHOLD = 150;
+            let REQUIRE_SCREENSHARE = true;
+            let lastAnnouncement = null;
 
             let isExamActive = false; 
             let isTransitioning = false; 
@@ -261,7 +224,6 @@
             let hardwareHashValue = "Not Generated";
             let lastInternalTick = _Date_now(); 
 
-            // Memory Leak Prevention Variables
             let audioInterval = null; 
             let audioContext = null;
             let focusPollerInterval = null;
@@ -285,176 +247,48 @@
             const unlockBtn = document.getElementById('unlock-btn');
             const unlockError = document.getElementById('unlock-error');
 
-            if (isMobile) {
-                grantPermBtn.innerText = "📸 Grant Camera & Mic Access";
-            }
+            if (isMobile) grantPermBtn.innerText = "📸 Grant Camera & Mic Access";
 
-            // --- ROUTER LOGIC ---
-            const urlParams = new URLSearchParams(window.location.search);
+            document.getElementById('lobby-screen').classList.remove('hidden');
             
-            // SECURITY UPDATE: The admin panel is now completely hidden behind ?pradyumn
-            if (urlParams.has('pradyumn')) {
-                document.getElementById('admin-login-screen').classList.remove('hidden');
-                
-                document.getElementById('admin-login-btn').addEventListener('click', () => {
-                    let pwd = document.getElementById('admin-password-input').value;
-                    let isValid = pwd.length === ADMIN_ENCRYPTED_KEY.length;
-                    if (isValid) {
-                        for (let i = 0; i < pwd.length; i++) {
-                            if (pwd.charCodeAt(i) + 5 !== ADMIN_ENCRYPTED_KEY[i]) {
-                                isValid = false; break;
-                            }
-                        }
-                    }
-                    
-                    if (isValid) {
-                        document.getElementById('admin-login-screen').classList.add('hidden');
-                        document.getElementById('admin-screen').classList.remove('hidden');
+            document.getElementById('join-exam-btn').addEventListener('click', async () => {
+                const btn = document.getElementById('join-exam-btn');
+                const errorMsg = document.getElementById('lobby-error');
+                btn.innerText = "Connecting to Server...";
+                btn.disabled = true;
+                errorMsg.style.display = 'none';
 
-                        // NEW FEATURE: Fetch Current Live Exam on Dashboard Load
-                        fetch(getEndpoint())
-                            .then(res => res.json())
-                            .then(data => {
-                                const statusLabel = document.getElementById('current-status-label');
-                                if (data && !data.error && data.formUrl) {
-                                    document.getElementById('admin-form-url').value = data.formUrl;
-                                    document.getElementById('admin-sections').value = data.sections;
-                                    statusLabel.innerHTML = "🟢 ACTIVE EXAM LIVE (Loaded below)";
-                                    statusLabel.style.background = "#e6f4ea";
-                                    statusLabel.style.color = "#137333";
-                                    document.getElementById('generate-link-btn').innerText = "Update Live Exam";
-                                } else {
-                                    statusLabel.innerHTML = "🔴 NO EXAM CURRENTLY ASSIGNED";
-                                    statusLabel.style.background = "#fce8e6";
-                                    statusLabel.style.color = "#c5221f";
-                                }
-                            })
-                            .catch(() => {
-                                document.getElementById('current-status-label').innerHTML = "⚠️ Cannot connect to Cloudflare.";
-                            });
+                try {
+                    const res = await fetch(getEndpoint());
+                    const data = await res.json();
 
-                    } else {
-                        document.getElementById('admin-login-error').style.display = 'block';
-                    }
-                });
-
-                // ADMIN PUSH TO CLOUDFLARE
-                document.getElementById('generate-link-btn').addEventListener('click', async () => {
-                    let rawUrl = document.getElementById('admin-form-url').value.trim();
-                    let sections = parseInt(document.getElementById('admin-sections').value);
-                    
-                    if (!rawUrl.includes('docs.google.com/forms')) {
-                        alert('Error: Please use the FULL docs.google.com/forms link, not the forms.gle shortlink.');
-                        return;
-                    }
-                    if (!rawUrl.includes('embedded=true')) {
-                        rawUrl += rawUrl.includes('?') ? '&embedded=true' : '?embedded=true';
-                    }
-                    
-                    const btn = document.getElementById('generate-link-btn');
-                    btn.innerText = "Pushing...";
-                    btn.disabled = true;
-                    
-                    try {
-                        const res = await fetch(getEndpoint(), {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                adminPassword: "pradyumnadmin",
-                                formUrl: rawUrl,
-                                sections: sections
-                            })
-                        });
-                        
-                        if (res.ok) {
-                            alert("✅ SUCCESS: The exam URL is now live globally!");
-                            const statusLabel = document.getElementById('current-status-label');
-                            statusLabel.innerHTML = "🟢 ACTIVE EXAM LIVE";
-                            statusLabel.style.background = "#e6f4ea";
-                            statusLabel.style.color = "#137333";
-                            btn.innerText = "Update Live Exam";
-                        } else {
-                            alert("❌ ERROR: Unauthorized or Server Error. Check password.");
-                        }
-                    } catch (e) {
-                        alert("❌ ERROR: Could not connect to edge server.");
-                    } finally {
-                        btn.disabled = false;
-                    }
-                });
-
-                // ADMIN DELETE FROM CLOUDFLARE
-                document.getElementById('delete-exam-btn').addEventListener('click', async () => {
-                    if (!confirm("⚠️ WARNING: This will instantly delete the active exam. Students will no longer be able to join. Continue?")) return;
-                    
-                    const btn = document.getElementById('delete-exam-btn');
-                    btn.innerText = "Deleting..."; btn.disabled = true;
-                    
-                    try {
-                        const res = await fetch(getEndpoint(), {
-                            method: 'DELETE',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ adminPassword: "pradyumnadmin" })
-                        });
-                        
-                        if (res.ok) {
-                            alert("✅ SUCCESS: The exam has been deleted from the global server.");
-                            document.getElementById('admin-form-url').value = '';
-                            document.getElementById('admin-sections').value = 2;
-                            const statusLabel = document.getElementById('current-status-label');
-                            statusLabel.innerHTML = "🔴 NO EXAM CURRENTLY ASSIGNED";
-                            statusLabel.style.background = "#fce8e6";
-                            statusLabel.style.color = "#c5221f";
-                            document.getElementById('generate-link-btn').innerText = "Push Live";
-                        }
-                        else alert("❌ ERROR: Unauthorized or Server Error.");
-                    } catch (e) { alert("❌ ERROR: Could not connect to edge server."); } 
-                    finally { btn.innerText = "Delete Exam"; btn.disabled = false; }
-                });
-
-            } else {
-                // Clean URL loaded, show Lobby
-                document.getElementById('lobby-screen').classList.remove('hidden');
-                
-                // STUDENT FETCH FROM CLOUDFLARE
-                document.getElementById('join-exam-btn').addEventListener('click', async () => {
-                    const btn = document.getElementById('join-exam-btn');
-                    const errorMsg = document.getElementById('lobby-error');
-                    btn.innerText = "Connecting to Server...";
-                    btn.disabled = true;
-                    errorMsg.style.display = 'none';
-
-                    try {
-                        const res = await fetch(getEndpoint());
-                        const data = await res.json();
-
-                        if (data.error) {
-                            errorMsg.innerText = "❌ No exam is currently active. Please wait.";
-                            errorMsg.style.display = 'block';
-                            btn.innerText = "Connect & Join Exam";
-                            btn.disabled = false;
-                            return;
-                        }
-
-                        // Pass fetched data into initialization
-                        initStudentSession(data.formUrl, data.sections);
-
-                    } catch (e) {
-                        errorMsg.innerText = "❌ Failed to reach exam server. Check your connection.";
+                    if (data.error) {
+                        errorMsg.innerText = "❌ No exam is currently active. Please wait.";
                         errorMsg.style.display = 'block';
                         btn.innerText = "Connect & Join Exam";
                         btn.disabled = false;
+                        return;
                     }
-                });
-            }
 
-            // --- EXAM INITIALIZER ---
-            function initStudentSession(fetchedUrl, fetchedSections) {
+                    initStudentSession(data.formUrl, data.sections, data.allowedRolls, data.maxStrikes, data.audioLimit, data.requireScreenShare);
+
+                } catch (e) {
+                    errorMsg.innerText = "❌ Failed to reach exam server. Check your connection.";
+                    errorMsg.style.display = 'block';
+                    btn.innerText = "Connect & Join Exam";
+                    btn.disabled = false;
+                }
+            });
+
+            function initStudentSession(fetchedUrl, fetchedSections, allowedList, maxStrikes, audioLimit, reqScreenShare) {
                 try {
                     DECODED_FORM_URL = fetchedUrl;
-                    TOTAL_FORM_SECTIONS = fetchedSections;
+                    TOTAL_FORM_SECTIONS = fetchedSections || 2;
+                    ALLOWED_ROLLS = allowedList || "";
+                    MAX_STRIKES = maxStrikes || 7;
+                    AUDIO_THRESHOLD = audioLimit || 150;
+                    REQUIRE_SCREENSHARE = reqScreenShare ?? true;
                     
-                    // Create unique memory isolated Session ID based on the URL
                     let urlHash = 0;
                     for (let i = 0; i < DECODED_FORM_URL.length; i++) {
                         urlHash = ((urlHash << 5) - urlHash) + DECODED_FORM_URL.charCodeAt(i);
@@ -462,12 +296,10 @@
                     }
                     PREFIX = "ex_" + Math.abs(urlHash) + "_";
                     
-                    // Load isolated memory
                     tabSwitchCount = parseInt(localStorage.getItem(PREFIX + 'tabSwitches') || '0');
                     violationLogs = JSON.parse(localStorage.getItem(PREFIX + 'violationLogs') || '[]');
                     screenShareDrops = parseInt(localStorage.getItem(PREFIX + 'screenDrops') || '0');
 
-                    // Clean UI transition
                     document.getElementById('lobby-screen').classList.add('hidden');
                     
                     if (localStorage.getItem(PREFIX + 'examLocked') === 'true') {
@@ -476,28 +308,25 @@
                         document.getElementById('final-title').style.color = "#d93025";
                         document.getElementById('final-message').innerText = "You have been locked out of this exam due to security violations.";
                         document.getElementById('unlock-section').style.display = 'block';
+                        startTelemetryPing(); // Keep pinging so admin can unlock remotely
                     } else {
                         document.getElementById('instruction-screen').classList.remove('hidden');
-                        validateInputs(); // refresh names
+                        validateInputs(); 
                     }
-
                 } catch(e) {
                     alert("A critical initialization error occurred.");
                     window.location.reload();
                 }
             }
 
-
-            // --- NETWORK DROP SHIELD (Offline Tracker) ---
             window.addEventListener('offline', () => {
                 if (isExamActive) document.getElementById('offline-overlay').style.display = 'flex';
             });
             window.addEventListener('online', () => {
                 document.getElementById('offline-overlay').style.display = 'none';
-                flushWebhookQueue(); // Process any logs that failed while offline
+                flushWebhookQueue(); 
             });
 
-            // --- WEBHOOK RETRY QUEUE ENGINE ---
             function sendWebhook(payload) {
                 if (!PREFIX) return;
                 if (!navigator.onLine) {
@@ -535,7 +364,7 @@
                 });
                 localStorage.setItem(PREFIX + 'webhookQueue', JSON.stringify(remainingQueue));
             }
-            _setInterval(flushWebhookQueue, 10000); // Check background queue every 10 seconds
+            _setInterval(flushWebhookQueue, 10000); 
 
             function generateHardwareFingerprint() {
                 try {
@@ -558,8 +387,8 @@
             hardwareHashValue = generateHardwareFingerprint();
 
             function startAudioMonitoring(stream) {
+                if (AUDIO_THRESHOLD > 500) return; // Disabled via config
                 try {
-                    // MEMORY LEAK FIX: Clear old intervals and context before starting new ones
                     if (audioInterval) clearInterval(audioInterval);
                     if (audioContext && audioContext.state !== 'closed') audioContext.close();
 
@@ -577,8 +406,8 @@
                         for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
                         let average = sum / dataArray.length;
 
-                        if (average > 150) {
-                            triggerExactWarning("High audio levels detected (Speaking/Whispering is prohibited).");
+                        if (average > AUDIO_THRESHOLD) {
+                            triggerExactWarning(`High audio levels detected (Threshold: ${AUDIO_THRESHOLD}).`);
                         }
                     }, 4000); 
                 } catch(e) {}
@@ -606,30 +435,20 @@
 
             function triggerTamperProtocol(reason) {
                 if (!isExamActive) return;
-                if (tabSwitchCount < 6) {
-                    tabSwitchCount = 6; 
-                    localStorage.setItem(PREFIX + 'tabSwitches', 6);
+                if (tabSwitchCount < (MAX_STRIKES - 1)) {
+                    tabSwitchCount = MAX_STRIKES - 1; 
+                    localStorage.setItem(PREFIX + 'tabSwitches', tabSwitchCount);
                 }
                 triggerExactWarning("SEVERE TAMPERING DETECTED: " + reason);
             }
 
-            // --- HIGH FREQUENCY OS FOCUS POLLER ---
-            let focusLossCount = 0;
             focusPollerInterval = _setInterval(() => {
                 if (!isExamActive || isTransitioning) return;
-                
                 if (!document.hasFocus()) {
-                    focusLossCount++;
-                    if (focusLossCount >= 3) { 
-                        triggerExactWarning("System Overlay Detected (Google Search PIP, Notification, or Text Selection).");
-                        focusLossCount = 0;
-                    }
-                } else {
-                    focusLossCount = 0; 
+                    triggerExactWarning("System Overlay Detected (Google Search PIP, Notification, or Text Selection).");
                 }
-            }, 500);
+            }, 600);
 
-            // --- THE MASTER SECURITY LOOP ---
             masterSecurityInterval = _setInterval(() => {
                 if (!isExamActive) {
                     if (document.getElementById('exam-container').style.display === 'block') {
@@ -657,7 +476,7 @@
                     }
                 }
 
-                if (!isMobile && !isTransitioning && isExamActive) {
+                if (REQUIRE_SCREENSHARE && !isMobile && !isTransitioning && isExamActive) {
                     let hasActiveScreen = false;
                     if (screenStream && screenStream.getVideoTracks().length > 0) {
                         if (screenStream.getVideoTracks()[0].readyState === 'live') {
@@ -668,10 +487,55 @@
                 }
             }, 2500);
 
-            _setInterval(() => {
-                if (!isExamActive) return;
-                sendWebhook({ action: 'ping', studentId: rollInput.value, time: new Date().toLocaleTimeString() });
-            }, 30000);
+            // --- ADVANCED TELEMETRY PING ---
+            function startTelemetryPing() {
+                _setInterval(async () => {
+                    const rNo = rollInput.value || localStorage.getItem('gf_globalRoll');
+                    if (!rNo) return;
+                    
+                    try {
+                        const res = await fetch(`${getEndpoint()}/telemetry`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                rollNo: rNo,
+                                name: nameInput.value || localStorage.getItem('gf_globalName'),
+                                status: tabSwitchCount >= MAX_STRIKES ? "LOCKED" : (tabSwitchCount >= Math.floor(MAX_STRIKES/2) ? "WARNING" : "ACTIVE"),
+                                violations: tabSwitchCount,
+                                hardwareHash: hardwareHashValue,
+                                logs: violationLogs
+                            })
+                        });
+                        
+                        const data = await res.json();
+                        
+                        if (data.action === "KICK") {
+                            lockOutStudent("Exam Terminated by Faculty", "You have been forcibly removed from the session by the instructor.", false);
+                        }
+                        if (data.action === "UNLOCK") {
+                            localStorage.removeItem(PREFIX + 'examLocked');
+                            tabSwitchCount = 0;
+                            localStorage.setItem(PREFIX + 'tabSwitches', '0');
+                            document.getElementById('violations-pill').innerText = '0';
+                            
+                            if (!isExamActive && document.getElementById('result-screen').classList.contains('hidden') === false) {
+                                alert("✅ Your instructor has remotely unlocked your exam. You may resume.");
+                                document.getElementById('result-screen').classList.add('hidden');
+                                document.getElementById('exam-container').style.display = 'block';
+                                document.getElementById('status-bar-container').style.display = 'flex';
+                                lastInternalTick = _Date_now(); 
+                                isExamActive = true; 
+                            }
+                        }
+
+                        if (data.announcement && data.announcement !== lastAnnouncement) {
+                            alert("📢 MESSAGE FROM INSTRUCTOR:\n\n" + data.announcement);
+                            lastAnnouncement = data.announcement;
+                        }
+
+                    } catch (e) {}
+                }, 15000); 
+            }
 
             function detectVirtualMachine() {
                 try {
@@ -690,7 +554,7 @@
                 if (detectVirtualMachine()) { alert("SECURITY ERROR: Virtual Machines and Emulators are strictly prohibited."); return; }
                 
                 try {
-                    if (!isMobile) {
+                    if (!isMobile && REQUIRE_SCREENSHARE) {
                         screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
                         const surface = screenStream.getVideoTracks()[0].getSettings().displaySurface;
                         if (surface && surface !== 'monitor' && surface !== 'display') {
@@ -703,11 +567,8 @@
 
                     mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                     
-                    if (!isMobile) {
-                        permStatus.innerText = "Status: Camera, Mic & Screen Active ✅";
-                    } else {
-                        permStatus.innerText = "Status: Camera & Mic Active ✅";
-                    }
+                    if (!isMobile && REQUIRE_SCREENSHARE) permStatus.innerText = "Status: Camera, Mic & Screen Active ✅";
+                    else permStatus.innerText = "Status: Camera & Mic Active ✅";
                     
                     permStatus.style.color = "green";
                     grantPermBtn.style.display = "none";
@@ -778,7 +639,7 @@
             }
 
             function attachScreenListeners() {
-                if (screenStream && !isMobile) {
+                if (screenStream && !isMobile && REQUIRE_SCREENSHARE) {
                     screenStream.getVideoTracks()[0].onended = handleScreenShareDrop;
                 }
             }
@@ -817,20 +678,20 @@
                 
                 document.getElementById('violations-pill').innerText = tabSwitchCount;
 
-                if (tabSwitchCount === 7) {
+                if (tabSwitchCount === MAX_STRIKES) {
                     let timeoutEnd = _Date_now() + (5 * 60 * 1000);
                     localStorage.setItem(PREFIX + 'timeoutEndTime', timeoutEnd);
                     startPenaltyCountdown(timeoutEnd);
                     return;
                 }
                 
-                if (tabSwitchCount > 7) {
-                    lockOutStudent("Exam Terminated", "Maximum security violations reached (Strike 8).", false);
+                if (tabSwitchCount > MAX_STRIKES) {
+                    lockOutStudent("Exam Terminated", "Maximum security violations reached.", false);
                     return;
                 }
 
                 document.getElementById('warning-detail').innerHTML = `<strong>Rule Broken:</strong><br>${exactRuleMessage}`;
-                document.getElementById('warning-strike-count').innerText = `Recorded Infraction #${tabSwitchCount} of 6 permitted before temporary lockout.`;
+                document.getElementById('warning-strike-count').innerText = `Recorded Infraction #${tabSwitchCount} of ${MAX_STRIKES-1} permitted before temporary lockout.`;
                 violationCheckbox.checked = false;
                 violationAckBtn.disabled = true;
                 document.getElementById('warning-overlay').style.display = 'flex';
@@ -841,7 +702,7 @@
             violationAckBtn.addEventListener('click', async () => {
                 if (!violationCheckbox.checked) return; 
                 
-                if (!isMobile) {
+                if (!isMobile && REQUIRE_SCREENSHARE) {
                     let needsScreen = false;
                     if (screenStream) {
                         screenStream.getVideoTracks().forEach(t => { if (t.readyState === 'ended') needsScreen = true; });
@@ -930,7 +791,7 @@
 
                     if (document.documentElement.requestFullscreen) { try { await document.documentElement.requestFullscreen(); } catch (e) {} }
                     
-                    if (!isMobile) {
+                    if (!isMobile && REQUIRE_SCREENSHARE) {
                         screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
                         const surface = screenStream.getVideoTracks()[0].getSettings().displaySurface;
                         if (surface && surface !== 'monitor' && surface !== 'display') {
@@ -960,7 +821,6 @@
                 } catch (e) { alert("Camera, Mic & Screen Share are mandatory to resume."); }
             });
 
-            // --- VIEWPORT DETECTOR (Debounced) ---
             if (window.visualViewport) {
                 let maxVH = window.visualViewport.height;
                 let resizeTimeout; 
@@ -985,7 +845,7 @@
                         if (shrinkRatio > 0.02 && shrinkRatio < 0.24) {
                             triggerExactWarning("Illegal System Overlay Detected (Search PIP or Native Toolbar).");
                         }
-                    }, 600); // 600ms Debounce delay
+                    }, 600); 
                 });
             }
 
@@ -1036,7 +896,6 @@
                 }
             });
 
-            // --- FACULTY OVERRIDE & UNLOCK LOGIC ---
             function validateUnlockForm() {
                 if (confessionCheckbox.checked && unlockKeyInput.value.trim() !== '') {
                     unlockBtn.disabled = false;
@@ -1048,8 +907,6 @@
             unlockKeyInput.addEventListener('input', validateUnlockForm);
 
             unlockBtn.addEventListener('click', async () => {
-                
-                // --- SECURE DECRYPTION CHECK ---
                 let enteredKey = unlockKeyInput.value;
                 let isKeyCorrect = enteredKey.length === ENCRYPTED_KEY.length;
                 if (isKeyCorrect) {
@@ -1073,7 +930,7 @@
 
                     if (document.documentElement.requestFullscreen) { try { await document.documentElement.requestFullscreen(); } catch (e) {} }
                     
-                    if (!isMobile) {
+                    if (!isMobile && REQUIRE_SCREENSHARE) {
                         screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
                         const surface = screenStream.getVideoTracks()[0].getSettings().displaySurface;
                         if (surface && surface !== 'monitor' && surface !== 'display') {
@@ -1089,7 +946,6 @@
                     attachMediaListeners();
                     attachScreenListeners();
 
-                    // Complete Clean Slate for THIS SPECIFIC EXAM only
                     localStorage.removeItem(PREFIX + 'examLocked');
                     tabSwitchCount = 0;
                     localStorage.setItem(PREFIX + 'tabSwitches', '0');
@@ -1101,7 +957,6 @@
                     document.getElementById('exam-container').style.display = 'block';
                     document.getElementById('status-bar-container').style.display = 'flex';
                     
-                    // Re-inject the Google Form iframe if they refreshed the page
                     if (!document.getElementById("google-form-iframe")) {
                         const iframe = document.createElement('iframe');
                         iframe.src = DECODED_FORM_URL;
@@ -1128,7 +983,14 @@
             startBtn.addEventListener('click', async () => {
                 if (!examAgreementCheckbox.checked || nameInput.value.trim() === '' || !/^\d{13}$/.test(rollInput.value) || !permissionsGranted) return;
                 
-                // Save globally so it auto-fills, but logs locally
+                if (ALLOWED_ROLLS && ALLOWED_ROLLS.trim() !== "") {
+                    const validRolls = ALLOWED_ROLLS.split(',').map(r => r.trim());
+                    if (!validRolls.includes(rollInput.value)) {
+                        alert("❌ ACCESS DENIED: Your Roll Number is not authorized for this exam session.");
+                        return;
+                    }
+                }
+
                 localStorage.setItem('gf_globalName', nameInput.value);
                 localStorage.setItem('gf_globalRoll', rollInput.value);
 
@@ -1166,6 +1028,8 @@
                     
                     lastInternalTick = _Date_now(); 
                     isExamActive = true; 
+                    
+                    startTelemetryPing(); // Start the 15s edge connection
                 } catch (err) { alert("A system error occurred. Please refresh the page."); }
             });
 
@@ -1187,7 +1051,6 @@
             function lockOutStudent(title, message, isSuccess) {
                 isExamActive = false; 
                 
-                // MEMORY LEAK FIX: Clear ALL background loops properly
                 clearInterval(timerInterval);
                 if (audioInterval) clearInterval(audioInterval);
                 if (focusPollerInterval) clearInterval(focusPollerInterval);
@@ -1213,7 +1076,7 @@
                 document.getElementById('final-title').style.color = isSuccess ? "#1a73e8" : "#d93025";
                 document.getElementById('final-message').innerText = message;
 
-                if (!isSuccess && !message.includes("expired")) {
+                if (!isSuccess && !message.includes("expired") && !message.includes("Faculty")) {
                     document.getElementById('unlock-section').style.display = 'block';
                     document.getElementById('confession-checkbox').checked = false;
                     document.getElementById('unlock-key-input').value = '';
@@ -1235,6 +1098,13 @@
                 };
 
                 sendWebhook(payload);
+                
+                // Final Edge Update
+                fetch(`${getEndpoint()}/telemetry`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rollNo: payload.studentId, name: payload.name, status: isSuccess ? "SUBMITTED" : "LOCKED", violations: tabSwitchCount, hardwareHash: hardwareHashValue, logs: violationLogs })
+                }).catch(()=>{});
             }
         })();
     </script>
