@@ -12,7 +12,7 @@
             --focus-ring: rgba(26, 115, 232, 0.2);
         }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
-        .container { width: 100%; max-width: 1050px; margin: 20px auto; padding: 0 15px; box-sizing: border-box; }
+        .container { width: 100%; max-width: 1100px; margin: 20px auto; padding: 0 15px; box-sizing: border-box; }
         .card { background: var(--surface-color); border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); border: 1px solid var(--border); padding: 25px; margin-bottom: 25px; box-sizing: border-box; }
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 20px; }
         .header h1 { font-size: 20px; margin: 0; font-weight: 600; display: flex; align-items: center; gap: 8px; }
@@ -29,7 +29,7 @@
         .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px var(--focus-ring); }
         
         .btn-row { display: flex; gap: 10px; margin-top: 10px; }
-        button { cursor: pointer; border: none; padding: 10px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; transition: all 0.2s; }
+        button { cursor: pointer; border: none; padding: 10px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
         button:active { transform: translateY(1px); }
         .btn-primary { background: var(--primary); color: white; }
         .btn-primary:hover { background: var(--primary-hover); }
@@ -39,7 +39,6 @@
         .btn-secondary:hover { background: #e8eaed; }
         .btn-small { padding: 6px 10px; font-size: 11px; margin-left: 5px; }
 
-        /* Analytics Cards */
         .analytics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
         .stat-card { padding: 15px; border-radius: 8px; border: 1px solid var(--border); text-align: center; }
         .stat-card h3 { margin: 0 0 5px 0; font-size: 24px; font-weight: 700; }
@@ -48,12 +47,13 @@
         .stat-suspicious { background: #fef7e0; color: #b07d00; border-color: #feefc3; }
         .stat-locked { background: #fce8e6; color: var(--danger); border-color: #fad2cf; }
 
-        /* Tools Row */
-        .tools-row { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; }
-        .tools-row input { flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
+        .tools-row { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+        .tools-row input { flex: 1; min-width: 250px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
+        
+        .auto-proctor-box { background: #fff3e0; padding: 8px 12px; border-radius: 6px; border: 1px solid #ffe0b2; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: bold; color: #e65100; cursor: pointer; }
 
         .table-responsive { width: 100%; overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 700px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 850px; }
         table th { background: #f8f9fa; text-align: left; padding: 12px 16px; border-bottom: 2px solid var(--border); color: var(--text-secondary); }
         table td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
         
@@ -61,16 +61,20 @@
         .tag-active { background: #e6f4ea; color: var(--success); }
         .tag-warning { background: #fef7e0; color: #b07d00; }
         .tag-locked { background: #fce8e6; color: var(--danger); }
+        .tag-collision { background: #fce8e6; color: var(--danger); border: 1px solid var(--danger); }
 
         .hidden { display: none !important; }
         #auth-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(32, 33, 36, 0.95); display: flex; justify-content: center; align-items: center; z-index: 9999; }
         .auth-box { background: white; padding: 40px; border-radius: 12px; max-width: 350px; width: 90%; text-align: center; }
-        
+
+        /* Forensic Modal */
+        #logs-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 99999; padding: 20px; }
+        .logs-box { background: white; width: 100%; max-width: 500px; border-radius: 12px; padding: 25px; box-sizing: border-box; max-height: 80vh; display: flex; flex-direction: column; }
+        .logs-content { background: #202124; color: #34a853; font-family: monospace; font-size: 12px; padding: 15px; border-radius: 6px; overflow-y: auto; flex: 1; white-space: pre-wrap; margin-top: 15px; }
+
         @media (max-width: 768px) {
             .analytics-grid { grid-template-columns: 1fr; }
-            .tools-row { flex-direction: column; }
-            .tools-row input { width: 100%; box-sizing: border-box; }
-            .tools-row button { width: 100%; }
+            .tools-row { flex-direction: column; align-items: stretch; }
         }
     </style>
 </head>
@@ -80,8 +84,19 @@
         <div class="auth-box">
             <h2 style="margin-top: 0; color: var(--primary);">Faculty Access</h2>
             <input type="password" id="auth-input" placeholder="Enter Admin Key..." style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; margin-bottom: 15px; text-align: center; box-sizing: border-box;">
-            <button id="auth-btn" class="btn-primary" style="width: 100%;">Authenticate Session</button>
+            <button id="auth-btn" class="btn-primary" style="width: 100%;">Authenticate</button>
             <p id="auth-error" class="hidden" style="color: var(--danger); font-size: 12px; margin-top: 10px; font-weight: bold;">❌ Authentication failed.</p>
+        </div>
+    </div>
+
+    <!-- FORENSIC LOGS MODAL -->
+    <div id="logs-overlay" class="hidden">
+        <div class="logs-box">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0; font-size: 18px;">Forensic Session Logs</h2>
+                <button class="btn-danger" style="padding: 6px 12px;" onclick="document.getElementById('logs-overlay').classList.add('hidden')">Close</button>
+            </div>
+            <div class="logs-content" id="logs-content-body">Loading...</div>
         </div>
     </div>
 
@@ -144,13 +159,21 @@
             <div class="analytics-grid">
                 <div class="stat-card stat-clean"><h3 id="stat-clean-count">0</h3><p>Clean (0-1 Strikes)</p></div>
                 <div class="stat-card stat-suspicious"><h3 id="stat-suspicious-count">0</h3><p>Suspicious (2-6 Strikes)</p></div>
-                <div class="stat-card stat-locked"><h3 id="stat-locked-count">0</h3><p>Locked Out (7+ Strikes)</p></div>
+                <div class="stat-card stat-locked"><h3 id="stat-locked-count">0</h3><p>Locked Out (7+)</p></div>
             </div>
 
             <div class="tools-row">
-                <input type="text" id="announce-input" placeholder="Type a live announcement for all students...">
-                <button class="btn-primary" onclick="broadcastMessage()">📢 Broadcast</button>
-                <button class="btn-secondary" onclick="downloadCSV()">📥 Export CSV Audit</button>
+                <div style="display: flex; flex: 1; gap: 10px;">
+                    <input type="text" id="announce-input" placeholder="Broadcast message to all students...">
+                    <button class="btn-primary" onclick="broadcastMessage()">📢 Broadcast</button>
+                </div>
+                
+                <div style="display: flex; gap: 10px;">
+                    <label class="auto-proctor-box">
+                        <input type="checkbox" id="auto-proctor-toggle"> 🤖 Auto-Proctor Kicks
+                    </label>
+                    <button class="btn-secondary" onclick="downloadCSV()">📥 Export CSV</button>
+                </div>
             </div>
 
             <div class="table-responsive">
@@ -159,14 +182,15 @@
                         <tr>
                             <th>Roll Number</th>
                             <th>Name</th>
+                            <th>Net</th>
                             <th>Status</th>
                             <th>Strikes</th>
-                            <th>Last Heartbeat</th>
+                            <th>HW Hash</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="candidate-rows">
-                        <tr><td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 30px;">No telemetry received.</td></tr>
+                        <tr><td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 30px;">No telemetry received.</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -178,7 +202,7 @@
         const getEndpoint = () => String.fromCharCode(...CIPHER.map(c => c - 5));
 
         let adminToken = "";
-        let currentSessions = []; // Store globally for CSV export
+        let currentSessions = []; 
 
         document.getElementById('auth-btn').addEventListener('click', async () => {
             const key = document.getElementById('auth-input').value.trim();
@@ -221,13 +245,30 @@
                 currentSessions = await res.json();
 
                 let clean = 0, suspicious = 0, locked = 0;
+                const autoProctor = document.getElementById('auto-proctor-toggle').checked;
 
                 if (currentSessions.length === 0) {
-                    document.getElementById('candidate-rows').innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 30px;">No active sessions.</td></tr>`;
+                    document.getElementById('candidate-rows').innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 30px;">No active sessions.</td></tr>`;
                 } else {
+                    // 1. Map Hardware Fingerprints to detect collisions
+                    const hashCounts = {};
+                    currentSessions.forEach(s => {
+                        if (s.hardwareHash && s.hardwareHash !== "Unavailable") {
+                            hashCounts[s.hardwareHash] = (hashCounts[s.hardwareHash] || 0) + 1;
+                        }
+                    });
+
+                    // 2. Sort by violations
                     currentSessions.sort((a, b) => b.violations - a.violations || b.lastSeen - a.lastSeen);
                     
                     document.getElementById('candidate-rows').innerHTML = currentSessions.map(s => {
+                        
+                        // AUTO-PROCTOR LOGIC
+                        if (autoProctor && s.status === "LOCKED" && !s.autoKicked) {
+                            sendAction(s.rollNo, 'KICK', null);
+                            s.autoKicked = true; 
+                        }
+
                         let tagClass = s.status === "LOCKED" ? "tag-locked" : (s.status === "WARNING" || s.violations >= 2 ? "tag-warning" : "tag-active");
                         
                         // Update Analytics logic
@@ -235,15 +276,30 @@
                         else if (s.violations >= 2) suspicious++;
                         else clean++;
 
+                        // Network Jitter Logic
                         const secs = Math.floor((Date.now() - s.lastSeen) / 1000);
+                        let netHealth = "🟢"; // < 25s Excellent
+                        if (secs >= 25 && secs < 45) netHealth = "🟡"; // Jitter / Poor
+                        if (secs >= 45) netHealth = "🔴"; // Dropped
+
+                        // Collision Detection
+                        let hashDisplay = s.hardwareHash;
+                        let collisionFlag = false;
+                        if (s.hardwareHash && s.hardwareHash !== "Unavailable" && hashCounts[s.hardwareHash] > 1) {
+                            hashDisplay = `<span class="tag tag-collision">⚠️ ${s.hardwareHash}</span>`;
+                            collisionFlag = true;
+                        }
+
                         return `
-                            <tr>
+                            <tr style="${collisionFlag ? 'background-color: #fff9f9;' : ''}">
                                 <td style="font-family: monospace; font-weight: 600;">${s.rollNo}</td>
                                 <td>${s.name}</td>
+                                <td title="Last Ping: ${secs}s ago">${netHealth}</td>
                                 <td><span class="tag ${tagClass}">${s.status}</span></td>
                                 <td style="font-weight: 700; color: ${s.violations >= 7 ? 'var(--danger)' : 'inherit'};">${s.violations}</td>
-                                <td style="color: var(--text-secondary); font-size: 12px;">${secs}s ago</td>
+                                <td style="font-family: monospace; font-size: 11px;">${hashDisplay}</td>
                                 <td>
+                                    <button class="btn-secondary btn-small" onclick="viewLogs('${s.rollNo}')">👁️ Logs</button>
                                     <button class="btn-secondary btn-small" onclick="sendAction('${s.rollNo}', 'UNLOCK', this)">Unlock</button>
                                     <button class="btn-danger btn-small" onclick="sendAction('${s.rollNo}', 'KICK', this)">Kick</button>
                                 </td>
@@ -257,6 +313,21 @@
                 document.getElementById('stat-locked-count').innerText = locked;
 
             } catch (e) {}
+        }
+
+        function viewLogs(rollNo) {
+            const student = currentSessions.find(s => s.rollNo === rollNo);
+            if (!student) return;
+            const logBox = document.getElementById('logs-content-body');
+            
+            if (!student.logs || student.logs.length === 0) {
+                logBox.innerText = `No forensic logs found for ${student.name} (${student.rollNo}). Session is clean.`;
+            } else {
+                logBox.innerHTML = `<strong>Forensic Output for ${student.name} (${student.rollNo})</strong>\n\n` + 
+                    student.logs.map(log => `[${log.time}] => ${log.reason}`).join("\n");
+            }
+            
+            document.getElementById('logs-overlay').classList.remove('hidden');
         }
 
         document.getElementById('btn-deploy').addEventListener('click', async () => {
@@ -290,18 +361,16 @@
             fetchServerState();
         });
 
-        // --- NEW GRANULAR FEATURES ---
         async function sendAction(rollNo, action, btnElement) {
-            btnElement.disabled = true;
-            btnElement.innerText = "...";
+            if(btnElement) { btnElement.disabled = true; btnElement.innerText = "..."; }
             try {
                 await fetch(`${getEndpoint()}/admin/action`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ adminPassword: adminToken, rollNo, action })
                 });
-                setTimeout(fetchTelemetry, 1000); // refresh grid
-            } catch (e) { alert("Action Failed"); btnElement.disabled = false; }
+                setTimeout(fetchTelemetry, 1000); 
+            } catch (e) { alert("Action Failed"); if(btnElement) btnElement.disabled = false; }
         }
 
         async function broadcastMessage() {
@@ -321,8 +390,8 @@
         function downloadCSV() {
             if (currentSessions.length === 0) return alert("No data to export.");
             const rows = [
-                ["Roll Number", "Name", "Status", "Strikes", "Last Seen (Timestamp)"],
-                ...currentSessions.map(s => [s.rollNo, `"${s.name}"`, s.status, s.violations, new Date(s.lastSeen).toISOString()])
+                ["Roll Number", "Name", "Status", "Strikes", "HW Hash", "Last Seen"],
+                ...currentSessions.map(s => [s.rollNo, `"${s.name}"`, s.status, s.violations, s.hardwareHash, new Date(s.lastSeen).toISOString()])
             ];
             const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
             const link = document.createElement("a");
