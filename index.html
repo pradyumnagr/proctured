@@ -102,10 +102,10 @@
 
     <div id="admin-screen" class="card hidden" style="border-top: 8px solid #1a73e8;">
         <h2 style="margin-top: 0; color: #1a73e8;">👨‍🏫 Faculty Dashboard</h2>
-        <p style="font-size: 14px; color: #555; text-align: left; margin-bottom: 20px;">Push a new Google Form URL to the Cloudflare Edge Server. All students will instantly receive this exam.</p>
+        <p id="current-status-label" style="font-size: 14px; padding: 10px; border-radius: 6px; background: #f1f3f4; font-weight: bold; margin-bottom: 20px;">🔄 Checking server for active exams...</p>
         
         <div style="text-align: left;">
-            <label style="font-weight: bold; font-size: 13px; display: block; margin-bottom: 5px;">1. Paste Long Google Form URL:</label>
+            <label style="font-weight: bold; font-size: 13px; display: block; margin-bottom: 5px;">1. Active Google Form URL:</label>
             <input type="text" id="admin-form-url" placeholder="https://docs.google.com/forms/d/e/.../viewform" style="width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px; font-family: monospace;">
             
             <label style="font-weight: bold; font-size: 13px; display: block; margin-bottom: 5px;">2. Total Form Sections (Required for Auto-Submit):</label>
@@ -253,7 +253,6 @@
             let timerInterval, penaltyInterval, mediaStream = null, screenStream = null;
             let permissionsGranted = false;
             let screenShareDrops = 0; 
-            let wakeLock = null;
             
             let initialWindowWidth = window.innerWidth;
             let initialWindowHeight = window.innerHeight;
@@ -261,6 +260,12 @@
             let formLoadCount = 0; 
             let hardwareHashValue = "Not Generated";
             let lastInternalTick = _Date_now(); 
+
+            // Memory Leak Prevention Variables
+            let audioInterval = null; 
+            let audioContext = null;
+            let focusPollerInterval = null;
+            let masterSecurityInterval = null;
 
             const examAgreementCheckbox = document.getElementById('exam-agreement-checkbox');
             const startBtn = document.getElementById('start-btn');
@@ -287,7 +292,8 @@
             // --- ROUTER LOGIC ---
             const urlParams = new URLSearchParams(window.location.search);
             
-            if (urlParams.has('admin')) {
+            // SECURITY UPDATE: The admin panel is now completely hidden behind ?pradyumn
+            if (urlParams.has('pradyumn')) {
                 document.getElementById('admin-login-screen').classList.remove('hidden');
                 
                 document.getElementById('admin-login-btn').addEventListener('click', () => {
@@ -304,6 +310,29 @@
                     if (isValid) {
                         document.getElementById('admin-login-screen').classList.add('hidden');
                         document.getElementById('admin-screen').classList.remove('hidden');
+
+                        // NEW FEATURE: Fetch Current Live Exam on Dashboard Load
+                        fetch(getEndpoint())
+                            .then(res => res.json())
+                            .then(data => {
+                                const statusLabel = document.getElementById('current-status-label');
+                                if (data && !data.error && data.formUrl) {
+                                    document.getElementById('admin-form-url').value = data.formUrl;
+                                    document.getElementById('admin-sections').value = data.sections;
+                                    statusLabel.innerHTML = "🟢 ACTIVE EXAM LIVE (Loaded below)";
+                                    statusLabel.style.background = "#e6f4ea";
+                                    statusLabel.style.color = "#137333";
+                                    document.getElementById('generate-link-btn').innerText = "Update Live Exam";
+                                } else {
+                                    statusLabel.innerHTML = "🔴 NO EXAM CURRENTLY ASSIGNED";
+                                    statusLabel.style.background = "#fce8e6";
+                                    statusLabel.style.color = "#c5221f";
+                                }
+                            })
+                            .catch(() => {
+                                document.getElementById('current-status-label').innerHTML = "⚠️ Cannot connect to Cloudflare.";
+                            });
+
                     } else {
                         document.getElementById('admin-login-error').style.display = 'block';
                     }
@@ -331,7 +360,7 @@
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
-                                adminPassword: "pradyumnadmin", // Securely checks at the edge
+                                adminPassword: "pradyumnadmin",
                                 formUrl: rawUrl,
                                 sections: sections
                             })
@@ -339,13 +368,17 @@
                         
                         if (res.ok) {
                             alert("✅ SUCCESS: The exam URL is now live globally!");
+                            const statusLabel = document.getElementById('current-status-label');
+                            statusLabel.innerHTML = "🟢 ACTIVE EXAM LIVE";
+                            statusLabel.style.background = "#e6f4ea";
+                            statusLabel.style.color = "#137333";
+                            btn.innerText = "Update Live Exam";
                         } else {
                             alert("❌ ERROR: Unauthorized or Server Error. Check password.");
                         }
                     } catch (e) {
                         alert("❌ ERROR: Could not connect to edge server.");
                     } finally {
-                        btn.innerText = "Push Live";
                         btn.disabled = false;
                     }
                 });
@@ -367,6 +400,12 @@
                         if (res.ok) {
                             alert("✅ SUCCESS: The exam has been deleted from the global server.");
                             document.getElementById('admin-form-url').value = '';
+                            document.getElementById('admin-sections').value = 2;
+                            const statusLabel = document.getElementById('current-status-label');
+                            statusLabel.innerHTML = "🔴 NO EXAM CURRENTLY ASSIGNED";
+                            statusLabel.style.background = "#fce8e6";
+                            statusLabel.style.color = "#c5221f";
+                            document.getElementById('generate-link-btn').innerText = "Push Live";
                         }
                         else alert("❌ ERROR: Unauthorized or Server Error.");
                     } catch (e) { alert("❌ ERROR: Could not connect to edge server."); } 
@@ -520,14 +559,18 @@
 
             function startAudioMonitoring(stream) {
                 try {
-                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    // MEMORY LEAK FIX: Clear old intervals and context before starting new ones
+                    if (audioInterval) clearInterval(audioInterval);
+                    if (audioContext && audioContext.state !== 'closed') audioContext.close();
+
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
                     const source = audioContext.createMediaStreamSource(stream);
                     const analyser = audioContext.createAnalyser();
                     analyser.fftSize = 256;
                     source.connect(analyser);
                     const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
-                    _setInterval(() => {
+                    audioInterval = _setInterval(() => {
                         if (!isExamActive) return;
                         analyser.getByteFrequencyData(dataArray);
                         let sum = 0;
@@ -572,7 +615,7 @@
 
             // --- HIGH FREQUENCY OS FOCUS POLLER ---
             let focusLossCount = 0;
-            _setInterval(() => {
+            focusPollerInterval = _setInterval(() => {
                 if (!isExamActive || isTransitioning) return;
                 
                 if (!document.hasFocus()) {
@@ -587,7 +630,7 @@
             }, 500);
 
             // --- THE MASTER SECURITY LOOP ---
-            _setInterval(() => {
+            masterSecurityInterval = _setInterval(() => {
                 if (!isExamActive) {
                     if (document.getElementById('exam-container').style.display === 'block') {
                         document.getElementById('exam-container').style.display = 'none';
@@ -947,7 +990,6 @@
             }
 
             document.addEventListener('visibilitychange', () => {
-                if (wakeLock !== null && document.visibilityState === 'visible') requestWakeLock();
                 if (document.hidden && !isTransitioning) triggerExactWarning("Switched browser tabs or minimized window."); 
             });
             
@@ -1144,7 +1186,14 @@
 
             function lockOutStudent(title, message, isSuccess) {
                 isExamActive = false; 
+                
+                // MEMORY LEAK FIX: Clear ALL background loops properly
                 clearInterval(timerInterval);
+                if (audioInterval) clearInterval(audioInterval);
+                if (focusPollerInterval) clearInterval(focusPollerInterval);
+                if (masterSecurityInterval) clearInterval(masterSecurityInterval);
+                
+                if (audioContext && audioContext.state !== 'closed') audioContext.close();
                 if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
                 if (screenStream) screenStream.getTracks().forEach(t => t.stop());
                 if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
