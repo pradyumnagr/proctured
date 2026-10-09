@@ -6,13 +6,22 @@
     <title>Faculty Command Center | Secure Exam Portal</title>
     <style>
         :root {
-            --bg-color: #f8f9fa; --surface-color: #ffffff; --primary: #1a73e8; --primary-hover: #1557b0;
+            --bg-color: #f4f6f9; --surface-color: #ffffff; --primary: #1a73e8; --primary-hover: #1557b0;
             --danger: #d93025; --danger-hover: #b3261e; --success: #1e8e3e; --warning: #f9ab00;
             --text-main: #202124; --text-secondary: #5f6368; --border: #e0e0e0;
             --focus-ring: rgba(26, 115, 232, 0.2);
         }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
-        .container { width: 100%; max-width: 1100px; margin: 20px auto; padding: 0 15px; box-sizing: border-box; }
+        .container { width: 100%; max-width: 1200px; margin: 20px auto; padding: 0 15px; box-sizing: border-box; }
+        
+        /* Tab System */
+        .tab-nav { display: flex; gap: 10px; margin-bottom: 20px; background: var(--surface-color); padding: 10px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid var(--border); }
+        .tab-btn { flex: 1; padding: 12px 20px; border: none; background: transparent; font-size: 15px; font-weight: 700; color: var(--text-secondary); cursor: pointer; border-radius: 8px; transition: 0.2s; }
+        .tab-btn:hover { background: #f1f3f4; }
+        .tab-btn.active { background: var(--primary); color: white; }
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
+
         .card { background: var(--surface-color); border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); border: 1px solid var(--border); padding: 25px; margin-bottom: 25px; box-sizing: border-box; }
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 20px; }
         .header h1 { font-size: 20px; margin: 0; font-weight: 600; display: flex; align-items: center; gap: 8px; }
@@ -49,7 +58,6 @@
 
         .tools-row { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
         .tools-row input { flex: 1; min-width: 250px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
-        
         .auto-proctor-box { background: #fff3e0; padding: 8px 12px; border-radius: 6px; border: 1px solid #ffe0b2; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: bold; color: #e65100; cursor: pointer; }
 
         .table-responsive { width: 100%; overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
@@ -57,11 +65,12 @@
         table th { background: #f8f9fa; text-align: left; padding: 12px 16px; border-bottom: 2px solid var(--border); color: var(--text-secondary); }
         table td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
         
-        .tag { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+        .tag { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; white-space: nowrap; }
         .tag-active { background: #e6f4ea; color: var(--success); }
         .tag-warning { background: #fef7e0; color: #b07d00; }
         .tag-locked { background: #fce8e6; color: var(--danger); }
         .tag-collision { background: #fce8e6; color: var(--danger); border: 1px solid var(--danger); }
+        .tag-section { background: #e8f0fe; color: var(--primary); border: 1px solid #d2e3fc; }
 
         .hidden { display: none !important; }
         #auth-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(32, 33, 36, 0.95); display: flex; justify-content: center; align-items: center; z-index: 9999; }
@@ -71,10 +80,9 @@
         .logs-box { background: white; width: 100%; max-width: 500px; border-radius: 12px; padding: 25px; box-sizing: border-box; max-height: 80vh; display: flex; flex-direction: column; }
         .logs-content { background: #202124; color: #34a853; font-family: monospace; font-size: 12px; padding: 15px; border-radius: 6px; overflow-y: auto; flex: 1; white-space: pre-wrap; margin-top: 15px; }
 
-        @media (max-width: 768px) {
-            .analytics-grid { grid-template-columns: 1fr; }
-            .tools-row { flex-direction: column; align-items: stretch; }
-        }
+        /* DB Preview Table */
+        #db-preview-table th { background: #e8eaed; color: #202124; font-weight: bold; }
+        .db-info-box { background: #e6f4ea; padding: 15px; border-radius: 8px; border: 1px solid #ceead6; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
     </style>
 </head>
 <body>
@@ -101,97 +109,156 @@
 
     <div class="container hidden" id="main-panel">
         
-        <div class="card">
-            <div class="header">
-                <h1>🛡️ Edge Configurator</h1>
-                <div id="status-badge" class="status-badge status-inactive">
-                    <div class="status-dot"></div>
-                    <span id="status-text">Disconnected</span>
-                </div>
-            </div>
+        <div class="tab-nav">
+            <button class="tab-btn" onclick="switchTab('tab-db')" id="btn-tab-db">👥 1. Global Database Hub</button>
+            <button class="tab-btn active" onclick="switchTab('tab-live')" id="btn-tab-live">🚀 2. Exam Controller & Live Grid</button>
+        </div>
 
-            <div class="form-grid">
-                <div class="form-group" style="grid-column: 1 / -1;">
-                    <label>Target URL (Must include embedded=true):</label>
-                    <input type="text" id="target-url" placeholder="https://docs.google.com/forms/...">
+        <!-- ================= TAB 1: DATABASE MANAGER ================= -->
+        <div id="tab-db" class="tab-pane">
+            <div class="card">
+                <div class="header">
+                    <h1>👥 Master Student Registry</h1>
+                    <span style="font-size: 13px; color: var(--text-secondary);">Stored securely in Local Storage</span>
                 </div>
-                <div class="form-group">
-                    <label>Total Sections:</label>
-                    <input type="number" id="target-sections" value="2" min="1">
+                
+                <div class="db-info-box">
+                    <div>
+                        <strong style="font-size: 18px; color: var(--success);" id="db-total-count">0</strong> Students Enrolled
+                    </div>
+                    <button class="btn-danger btn-small" onclick="clearDatabase()">🗑️ Clear DB</button>
                 </div>
-                <div class="form-group">
-                    <label>Strike Threshold:</label>
-                    <input type="number" id="target-strikes" value="7">
-                </div>
-                <div class="form-group">
-                    <label>Audio Limit:</label>
-                    <select id="target-audio">
-                        <option value="120">Strict (120)</option>
-                        <option value="150" selected>Balanced (150)</option>
-                        <option value="9999">Disabled</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Screen Share (Desktop):</label>
-                    <select id="target-screenshare">
-                        <option value="true" selected>Mandatory</option>
-                        <option value="false">Optional</option>
-                    </select>
-                </div>
-                <div class="form-group" style="grid-column: 1 / -1;">
-                    <label>Secure Student Registry (Format: Roll Number, Name, DOB - One per line):</label>
-                    <textarea id="target-allowed" rows="4" placeholder="1300000000001, John Doe, 25-Oct-2004&#10;1300000000002, Alice Smith, 14-Jan-2005"></textarea>
-                </div>
-            </div>
 
-            <div class="btn-row">
-                <button class="btn-primary" id="btn-deploy">🚀 Deploy Configuration</button>
-                <button class="btn-danger" id="btn-terminate">🛑 Terminate Exam</button>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Bulk Import Students (Format: Roll Number, Name, DOB, Year, Section, Course, Branch)</label>
+                    <textarea id="db-import-area" rows="6" placeholder="1300000000001, John Doe, 25/10/2004, 3RD YEAR, SEC-A, B.Tech, Computer Science and Engineering&#10;1300000000002, Alice Smith, 14/01/2005, 3RD YEAR, SEC-B, B.Tech, Computer Science and Engineering"></textarea>
+                </div>
+                <button class="btn-primary" onclick="saveMasterDatabase()">💾 Save to Master Database</button>
+
+                <h3 style="margin-top: 30px; font-size: 16px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">Database Preview</h3>
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    <table id="db-preview-table">
+                        <thead style="position: sticky; top: 0;">
+                            <tr>
+                                <th>Roll Number</th>
+                                <th>Name</th>
+                                <th>DOB</th>
+                                <th>Year</th>
+                                <th>Section</th>
+                                <th>Course</th>
+                                <th>Branch</th>
+                            </tr>
+                        </thead>
+                        <tbody id="db-preview-rows">
+                            <tr><td colspan="7" style="text-align: center; padding: 20px;">No students enrolled. Import data above.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
-        <div class="card">
-            <div class="header" style="margin-bottom: 15px;">
-                <h1>👥 Live Invigilation Grid</h1>
-            </div>
-
-            <div class="analytics-grid">
-                <div class="stat-card stat-clean"><h3 id="stat-clean-count">0</h3><p>Clean (0-1 Strikes)</p></div>
-                <div class="stat-card stat-suspicious"><h3 id="stat-suspicious-count">0</h3><p>Suspicious (2-6 Strikes)</p></div>
-                <div class="stat-card stat-locked"><h3 id="stat-locked-count">0</h3><p>Locked Out (7+)</p></div>
-            </div>
-
-            <div class="tools-row">
-                <div style="display: flex; flex: 1; gap: 10px;">
-                    <input type="text" id="announce-input" placeholder="Broadcast message to all students...">
-                    <button class="btn-primary" onclick="broadcastMessage()">📢 Broadcast</button>
+        <!-- ================= TAB 2: LIVE INVIGILATION ================= -->
+        <div id="tab-live" class="tab-pane active">
+            <div class="card">
+                <div class="header">
+                    <h1>🛡️ Edge Configurator</h1>
+                    <div id="status-badge" class="status-badge status-inactive">
+                        <div class="status-dot"></div>
+                        <span id="status-text">Disconnected</span>
+                    </div>
                 </div>
-                
-                <div style="display: flex; gap: 10px;">
-                    <label class="auto-proctor-box">
-                        <input type="checkbox" id="auto-proctor-toggle"> 🤖 Auto-Proctor Kicks
-                    </label>
-                    <button class="btn-secondary" onclick="downloadCSV()">📥 Export CSV</button>
+
+                <div class="form-grid">
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label>Target Google Form URL (Must include embedded=true):</label>
+                        <input type="text" id="target-url" placeholder="https://docs.google.com/forms/...">
+                    </div>
+                    <div class="form-group">
+                        <label>Total Sections:</label>
+                        <input type="number" id="target-sections" value="2" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Strike Threshold:</label>
+                        <input type="number" id="target-strikes" value="7">
+                    </div>
+                    <div class="form-group">
+                        <label>Audio Limit:</label>
+                        <select id="target-audio">
+                            <option value="120">Strict (120)</option>
+                            <option value="150" selected>Balanced (150)</option>
+                            <option value="9999">Disabled</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Screen Share (Desktop):</label>
+                        <select id="target-screenshare">
+                            <option value="true" selected>Mandatory</option>
+                            <option value="false">Optional</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label style="color: var(--primary); font-size: 15px;">🎯 Target Audience (Requires saved Global Database):</label>
+                        <select id="target-audience" style="border: 2px solid var(--primary); font-weight: bold; background: #e8f0fe;">
+                            <option value="OPEN">Open Exam (No Identity Verification)</option>
+                            <option value="ALL">Allow All Registered Students in Database</option>
+                            <!-- Sections populated via JS -->
+                        </select>
+                    </div>
+                </div>
+
+                <div class="btn-row">
+                    <button class="btn-primary" id="btn-deploy">🚀 Deploy Exam Configurations</button>
+                    <button class="btn-danger" id="btn-terminate">🛑 Terminate Exam</button>
                 </div>
             </div>
 
-            <div class="table-responsive">
-                <table id="candidate-table">
-                    <thead>
-                        <tr>
-                            <th>Roll Number</th>
-                            <th>Name</th>
-                            <th>Net</th>
-                            <th>Status</th>
-                            <th>Strikes</th>
-                            <th>HW Hash</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="candidate-rows">
-                        <tr><td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 30px;">No telemetry received.</td></tr>
-                    </tbody>
-                </table>
+            <div class="card">
+                <div class="header" style="margin-bottom: 15px;">
+                    <h1>👥 Live Telemetry Grid</h1>
+                </div>
+
+                <div class="analytics-grid">
+                    <div class="stat-card stat-clean"><h3 id="stat-clean-count">0</h3><p>Clean (0-1 Strikes)</p></div>
+                    <div class="stat-card stat-suspicious"><h3 id="stat-suspicious-count">0</h3><p>Suspicious (2-6 Strikes)</p></div>
+                    <div class="stat-card stat-locked"><h3 id="stat-locked-count">0</h3><p>Locked Out (7+)</p></div>
+                </div>
+
+                <div class="tools-row">
+                    <div style="display: flex; flex: 1; gap: 10px;">
+                        <input type="text" id="announce-input" placeholder="Broadcast live pop-up message to all students...">
+                        <button class="btn-primary" onclick="broadcastMessage()">📢 Broadcast</button>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <select id="live-section-filter" style="padding: 10px; border-radius: 6px; border: 1px solid var(--border); font-weight: 600;" onchange="renderTelemetryGrid()">
+                            <option value="ALL">View All Sections</option>
+                        </select>
+                        <label class="auto-proctor-box">
+                            <input type="checkbox" id="auto-proctor-toggle"> 🤖 Auto-Proctor Kicks
+                        </label>
+                        <button class="btn-secondary" onclick="downloadCSV()">📥 Export Audit CSV</button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table id="candidate-table">
+                        <thead>
+                            <tr>
+                                <th>Roll Number</th>
+                                <th>Name</th>
+                                <th>Section / Branch</th>
+                                <th>Net</th>
+                                <th>Status</th>
+                                <th>Strikes</th>
+                                <th>HW Hash</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="candidate-rows">
+                            <tr><td colspan="8" style="text-align: center; color: var(--text-secondary); padding: 30px;">No telemetry received.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -202,7 +269,17 @@
 
         let adminToken = "";
         let currentSessions = []; 
+        let globalDatabase = JSON.parse(localStorage.getItem('faculty_global_db') || '{}');
 
+        // ==== TAB MANAGEMENT ====
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            document.getElementById(`btn-${tabId}`).classList.add('active');
+        }
+
+        // ==== AUTHENTICATION ====
         document.getElementById('auth-btn').addEventListener('click', async () => {
             const key = document.getElementById('auth-input').value.trim();
             try {
@@ -212,9 +289,141 @@
                 adminToken = key;
                 document.getElementById('auth-overlay').classList.add('hidden');
                 document.getElementById('main-panel').classList.remove('hidden');
+                
+                refreshDBUI(); // Load Master DB
                 fetchServerState();
                 setInterval(fetchTelemetry, 5000);
             } catch (e) { alert("Network Error"); }
+        });
+
+        // ==== DATABASE MANAGER LOGIC ====
+        function saveMasterDatabase() {
+            const rawText = document.getElementById('db-import-area').value.trim();
+            if (!rawText) return alert("Please paste the CSV data first.");
+
+            const lines = rawText.split('\n');
+            let addedCount = 0;
+
+            for (let line of lines) {
+                let parts = line.split(',');
+                if (parts.length >= 7) {
+                    let roll = parts[0].trim();
+                    if (roll.length > 0) {
+                        globalDatabase[roll] = {
+                            name: parts[1].trim(),
+                            dob: parts[2].trim(),
+                            year: parts[3].trim(),
+                            section: parts[4].trim(),
+                            course: parts[5].trim(),
+                            branch: parts.slice(6).join(',').trim()
+                        };
+                        addedCount++;
+                    }
+                }
+            }
+            
+            localStorage.setItem('faculty_global_db', JSON.stringify(globalDatabase));
+            document.getElementById('db-import-area').value = ""; // clear area
+            alert(`✅ Successfully imported/updated ${addedCount} student records.`);
+            refreshDBUI();
+        }
+
+        function clearDatabase() {
+            if(!confirm("Are you sure you want to delete the entire local database?")) return;
+            globalDatabase = {};
+            localStorage.setItem('faculty_global_db', JSON.stringify(globalDatabase));
+            refreshDBUI();
+        }
+
+        function refreshDBUI() {
+            const rolls = Object.keys(globalDatabase);
+            document.getElementById('db-total-count').innerText = rolls.length;
+            
+            // Populate DB Preview Table
+            const tbody = document.getElementById('db-preview-rows');
+            if (rolls.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px;">No students enrolled. Import data above.</td></tr>`;
+            } else {
+                tbody.innerHTML = rolls.slice(0, 100).map(roll => {
+                    const s = globalDatabase[roll];
+                    return `<tr>
+                        <td style="font-family: monospace;">${roll}</td>
+                        <td style="font-weight: bold;">${s.name}</td>
+                        <td>${s.dob}</td>
+                        <td>${s.year}</td>
+                        <td><span class="tag tag-section">${s.section}</span></td>
+                        <td>${s.course}</td>
+                        <td style="font-size: 11px;">${s.branch}</td>
+                    </tr>`;
+                }).join('');
+                if (rolls.length > 100) tbody.innerHTML += `<tr><td colspan="7" style="text-align: center; font-style: italic; color: gray;">... and ${rolls.length - 100} more rows hidden.</td></tr>`;
+            }
+
+            // Populate Deployment Target Dropdown
+            let sections = new Set();
+            rolls.forEach(r => sections.add(globalDatabase[r].section));
+            
+            let targetSelect = document.getElementById('target-audience');
+            targetSelect.innerHTML = `
+                <option value="OPEN">Open Exam (No Restrictions / Fallback)</option>
+                <option value="ALL">Allow All Registered Students (${rolls.length} students)</option>
+            `;
+            [...sections].sort().forEach(sec => {
+                if(sec && sec !== "N/A" && sec !== "Unknown") {
+                    targetSelect.innerHTML += `<option value="SEC:${sec}">Restrict strictly to ${sec}</option>`;
+                }
+            });
+        }
+
+        // ==== EXAM DEPLOYMENT LOGIC ====
+        document.getElementById('btn-deploy').addEventListener('click', async () => {
+            const btn = document.getElementById('btn-deploy');
+            btn.innerText = "Deploying to Edge..."; btn.disabled = true;
+            try {
+                let url = document.getElementById('target-url').value.trim();
+                if (!url.includes('embedded=true')) url += url.includes('?') ? '&embedded=true' : '?embedded=true';
+                
+                const audienceMode = document.getElementById('target-audience').value;
+                let payloadRegistry = null;
+
+                if (audienceMode !== "OPEN") {
+                    payloadRegistry = {};
+                    const rolls = Object.keys(globalDatabase);
+                    if (rolls.length === 0) throw new Error("Database is empty! Cannot enforce restrictions.");
+                    
+                    if (audienceMode === "ALL") {
+                        payloadRegistry = globalDatabase;
+                    } else if (audienceMode.startsWith("SEC:")) {
+                        const targetSec = audienceMode.split(":")[1];
+                        rolls.forEach(r => {
+                            if (globalDatabase[r].section === targetSec) payloadRegistry[r] = globalDatabase[r];
+                        });
+                    }
+                }
+
+                await fetch(getEndpoint(), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        adminPassword: adminToken,
+                        formUrl: url,
+                        sections: parseInt(document.getElementById('target-sections').value),
+                        maxStrikes: parseInt(document.getElementById('target-strikes').value),
+                        audioLimit: parseInt(document.getElementById('target-audio').value),
+                        requireScreenShare: document.getElementById('target-screenshare').value === "true",
+                        allowedStudents: payloadRegistry // The filtered DB gets sent!
+                    })
+                });
+                alert("✅ Configuration Deployed Globally!");
+                fetchServerState();
+            } catch (e) { alert("Deploy Error: " + e.message); }
+            btn.innerText = "🚀 Deploy Exam Configurations"; btn.disabled = false;
+        });
+
+        document.getElementById('btn-terminate').addEventListener('click', async () => {
+            if (!confirm("Terminate exam globally?")) return;
+            await fetch(getEndpoint(), { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adminPassword: adminToken }) });
+            fetchServerState();
         });
 
         async function fetchServerState() {
@@ -228,19 +437,8 @@
                     document.getElementById('target-audio').value = data.audioLimit || 150;
                     document.getElementById('target-screenshare').value = String(data.requireScreenShare ?? true);
                     
-                    // REVERSE JSON DICTIONARY BACK TO TEXTAREA
-                    if (data.allowedStudents && Object.keys(data.allowedStudents).length > 0) {
-                        let lines = [];
-                        for (const [roll, info] of Object.entries(data.allowedStudents)) {
-                            lines.push(`${roll}, ${info.name}, ${info.dob}`);
-                        }
-                        document.getElementById('target-allowed').value = lines.join('\n');
-                    } else {
-                        document.getElementById('target-allowed').value = "";
-                    }
-
                     document.getElementById('status-badge').className = "status-badge status-active";
-                    document.getElementById('status-text').innerText = "Exam Live Globally";
+                    document.getElementById('status-text').innerText = "Exam is LIVE";
                 } else {
                     document.getElementById('status-badge').className = "status-badge status-inactive";
                     document.getElementById('status-text').innerText = "No Exam Active";
@@ -248,76 +446,100 @@
             } catch (e) {}
         }
 
+        // ==== TELEMETRY & GRID LOGIC ====
         async function fetchTelemetry() {
             if (!adminToken) return;
             try {
                 const res = await fetch(`${getEndpoint()}/admin/sessions`, { headers: { "x-admin-key": adminToken } });
                 currentSessions = await res.json();
-
-                let clean = 0, suspicious = 0, locked = 0;
-                const autoProctor = document.getElementById('auto-proctor-toggle').checked;
-
-                if (currentSessions.length === 0) {
-                    document.getElementById('candidate-rows').innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 30px;">No active sessions.</td></tr>`;
-                } else {
-                    const hashCounts = {};
-                    currentSessions.forEach(s => {
-                        if (s.hardwareHash && s.hardwareHash !== "Unavailable") {
-                            hashCounts[s.hardwareHash] = (hashCounts[s.hardwareHash] || 0) + 1;
-                        }
-                    });
-
-                    currentSessions.sort((a, b) => b.violations - a.violations || b.lastSeen - a.lastSeen);
-                    
-                    document.getElementById('candidate-rows').innerHTML = currentSessions.map(s => {
-                        if (autoProctor && s.status === "LOCKED" && !s.autoKicked) {
-                            sendAction(s.rollNo, 'KICK', null);
-                            s.autoKicked = true; 
-                        }
-
-                        let tagClass = s.status === "LOCKED" ? "tag-locked" : (s.status === "WARNING" || s.violations >= 2 ? "tag-warning" : "tag-active");
-                        
-                        if (s.status === "LOCKED" || s.violations >= 7) locked++;
-                        else if (s.violations >= 2) suspicious++;
-                        else clean++;
-
-                        const secs = Math.floor((Date.now() - s.lastSeen) / 1000);
-                        let netHealth = "🟢"; 
-                        if (secs >= 25 && secs < 45) netHealth = "🟡"; 
-                        if (secs >= 45) netHealth = "🔴"; 
-
-                        let hashDisplay = s.hardwareHash;
-                        let collisionFlag = false;
-                        if (s.hardwareHash && s.hardwareHash !== "Unavailable" && hashCounts[s.hardwareHash] > 1) {
-                            hashDisplay = `<span class="tag tag-collision">⚠️ ${s.hardwareHash}</span>`;
-                            collisionFlag = true;
-                        }
-
-                        return `
-                            <tr style="${collisionFlag ? 'background-color: #fff9f9;' : ''}">
-                                <td style="font-family: monospace; font-weight: 600;">${s.rollNo}</td>
-                                <td>${s.name}</td>
-                                <td title="Last Ping: ${secs}s ago">${netHealth}</td>
-                                <td><span class="tag ${tagClass}">${s.status}</span></td>
-                                <td style="font-weight: 700; color: ${s.violations >= 7 ? 'var(--danger)' : 'inherit'};">${s.violations}</td>
-                                <td style="font-family: monospace; font-size: 11px;">${hashDisplay}</td>
-                                <td>
-                                    <button class="btn-secondary btn-small" onclick="viewLogs('${s.rollNo}')">👁️ Logs</button>
-                                    <button class="btn-secondary btn-small" onclick="sendAction('${s.rollNo}', 'UNLOCK', this)">Unlock</button>
-                                    <button class="btn-danger btn-small" onclick="sendAction('${s.rollNo}', 'KICK', this)">Kick</button>
-                                </td>
-                            </tr>
-                        `;
-                    }).join("");
-                }
-
-                document.getElementById('stat-clean-count').innerText = clean;
-                document.getElementById('stat-suspicious-count').innerText = suspicious;
-                document.getElementById('stat-locked-count').innerText = locked;
-
+                renderTelemetryGrid();
             } catch (e) {}
         }
 
+        function renderTelemetryGrid() {
+            let clean = 0, suspicious = 0, locked = 0;
+            const autoProctor = document.getElementById('auto-proctor-toggle').checked;
+            
+            // Populate Live Section Filter
+            const uniqueSections = [...new Set(currentSessions.map(s => s.section || "N/A"))].sort();
+            const filterDropdown = document.getElementById('live-section-filter');
+            const currentFilter = filterDropdown.value;
+            
+            filterDropdown.innerHTML = `<option value="ALL">View All Sections</option>` + 
+                uniqueSections.map(sec => `<option value="${sec}">${sec}</option>`).join('');
+            if (uniqueSections.includes(currentFilter) || currentFilter === "ALL") filterDropdown.value = currentFilter;
+
+            if (currentSessions.length === 0) {
+                document.getElementById('candidate-rows').innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-secondary); padding: 30px;">No telemetry received.</td></tr>`;
+            } else {
+                const hashCounts = {};
+                currentSessions.forEach(s => {
+                    if (s.hardwareHash && s.hardwareHash !== "Unavailable") {
+                        hashCounts[s.hardwareHash] = (hashCounts[s.hardwareHash] || 0) + 1;
+                    }
+                });
+
+                currentSessions.sort((a, b) => b.violations - a.violations || b.lastSeen - a.lastSeen);
+                
+                let displayedSessions = currentSessions;
+                if (filterDropdown.value !== "ALL") {
+                    displayedSessions = currentSessions.filter(s => (s.section || "N/A") === filterDropdown.value);
+                }
+                
+                document.getElementById('candidate-rows').innerHTML = displayedSessions.map(s => {
+                    if (autoProctor && s.status === "LOCKED" && !s.autoKicked) {
+                        sendAction(s.rollNo, 'KICK', null);
+                        s.autoKicked = true; 
+                    }
+
+                    let tagClass = s.status === "LOCKED" ? "tag-locked" : (s.status === "WARNING" || s.violations >= 2 ? "tag-warning" : "tag-active");
+                    
+                    if (s.status === "LOCKED" || s.violations >= 7) locked++;
+                    else if (s.violations >= 2) suspicious++;
+                    else clean++;
+
+                    const secs = Math.floor((Date.now() - s.lastSeen) / 1000);
+                    let netHealth = "🟢"; 
+                    if (secs >= 25 && secs < 45) netHealth = "🟡"; 
+                    if (secs >= 45) netHealth = "🔴"; 
+
+                    let hashDisplay = s.hardwareHash;
+                    let collisionFlag = false;
+                    if (s.hardwareHash && s.hardwareHash !== "Unavailable" && hashCounts[s.hardwareHash] > 1) {
+                        hashDisplay = `<span class="tag tag-collision">⚠️ ${s.hardwareHash}</span>`;
+                        collisionFlag = true;
+                    }
+
+                    const branchTrimmed = (s.branch && s.branch.includes("Artificial Intelligence")) ? "AI & ML" : (s.branch || "N/A");
+
+                    return `
+                        <tr style="${collisionFlag ? 'background-color: #fff9f9;' : ''}">
+                            <td style="font-family: monospace; font-weight: 600;">${s.rollNo}</td>
+                            <td style="font-weight: bold;">${s.name}</td>
+                            <td>
+                                <span class="tag tag-section" style="margin-bottom: 4px; display: inline-block;">${s.section || "N/A"}</span><br>
+                                <span style="font-size: 11px; color: var(--text-secondary);">${branchTrimmed}</span>
+                            </td>
+                            <td title="Last Ping: ${secs}s ago">${netHealth}</td>
+                            <td><span class="tag ${tagClass}">${s.status}</span></td>
+                            <td style="font-weight: 700; font-size: 16px; color: ${s.violations >= 7 ? 'var(--danger)' : 'inherit'};">${s.violations}</td>
+                            <td style="font-family: monospace; font-size: 11px;">${hashDisplay}</td>
+                            <td>
+                                <button class="btn-secondary btn-small" onclick="viewLogs('${s.rollNo}')">👁️ Logs</button>
+                                <button class="btn-secondary btn-small" onclick="sendAction('${s.rollNo}', 'UNLOCK', this)">Unlock</button>
+                                <button class="btn-danger btn-small" onclick="sendAction('${s.rollNo}', 'KICK', this)">Kick</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join("");
+            }
+
+            document.getElementById('stat-clean-count').innerText = clean;
+            document.getElementById('stat-suspicious-count').innerText = suspicious;
+            document.getElementById('stat-locked-count').innerText = locked;
+        }
+
+        // ==== ACTION HANDLERS ====
         function viewLogs(rollNo) {
             const student = currentSessions.find(s => s.rollNo === rollNo);
             if (!student) return;
@@ -332,55 +554,6 @@
             
             document.getElementById('logs-overlay').classList.remove('hidden');
         }
-
-        document.getElementById('btn-deploy').addEventListener('click', async () => {
-            const btn = document.getElementById('btn-deploy');
-            btn.innerText = "Deploying..."; btn.disabled = true;
-            try {
-                let url = document.getElementById('target-url').value.trim();
-                if (!url.includes('embedded=true')) url += url.includes('?') ? '&embedded=true' : '?embedded=true';
-                
-                // PARSE TEXTAREA INTO JSON DICTIONARY
-                let registryText = document.getElementById('target-allowed').value.trim();
-                let allowedStudentsObj = null;
-                
-                if (registryText !== "") {
-                    allowedStudentsObj = {};
-                    const lines = registryText.split('\n');
-                    for (let line of lines) {
-                        let parts = line.split(',');
-                        if (parts.length >= 3) {
-                            let roll = parts[0].trim();
-                            let name = parts[1].trim();
-                            let dob = parts.slice(2).join(',').trim(); 
-                            if (roll.length > 0) allowedStudentsObj[roll] = { name: name, dob: dob };
-                        }
-                    }
-                }
-
-                await fetch(getEndpoint(), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        adminPassword: adminToken,
-                        formUrl: url,
-                        sections: parseInt(document.getElementById('target-sections').value),
-                        maxStrikes: parseInt(document.getElementById('target-strikes').value),
-                        audioLimit: parseInt(document.getElementById('target-audio').value),
-                        requireScreenShare: document.getElementById('target-screenshare').value === "true",
-                        allowedStudents: allowedStudentsObj
-                    })
-                });
-                fetchServerState();
-            } catch (e) { alert("Error Deploying"); }
-            btn.innerText = "🚀 Deploy Configuration"; btn.disabled = false;
-        });
-
-        document.getElementById('btn-terminate').addEventListener('click', async () => {
-            if (!confirm("Terminate exam globally?")) return;
-            await fetch(getEndpoint(), { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adminPassword: adminToken }) });
-            fetchServerState();
-        });
 
         async function sendAction(rollNo, action, btnElement) {
             if(btnElement) { btnElement.disabled = true; btnElement.innerText = "..."; }
@@ -411,8 +584,11 @@
         function downloadCSV() {
             if (currentSessions.length === 0) return alert("No data to export.");
             const rows = [
-                ["Roll Number", "Name", "Status", "Strikes", "HW Hash", "Last Seen"],
-                ...currentSessions.map(s => [s.rollNo, `"${s.name}"`, s.status, s.violations, s.hardwareHash, new Date(s.lastSeen).toISOString()])
+                ["Roll Number", "Name", "Section", "Course", "Branch", "Status", "Strikes", "HW Hash", "Last Seen"],
+                ...currentSessions.map(s => [
+                    s.rollNo, `"${s.name}"`, s.section || "N/A", s.course || "N/A", `"${s.branch || "N/A"}"`, 
+                    s.status, s.violations, s.hardwareHash, new Date(s.lastSeen).toISOString()
+                ])
             ];
             const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
             const link = document.createElement("a");
