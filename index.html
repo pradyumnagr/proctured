@@ -71,12 +71,12 @@
         <p style="font-size: 16px; color: #ccc; max-width: 400px; line-height: 1.5;">Please reconnect to Wi-Fi or Cellular Data to automatically resume.</p>
     </div>
 
-    <!-- Status Bar -->
+    <!-- Status Bar with Bold Name Badge -->
     <div id="status-bar-container">
         <div style="display: flex; align-items: center; gap: 8px;">
             <div class="pulse-dot"></div>
             <span style="color: #ff4444; font-weight: 900; letter-spacing: 1px; font-size: 13px;">LIVE REC</span>
-            <span id="active-student-name" style="margin-left: 10px; font-size: 12px; color: #b0b3b8; font-weight: 500; text-transform: uppercase;"></span>
+            <span id="active-student-name" style="margin-left: 10px; font-size: 14px; color: #e8eaed; font-weight: bold; background: #3c4043; padding: 4px 10px; border-radius: 4px; border: 1px solid #5f6368;"></span>
         </div>
         <div>Time: <span id="timer-pill">02:00:00</span></div>
         <div>Strikes: <span id="violations-pill">0</span></div>
@@ -95,56 +95,60 @@
     <div id="instruction-screen" class="card hidden">
         <h2 style="margin-top: 0; color: #202124;">Exam Setup & Rules</h2>
         
-        <!-- SECURE STUDENT AUTHENTICATION UI -->
-        <div class="input-group">
-            <label>1. Secure Student Authentication:</label>
-            <input type="text" id="roll-no-input" placeholder="13-Digit Roll Number" maxlength="13" required style="margin-bottom: 8px;">
-            <input type="text" id="dob-input" placeholder="Date of Birth (DD/MM/YYYY)" maxlength="10" required style="margin-bottom: 8px; display: none;">
+        <!-- PHASE 1: SECURE AUTHENTICATION -->
+        <div id="auth-phase" class="input-group" style="background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #e0e0e0; margin-bottom: 20px;">
+            <label style="color: #1a73e8; font-size: 16px; margin-bottom: 10px;">1. Identity Verification</label>
+            <input type="text" id="roll-no-input" placeholder="13-Digit Roll Number" maxlength="13" required style="margin-bottom: 10px;">
+            <input type="text" id="dob-input" placeholder="Date of Birth (DD/MM/YYYY)" maxlength="10" required style="margin-bottom: 10px; display: none;">
             
-            <!-- Fallback for Open Exams -->
-            <input type="text" id="open-name-input" placeholder="Enter Full Name" style="margin-bottom: 8px; display: none;">
+            <input type="text" id="open-name-input" placeholder="Enter Full Name" style="margin-bottom: 10px; display: none;">
             
-            <p id="roll-error" style="color: #d93025; font-size: 12px; margin-top: 5px; display: none; font-weight: bold;">❌ Authentication Failed.</p>
+            <button id="verify-btn" class="btn-primary" style="width: 100%; background: #34a853; display: none;">🔍 Verify Identity</button>
+            <p id="roll-error" style="color: #d93025; font-size: 13px; margin-top: 10px; display: none; font-weight: bold;">❌ Authentication Failed: Invalid Details.</p>
         </div>
 
-        <!-- DIGITAL ID PROFILE CARD -->
-        <div id="student-profile-card" style="display: none; background: #e8f0fe; border: 1px solid #d2e3fc; border-radius: 8px; padding: 15px; margin-bottom: 20px; text-align: left;">
-            <h4 style="margin: 0 0 10px 0; color: #1a73e8; border-bottom: 1px solid #adcbf9; padding-bottom: 5px;">✅ Identity Verified</h4>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; color: #202124;">
-                <div style="grid-column: 1 / -1;"><strong>Name:</strong> <span id="profile-name"></span></div>
-                <div><strong>Roll No:</strong> <span id="profile-roll"></span></div>
-                <div><strong>DOB:</strong> <span id="profile-dob"></span></div>
-                <div style="grid-column: 1 / -1;"><strong>Course:</strong> <span id="profile-course"></span> - <span id="profile-branch"></span></div>
-                <div><strong>Year:</strong> <span id="profile-year"></span></div>
-                <div><strong>Section:</strong> <span id="profile-section"></span></div>
+        <!-- PHASE 2: CONFIRMATION & SETUP (Hidden until Verified) -->
+        <div id="setup-phase" style="display: none;">
+            
+            <!-- DIGITAL ID PROFILE CARD -->
+            <div id="student-profile-card" style="background: #e8f0fe; border: 1px solid #d2e3fc; border-radius: 8px; padding: 15px; margin-bottom: 20px; text-align: left;">
+                <h4 style="margin: 0 0 10px 0; color: #1a73e8; border-bottom: 1px solid #adcbf9; padding-bottom: 5px;">✅ Verified Profile Information</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; color: #202124;">
+                    <div style="grid-column: 1 / -1;"><strong>Name:</strong> <span id="profile-name" style="font-size: 15px; font-weight: bold;"></span></div>
+                    <div><strong>Roll No:</strong> <span id="profile-roll"></span></div>
+                    <div><strong>DOB:</strong> <span id="profile-dob"></span></div>
+                    <div style="grid-column: 1 / -1;"><strong>Course:</strong> <span id="profile-course"></span> - <span id="profile-branch"></span></div>
+                    <div><strong>Year:</strong> <span id="profile-year"></span></div>
+                    <div><strong>Section:</strong> <span id="profile-section"></span></div>
+                </div>
+                <p style="margin: 12px 0 0 0; font-size: 12px; color: #d93025; font-weight: bold; background: #fff; padding: 8px; border-radius: 4px;">⚠️ Please verify the above details belong to you before proceeding.</p>
             </div>
-            <p style="margin: 12px 0 0 0; font-size: 12px; color: #5f6368; font-weight: bold; background: #fff; padding: 8px; border-radius: 4px;">⚠️ Please confirm the above details belong to you before starting.</p>
-        </div>
 
-        <div class="instruction-box">
-            <h4>2. Strict Proctoring Rules</h4>
-            <ul>
-                <li><strong>No Tab Switching:</strong> You cannot open other tabs, browsers, or apps.</li>
-                <li><strong>No Back Button:</strong> You must only move forward in the exam.</li>
-                <li><strong>No Google Search PIP:</strong> Highlighting text triggers an instant violation.</li>
-                <li><strong>Screen Share Required:</strong> (Desktop) You must select "Entire Screen".</li>
-            </ul>
-        </div>
+            <div class="instruction-box">
+                <h4>2. Strict Proctoring Rules</h4>
+                <ul>
+                    <li><strong>No Tab Switching:</strong> You cannot open other tabs, browsers, or apps.</li>
+                    <li><strong>No Back Button:</strong> You must only move forward in the exam.</li>
+                    <li><strong>No Google Search PIP:</strong> Highlighting text triggers an instant violation.</li>
+                    <li><strong>Screen Share Required:</strong> (Desktop) You must select "Entire Screen".</li>
+                </ul>
+            </div>
 
-        <div class="system-check-box">
-            <label style="display: block; color: #1a73e8; font-weight: bold; margin-bottom: 8px;">3. System Check (Required):</label>
-            <button id="grant-perm-btn" type="button" style="background: #1a73e8; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%;">📸 Grant Camera & Screen Share Access</button>
-            <p id="perm-status" style="font-size: 13px; color: #555; margin-top: 8px; margin-bottom: 0; font-weight: bold;">Status: Waiting for permission...</p>
-        </div>
+            <div class="system-check-box">
+                <label style="display: block; color: #1a73e8; font-weight: bold; margin-bottom: 8px;">3. System Check (Required):</label>
+                <button id="grant-perm-btn" type="button" style="background: #1a73e8; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%;">📸 Grant Camera & Screen Share Access</button>
+                <p id="perm-status" style="font-size: 13px; color: #555; margin-top: 8px; margin-bottom: 0; font-weight: bold;">Status: Waiting for permission...</p>
+            </div>
 
-        <div style="text-align: left; margin-bottom: 20px;">
-            <label class="ack-label">
-                <input type="checkbox" id="exam-agreement-checkbox" class="ack-checkbox">
-                <strong>4. I agree to the proctoring terms and am ready to begin.</strong>
-            </label>
-        </div>
+            <div style="text-align: left; margin-bottom: 20px;">
+                <label class="ack-label">
+                    <input type="checkbox" id="exam-agreement-checkbox" class="ack-checkbox">
+                    <strong>4. I confirm my details are correct and agree to the rules.</strong>
+                </label>
+            </div>
 
-        <button id="start-btn" class="btn-primary" disabled>Complete All Steps Above to Start</button>
+            <button id="start-btn" class="btn-primary" disabled>Complete All Steps Above to Start</button>
+        </div>
         <div class="designer-credit">Designed by Pradyumn</div>
     </div>
 
@@ -258,6 +262,7 @@
             const violationAckBtn = document.getElementById('violation-ack-btn');
             const resumeFinalBtn = document.getElementById('resume-final-btn');
             const restartScreenBtn = document.getElementById('restart-screen-btn');
+            const verifyBtn = document.getElementById('verify-btn');
             
             const rollInput = document.getElementById('roll-no-input');
             const dobInput = document.getElementById('dob-input');
@@ -320,13 +325,19 @@
                     violationLogs = JSON.parse(localStorage.getItem(PREFIX + 'violationLogs') || '[]');
                     screenShareDrops = parseInt(localStorage.getItem(PREFIX + 'screenDrops') || '0');
 
-                    // Setup Auth UI based on strictly registered mode vs open mode
+                    // Setup Auth UI Phase
                     if (ALLOWED_STUDENTS && Object.keys(ALLOWED_STUDENTS).length > 0) {
                         dobInput.style.display = 'block';
+                        verifyBtn.style.display = 'block';
                         openNameInput.style.display = 'none';
+                        document.getElementById('setup-phase').style.display = 'none';
                     } else {
+                        // Open Exam Fallback
                         dobInput.style.display = 'none';
+                        verifyBtn.style.display = 'none';
                         openNameInput.style.display = 'block';
+                        document.getElementById('setup-phase').style.display = 'block';
+                        profileCard.style.display = 'none';
                     }
 
                     document.getElementById('lobby-screen').classList.add('hidden');
@@ -340,7 +351,6 @@
                         startTelemetryPing(); 
                     } else {
                         document.getElementById('instruction-screen').classList.remove('hidden');
-                        validateInputs(); 
                     }
                 } catch(e) {
                     alert("A critical initialization error occurred.");
@@ -354,74 +364,58 @@
                 if (v.length > 2 && v.length <= 4) v = v.substring(0,2) + '/' + v.substring(2);
                 else if (v.length > 4) v = v.substring(0,2) + '/' + v.substring(2,4) + '/' + v.substring(4,8);
                 this.value = v;
-                validateInputs();
             });
 
             rollInput.addEventListener('input', function() {
                 this.value = this.value.replace(/\D/g, ''); 
-                validateInputs();
             });
-            openNameInput.addEventListener('input', validateInputs);
-            examAgreementCheckbox.addEventListener('change', validateInputs);
 
-            // PROFILE VALIDATION
-            function validateInputs() {
-                const isRollValid = /^\d{13}$/.test(rollInput.value);
-                const dobValue = dobInput.value.trim();
-                let isRegistered = false;
+            // PHASE 1: EXPLICIT VERIFICATION
+            verifyBtn.addEventListener('click', () => {
+                const roll = rollInput.value.trim();
+                const dob = dobInput.value.trim();
+                
+                if (!/^\d{13}$/.test(roll) || dob.length !== 10) {
+                    rollError.innerText = "❌ Please enter a valid 13-digit Roll No and DOB.";
+                    rollError.style.display = 'block';
+                    return;
+                }
 
-                if (ALLOWED_STUDENTS && Object.keys(ALLOWED_STUDENTS).length > 0) {
-                    if (isRollValid && dobValue.length === 10) {
-                        const studentRecord = ALLOWED_STUDENTS[rollInput.value];
-                        if (studentRecord && studentRecord.dob === dobValue) {
-                            
-                            STUDENT_NAME = studentRecord.name;
-                            STUDENT_SECTION = studentRecord.section || "N/A";
-                            STUDENT_COURSE = studentRecord.course || "N/A";
-                            STUDENT_BRANCH = studentRecord.branch || "N/A";
+                const studentRecord = ALLOWED_STUDENTS[roll];
+                if (studentRecord && studentRecord.dob === dob) {
+                    STUDENT_NAME = studentRecord.name;
+                    STUDENT_SECTION = studentRecord.section || "N/A";
+                    STUDENT_COURSE = studentRecord.course || "N/A";
+                    STUDENT_BRANCH = studentRecord.branch || "N/A";
 
-                            document.getElementById('profile-name').innerText = STUDENT_NAME;
-                            document.getElementById('profile-roll').innerText = rollInput.value;
-                            document.getElementById('profile-dob').innerText = dobValue;
-                            document.getElementById('profile-course').innerText = STUDENT_COURSE;
-                            document.getElementById('profile-branch').innerText = STUDENT_BRANCH;
-                            document.getElementById('profile-year').innerText = studentRecord.year || "N/A";
-                            document.getElementById('profile-section').innerText = STUDENT_SECTION;
+                    document.getElementById('profile-name').innerText = STUDENT_NAME;
+                    document.getElementById('profile-roll').innerText = roll;
+                    document.getElementById('profile-dob').innerText = dob;
+                    document.getElementById('profile-course').innerText = STUDENT_COURSE;
+                    document.getElementById('profile-branch').innerText = STUDENT_BRANCH;
+                    document.getElementById('profile-year').innerText = studentRecord.year || "N/A";
+                    document.getElementById('profile-section').innerText = STUDENT_SECTION;
 
-                            profileCard.style.display = 'block';
-                            rollError.style.display = 'none';
-                            isRegistered = true;
-                        } else {
-                            profileCard.style.display = 'none';
-                            rollError.innerText = "❌ Authentication Failed: Invalid Roll Number or DOB.";
-                            rollError.style.display = 'block';
-                        }
-                    } else {
-                        profileCard.style.display = 'none';
-                        rollError.style.display = 'none';
-                    }
-                } 
-                else {
-                    STUDENT_NAME = openNameInput.value.trim();
-                    if (localStorage.getItem('gf_globalName') && STUDENT_NAME === '') {
-                        openNameInput.value = localStorage.getItem('gf_globalName');
-                        STUDENT_NAME = openNameInput.value;
-                    }
+                    rollError.style.display = 'none';
+                    rollInput.readOnly = true; rollInput.style.background = "#e8eaed";
+                    dobInput.readOnly = true; dobInput.style.background = "#e8eaed";
+                    verifyBtn.style.display = 'none';
                     
-                    if (rollInput.value.length > 0 && !isRollValid) {
-                        rollError.innerText = "Roll number must be exactly 13 digits.";
-                        rollError.style.display = 'block';
-                    } else {
-                        rollError.style.display = 'none';
-                    }
-                    isRegistered = true; 
+                    document.getElementById('setup-phase').style.display = 'block';
+                    profileCard.style.display = 'block';
+                } else {
+                    rollError.innerText = "❌ Authentication Failed: Details not found in registry.";
+                    rollError.style.display = 'block';
+                }
+            });
+
+            // PHASE 2: CHECK START CONDITIONS
+            function checkStartConditions() {
+                if (!ALLOWED_STUDENTS || Object.keys(ALLOWED_STUDENTS).length === 0) {
+                    STUDENT_NAME = openNameInput.value.trim();
                 }
 
-                if (localStorage.getItem('gf_globalRoll') && rollInput.value === '') {
-                    rollInput.value = localStorage.getItem('gf_globalRoll');
-                }
-
-                if (examAgreementCheckbox.checked && STUDENT_NAME !== '' && isRollValid && isRegistered && permissionsGranted) {
+                if (examAgreementCheckbox.checked && STUDENT_NAME !== '' && permissionsGranted) {
                     startBtn.disabled = false;
                     startBtn.innerText = "Confirm Details & Begin Exam";
                 } else {
@@ -429,6 +423,9 @@
                     startBtn.innerText = "Complete All Steps Above to Start";
                 }
             }
+
+            openNameInput.addEventListener('input', checkStartConditions);
+            examAgreementCheckbox.addEventListener('change', checkStartConditions);
 
             window.addEventListener('offline', () => { if (isExamActive) document.getElementById('offline-overlay').style.display = 'flex'; });
             window.addEventListener('online', () => { document.getElementById('offline-overlay').style.display = 'none'; flushWebhookQueue(); });
@@ -645,7 +642,7 @@
                     permStatus.style.color = "green";
                     grantPermBtn.style.display = "none";
                     permissionsGranted = true;
-                    validateInputs();
+                    checkStartConditions();
                 } catch(e) {
                     if (screenStream) screenStream.getTracks().forEach(t => t.stop());
                     if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
@@ -941,18 +938,12 @@
             });
 
             startBtn.addEventListener('click', async () => {
-                const isRollValid = /^\d{13}$/.test(rollInput.value);
-                if (!examAgreementCheckbox.checked || STUDENT_NAME === '' || !isRollValid || !permissionsGranted) return;
-                
-                if (ALLOWED_STUDENTS && Object.keys(ALLOWED_STUDENTS).length > 0) {
-                    const studentRecord = ALLOWED_STUDENTS[rollInput.value];
-                    if (!studentRecord || studentRecord.dob !== dobInput.value.trim()) {
-                        alert("❌ ACCESS DENIED: Your Roll Number or DOB is not authorized."); return;
-                    }
-                }
+                if (!examAgreementCheckbox.checked || STUDENT_NAME === '' || !permissionsGranted) return;
 
                 localStorage.setItem('gf_globalName', STUDENT_NAME);
                 localStorage.setItem('gf_globalRoll', rollInput.value);
+                
+                // Name highly visible in the Top Bar during the exam
                 document.getElementById('active-student-name').innerText = "👤 " + STUDENT_NAME;
 
                 try {
