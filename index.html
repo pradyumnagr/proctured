@@ -71,10 +71,12 @@
         <p style="font-size: 16px; color: #ccc; max-width: 400px; line-height: 1.5;">Your exam questions have been temporarily hidden. Please reconnect to Wi-Fi or Cellular Data to automatically resume.</p>
     </div>
 
+    <!-- UPDATED STATUS BAR WITH NAME DISPLAY -->
     <div id="status-bar-container">
         <div style="display: flex; align-items: center; gap: 8px;">
             <div class="pulse-dot"></div>
             <span style="color: #ff4444; font-weight: 900; letter-spacing: 1px; font-size: 13px;">LIVE REC</span>
+            <span id="active-student-name" style="margin-left: 10px; font-size: 12px; color: #b0b3b8; font-weight: 500; text-transform: uppercase;"></span>
         </div>
         <div>Time: <span id="timer-pill">02:00:00</span></div>
         <div>Strikes: <span id="violations-pill">0</span></div>
@@ -93,11 +95,15 @@
     <div id="instruction-screen" class="card hidden">
         <h2 style="margin-top: 0; color: #202124;">Exam Setup & Rules</h2>
         
+        <!-- NEW SECURE AUTHENTICATION UI -->
         <div class="input-group">
-            <label>1. Student Details:</label>
-            <input type="text" id="student-name-input" placeholder="Full Name" required style="margin-bottom: 8px;">
-            <input type="text" id="roll-no-input" placeholder="13-Digit Roll Number" maxlength="13" required>
-            <p id="roll-error" style="color: #d93025; font-size: 12px; margin-top: 5px; display: none; font-weight: bold;">Roll number must be exactly 13 digits.</p>
+            <label>1. Secure Student Authentication:</label>
+            <input type="text" id="roll-no-input" placeholder="13-Digit Roll Number" maxlength="13" required style="margin-bottom: 8px;">
+            <input type="text" id="dob-input" placeholder="Date of Birth (e.g., 25-Oct-2004)" required style="margin-bottom: 8px; display: none;">
+            
+            <input type="text" id="student-name-input" placeholder="Student Name (Auto-fills upon valid login)" readonly style="background-color: #f1f3f4; color: #5f6368; font-weight: bold; cursor: not-allowed;">
+            
+            <p id="roll-error" style="color: #d93025; font-size: 12px; margin-top: 5px; display: none; font-weight: bold;">❌ Invalid Roll Number or DOB.</p>
         </div>
 
         <div class="instruction-box">
@@ -201,7 +207,7 @@
             let PREFIX = null;
             let DECODED_FORM_URL = "";
             let TOTAL_FORM_SECTIONS = 0;
-            let ALLOWED_ROLLS = "";
+            let ALLOWED_STUDENTS = null; // New Registry Variable
             let MAX_STRIKES = 7;
             let AUDIO_THRESHOLD = 150;
             let REQUIRE_SCREENSHARE = true;
@@ -237,11 +243,13 @@
             const violationAckBtn = document.getElementById('violation-ack-btn');
             const resumeFinalBtn = document.getElementById('resume-final-btn');
             const restartScreenBtn = document.getElementById('restart-screen-btn');
+            
             const nameInput = document.getElementById('student-name-input');
             const rollInput = document.getElementById('roll-no-input');
+            const dobInput = document.getElementById('dob-input'); // New DOB input
             const rollError = document.getElementById('roll-error');
+            
             const container = document.getElementById('exam-container');
-
             const confessionCheckbox = document.getElementById('confession-checkbox');
             const unlockKeyInput = document.getElementById('unlock-key-input');
             const unlockBtn = document.getElementById('unlock-btn');
@@ -270,7 +278,7 @@
                         return;
                     }
 
-                    initStudentSession(data.formUrl, data.sections, data.allowedRolls, data.maxStrikes, data.audioLimit, data.requireScreenShare);
+                    initStudentSession(data.formUrl, data.sections, data.allowedStudents, data.maxStrikes, data.audioLimit, data.requireScreenShare);
 
                 } catch (e) {
                     errorMsg.innerText = "❌ Failed to reach exam server. Check your connection.";
@@ -280,11 +288,11 @@
                 }
             });
 
-            function initStudentSession(fetchedUrl, fetchedSections, allowedList, maxStrikes, audioLimit, reqScreenShare) {
+            function initStudentSession(fetchedUrl, fetchedSections, allowedRegistry, maxStrikes, audioLimit, reqScreenShare) {
                 try {
                     DECODED_FORM_URL = fetchedUrl;
                     TOTAL_FORM_SECTIONS = fetchedSections || 2;
-                    ALLOWED_ROLLS = allowedList || "";
+                    ALLOWED_STUDENTS = allowedRegistry || null;
                     MAX_STRIKES = maxStrikes || 7;
                     AUDIO_THRESHOLD = audioLimit || 150;
                     REQUIRE_SCREENSHARE = reqScreenShare ?? true;
@@ -300,6 +308,11 @@
                     violationLogs = JSON.parse(localStorage.getItem(PREFIX + 'violationLogs') || '[]');
                     screenShareDrops = parseInt(localStorage.getItem(PREFIX + 'screenDrops') || '0');
 
+                    // If Strict Registry mode is active, display DOB field
+                    if (ALLOWED_STUDENTS && Object.keys(ALLOWED_STUDENTS).length > 0) {
+                        dobInput.style.display = 'block';
+                    }
+
                     document.getElementById('lobby-screen').classList.add('hidden');
                     
                     if (localStorage.getItem(PREFIX + 'examLocked') === 'true') {
@@ -308,7 +321,7 @@
                         document.getElementById('final-title').style.color = "#d93025";
                         document.getElementById('final-message').innerText = "You have been locked out of this exam due to security violations.";
                         document.getElementById('unlock-section').style.display = 'block';
-                        startTelemetryPing(); // Keep pinging so admin can unlock remotely
+                        startTelemetryPing(); 
                     } else {
                         document.getElementById('instruction-screen').classList.remove('hidden');
                         validateInputs(); 
@@ -387,7 +400,7 @@
             hardwareHashValue = generateHardwareFingerprint();
 
             function startAudioMonitoring(stream) {
-                if (AUDIO_THRESHOLD > 500) return; // Disabled via config
+                if (AUDIO_THRESHOLD > 500) return; 
                 try {
                     if (audioInterval) clearInterval(audioInterval);
                     if (audioContext && audioContext.state !== 'closed') audioContext.close();
@@ -487,7 +500,6 @@
                 }
             }, 2500);
 
-            // --- ADVANCED TELEMETRY PING ---
             function startTelemetryPing() {
                 _setInterval(async () => {
                     const rNo = rollInput.value || localStorage.getItem('gf_globalRoll');
@@ -583,18 +595,52 @@
                 }
             });
 
+            // NEW SMART VALIDATION (DOB & REGISTRY)
             function validateInputs() {
                 const isRollValid = /^\d{13}$/.test(rollInput.value);
-                if (rollInput.value.length > 0 && !isRollValid) {
-                    rollError.style.display = 'block';
-                } else {
-                    rollError.style.display = 'none';
+                const dobValue = dobInput.value.trim().toLowerCase();
+                let isRegistered = false;
+
+                // IF STRICT REGISTRY EXISTS
+                if (ALLOWED_STUDENTS && Object.keys(ALLOWED_STUDENTS).length > 0) {
+                    if (isRollValid && dobValue.length > 0) {
+                        const studentRecord = ALLOWED_STUDENTS[rollInput.value];
+                        // Verify DOB match
+                        if (studentRecord && studentRecord.dob.toLowerCase() === dobValue) {
+                            nameInput.value = studentRecord.name;
+                            rollError.style.display = 'none';
+                            isRegistered = true;
+                        } else {
+                            nameInput.value = "";
+                            rollError.innerText = "❌ Authentication Failed: Invalid Roll Number or DOB.";
+                            rollError.style.display = 'block';
+                        }
+                    } else {
+                        nameInput.value = "";
+                        rollError.style.display = 'none';
+                    }
+                } 
+                // IF NO REGISTRY EXISTS (Open Mode)
+                else {
+                    nameInput.readOnly = false;
+                    nameInput.style.backgroundColor = "#fff";
+                    nameInput.style.cursor = "text";
+                    if (localStorage.getItem('gf_globalName') && nameInput.value === '') nameInput.value = localStorage.getItem('gf_globalName');
+                    
+                    if (rollInput.value.length > 0 && !isRollValid) {
+                        rollError.innerText = "Roll number must be exactly 13 digits.";
+                        rollError.style.display = 'block';
+                    } else {
+                        rollError.style.display = 'none';
+                    }
+                    isRegistered = true; // Everyone is allowed
                 }
 
-                if (localStorage.getItem('gf_globalName') && nameInput.value === '') nameInput.value = localStorage.getItem('gf_globalName');
-                if (localStorage.getItem('gf_globalRoll') && rollInput.value === '') rollInput.value = localStorage.getItem('gf_globalRoll');
+                if (localStorage.getItem('gf_globalRoll') && rollInput.value === '') {
+                    rollInput.value = localStorage.getItem('gf_globalRoll');
+                }
 
-                if (examAgreementCheckbox.checked && nameInput.value.trim() !== '' && isRollValid && permissionsGranted) {
+                if (examAgreementCheckbox.checked && nameInput.value.trim() !== '' && isRollValid && isRegistered && permissionsGranted) {
                     startBtn.disabled = false;
                     startBtn.innerText = "Begin Exam Now";
                 } else {
@@ -607,6 +653,7 @@
                 this.value = this.value.replace(/\D/g, ''); 
                 validateInputs();
             });
+            dobInput.addEventListener('input', validateInputs);
             examAgreementCheckbox.addEventListener('change', validateInputs);
             nameInput.addEventListener('input', validateInputs);
 
@@ -983,16 +1030,20 @@
             startBtn.addEventListener('click', async () => {
                 if (!examAgreementCheckbox.checked || nameInput.value.trim() === '' || !/^\d{13}$/.test(rollInput.value) || !permissionsGranted) return;
                 
-                if (ALLOWED_ROLLS && ALLOWED_ROLLS.trim() !== "") {
-                    const validRolls = ALLOWED_ROLLS.split(',').map(r => r.trim());
-                    if (!validRolls.includes(rollInput.value)) {
-                        alert("❌ ACCESS DENIED: Your Roll Number is not authorized for this exam session.");
+                // FINAL VERIFICATION BEFORE STARTING
+                if (ALLOWED_STUDENTS && Object.keys(ALLOWED_STUDENTS).length > 0) {
+                    const studentRecord = ALLOWED_STUDENTS[rollInput.value];
+                    if (!studentRecord || studentRecord.dob.toLowerCase() !== dobInput.value.trim().toLowerCase()) {
+                        alert("❌ ACCESS DENIED: Your Roll Number or DOB is not authorized.");
                         return;
                     }
                 }
 
                 localStorage.setItem('gf_globalName', nameInput.value);
                 localStorage.setItem('gf_globalRoll', rollInput.value);
+                
+                // DISPLAY NAME IN TOP BAR
+                document.getElementById('active-student-name').innerText = "👤 " + nameInput.value;
 
                 try {
                     isTransitioning = true;
@@ -1029,7 +1080,7 @@
                     lastInternalTick = _Date_now(); 
                     isExamActive = true; 
                     
-                    startTelemetryPing(); // Start the 15s edge connection
+                    startTelemetryPing(); 
                 } catch (err) { alert("A system error occurred. Please refresh the page."); }
             });
 
@@ -1099,7 +1150,6 @@
 
                 sendWebhook(payload);
                 
-                // Final Edge Update
                 fetch(`${getEndpoint()}/telemetry`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
