@@ -67,7 +67,6 @@
         #auth-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(32, 33, 36, 0.95); display: flex; justify-content: center; align-items: center; z-index: 9999; }
         .auth-box { background: white; padding: 40px; border-radius: 12px; max-width: 350px; width: 90%; text-align: center; }
 
-        /* Forensic Modal */
         #logs-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 99999; padding: 20px; }
         .logs-box { background: white; width: 100%; max-width: 500px; border-radius: 12px; padding: 25px; box-sizing: border-box; max-height: 80vh; display: flex; flex-direction: column; }
         .logs-content { background: #202124; color: #34a853; font-family: monospace; font-size: 12px; padding: 15px; border-radius: 6px; overflow-y: auto; flex: 1; white-space: pre-wrap; margin-top: 15px; }
@@ -140,8 +139,8 @@
                     </select>
                 </div>
                 <div class="form-group" style="grid-column: 1 / -1;">
-                    <label>Allowed Roll Numbers (Comma Separated - Leave blank to allow all):</label>
-                    <textarea id="target-allowed" rows="2" placeholder="1300000000001, 1300000000002, ..."></textarea>
+                    <label>Secure Student Registry (Format: Roll Number, Name, DOB - One per line):</label>
+                    <textarea id="target-allowed" rows="4" placeholder="1300000000001, John Doe, 25-Oct-2004&#10;1300000000002, Alice Smith, 14-Jan-2005"></textarea>
                 </div>
             </div>
 
@@ -228,7 +227,18 @@
                     document.getElementById('target-strikes').value = data.maxStrikes || 7;
                     document.getElementById('target-audio').value = data.audioLimit || 150;
                     document.getElementById('target-screenshare').value = String(data.requireScreenShare ?? true);
-                    document.getElementById('target-allowed').value = data.allowedRolls || "";
+                    
+                    // REVERSE JSON DICTIONARY BACK TO TEXTAREA
+                    if (data.allowedStudents && Object.keys(data.allowedStudents).length > 0) {
+                        let lines = [];
+                        for (const [roll, info] of Object.entries(data.allowedStudents)) {
+                            lines.push(`${roll}, ${info.name}, ${info.dob}`);
+                        }
+                        document.getElementById('target-allowed').value = lines.join('\n');
+                    } else {
+                        document.getElementById('target-allowed').value = "";
+                    }
+
                     document.getElementById('status-badge').className = "status-badge status-active";
                     document.getElementById('status-text').innerText = "Exam Live Globally";
                 } else {
@@ -250,7 +260,6 @@
                 if (currentSessions.length === 0) {
                     document.getElementById('candidate-rows').innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 30px;">No active sessions.</td></tr>`;
                 } else {
-                    // 1. Map Hardware Fingerprints to detect collisions
                     const hashCounts = {};
                     currentSessions.forEach(s => {
                         if (s.hardwareHash && s.hardwareHash !== "Unavailable") {
@@ -258,12 +267,9 @@
                         }
                     });
 
-                    // 2. Sort by violations
                     currentSessions.sort((a, b) => b.violations - a.violations || b.lastSeen - a.lastSeen);
                     
                     document.getElementById('candidate-rows').innerHTML = currentSessions.map(s => {
-                        
-                        // AUTO-PROCTOR LOGIC
                         if (autoProctor && s.status === "LOCKED" && !s.autoKicked) {
                             sendAction(s.rollNo, 'KICK', null);
                             s.autoKicked = true; 
@@ -271,18 +277,15 @@
 
                         let tagClass = s.status === "LOCKED" ? "tag-locked" : (s.status === "WARNING" || s.violations >= 2 ? "tag-warning" : "tag-active");
                         
-                        // Update Analytics logic
                         if (s.status === "LOCKED" || s.violations >= 7) locked++;
                         else if (s.violations >= 2) suspicious++;
                         else clean++;
 
-                        // Network Jitter Logic
                         const secs = Math.floor((Date.now() - s.lastSeen) / 1000);
-                        let netHealth = "🟢"; // < 25s Excellent
-                        if (secs >= 25 && secs < 45) netHealth = "🟡"; // Jitter / Poor
-                        if (secs >= 45) netHealth = "🔴"; // Dropped
+                        let netHealth = "🟢"; 
+                        if (secs >= 25 && secs < 45) netHealth = "🟡"; 
+                        if (secs >= 45) netHealth = "🔴"; 
 
-                        // Collision Detection
                         let hashDisplay = s.hardwareHash;
                         let collisionFlag = false;
                         if (s.hardwareHash && s.hardwareHash !== "Unavailable" && hashCounts[s.hardwareHash] > 1) {
@@ -337,6 +340,24 @@
                 let url = document.getElementById('target-url').value.trim();
                 if (!url.includes('embedded=true')) url += url.includes('?') ? '&embedded=true' : '?embedded=true';
                 
+                // PARSE TEXTAREA INTO JSON DICTIONARY
+                let registryText = document.getElementById('target-allowed').value.trim();
+                let allowedStudentsObj = null;
+                
+                if (registryText !== "") {
+                    allowedStudentsObj = {};
+                    const lines = registryText.split('\n');
+                    for (let line of lines) {
+                        let parts = line.split(',');
+                        if (parts.length >= 3) {
+                            let roll = parts[0].trim();
+                            let name = parts[1].trim();
+                            let dob = parts.slice(2).join(',').trim(); 
+                            if (roll.length > 0) allowedStudentsObj[roll] = { name: name, dob: dob };
+                        }
+                    }
+                }
+
                 await fetch(getEndpoint(), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -347,7 +368,7 @@
                         maxStrikes: parseInt(document.getElementById('target-strikes').value),
                         audioLimit: parseInt(document.getElementById('target-audio').value),
                         requireScreenShare: document.getElementById('target-screenshare').value === "true",
-                        allowedRolls: document.getElementById('target-allowed').value.trim()
+                        allowedStudents: allowedStudentsObj
                     })
                 });
                 fetchServerState();
