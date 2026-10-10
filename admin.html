@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pradyumn's Command Center | Secure Exam Portal</title>
+    <title>Pradyumn's Command Center | Enterprise Invigilation</title>
     <style>
         :root {
             --bg-color: #f4f6f9; --surface-color: #ffffff; --primary: #1a73e8; --primary-hover: #1557b0;
@@ -12,14 +12,12 @@
             --focus-ring: rgba(26, 115, 232, 0.2);
         }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
-        .container { width: 100%; max-width: 1200px; margin: 20px auto; padding: 0 15px; box-sizing: border-box; }
+        .container { width: 100%; max-width: 1300px; margin: 20px auto; padding: 0 15px; box-sizing: border-box; }
         
-        /* Branding & Top Bar */
         .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 15px 25px; background: var(--surface-color); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid var(--border); }
         .brand-title { font-size: 22px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 10px; }
         .brand-subtitle { font-size: 13px; color: var(--text-secondary); font-weight: 600; margin-top: 2px; }
 
-        /* Tab System */
         .tab-nav { display: flex; gap: 10px; margin-bottom: 20px; background: var(--surface-color); padding: 10px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid var(--border); }
         .tab-btn { flex: 1; padding: 12px 20px; border: none; background: transparent; font-size: 15px; font-weight: 700; color: var(--text-secondary); cursor: pointer; border-radius: 8px; transition: 0.2s; }
         .tab-btn:hover { background: #f1f3f4; }
@@ -36,13 +34,13 @@
         .status-inactive { background: #fce8e6; color: var(--danger); }
         .status-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; box-shadow: 0 0 6px currentColor; }
 
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; margin-bottom: 20px; }
         .form-group { display: flex; flex-direction: column; gap: 6px; }
         .form-group label { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
         .form-group input, .form-group select, .form-group textarea { padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; outline: none; background: #fafafa; font-family: inherit; }
         .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px var(--focus-ring); }
         
-        .btn-row { display: flex; gap: 10px; margin-top: 10px; }
+        .btn-row { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
         button { cursor: pointer; border: none; padding: 10px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
         button:active { transform: translateY(1px); }
         .btn-primary { background: var(--primary); color: white; }
@@ -51,43 +49,51 @@
         .btn-danger:hover { background: var(--danger-hover); }
         .btn-secondary { background: #f1f3f4; color: var(--text-main); border: 1px solid var(--border); }
         .btn-secondary:hover { background: #e8eaed; }
-        .btn-small { padding: 6px 10px; font-size: 11px; margin-left: 5px; }
+        .btn-warning { background: var(--warning); color: #202124; }
+        .btn-warning:hover { background: #e09900; }
+        .btn-small { padding: 5px 8px; font-size: 11px; margin: 2px; }
 
-        .analytics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
+        .analytics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
         .stat-card { padding: 15px; border-radius: 8px; border: 1px solid var(--border); text-align: center; }
         .stat-card h3 { margin: 0 0 5px 0; font-size: 24px; font-weight: 700; }
         .stat-card p { margin: 0; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
         .stat-clean { background: #e6f4ea; color: var(--success); border-color: #ceead6; }
         .stat-suspicious { background: #fef7e0; color: #b07d00; border-color: #feefc3; }
         .stat-locked { background: #fce8e6; color: var(--danger); border-color: #fad2cf; }
+        .stat-avg { background: #e8f0fe; color: var(--primary); border-color: #d2e3fc; }
 
         .tools-row { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
         .tools-row input { flex: 1; min-width: 250px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
         .auto-proctor-box { background: #fff3e0; padding: 8px 12px; border-radius: 6px; border: 1px solid #ffe0b2; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: bold; color: #e65100; cursor: pointer; }
 
         .table-responsive { width: 100%; overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 850px; }
-        table th { background: #f8f9fa; text-align: left; padding: 12px 16px; border-bottom: 2px solid var(--border); color: var(--text-secondary); }
-        table td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1050px; }
+        table th { background: #f8f9fa; text-align: left; padding: 12px 14px; border-bottom: 2px solid var(--border); color: var(--text-secondary); }
+        table td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
         
         .tag { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; white-space: nowrap; }
         .tag-active { background: #e6f4ea; color: var(--success); }
         .tag-warning { background: #fef7e0; color: #b07d00; }
         .tag-locked { background: #fce8e6; color: var(--danger); }
+        .tag-paused { background: #e8eaed; color: #5f6368; }
         .tag-collision { background: #fce8e6; color: var(--danger); border: 1px solid var(--danger); }
-        .tag-section { background: #e8f0fe; color: var(--primary); border: 1px solid #d2e3fc; }
+        .tag-section { background: #e8f0fe; color: var(--primary); border: 1px solid var(--d2e3fc); }
+
+        /* Integrity Score Badges */
+        .score-pill { padding: 4px 10px; border-radius: 12px; font-weight: 800; font-size: 12px; display: inline-block; }
+        .score-high { background: #e6f4ea; color: var(--success); border: 1px solid #ceead6; }
+        .score-med { background: #fef7e0; color: #b07d00; border: 1px solid #feefc3; }
+        .score-low { background: #fce8e6; color: var(--danger); border: 1px solid #fad2cf; }
 
         .hidden { display: none !important; }
         #auth-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(32, 33, 36, 0.95); display: flex; justify-content: center; align-items: center; z-index: 9999; }
         .auth-box { background: white; padding: 40px; border-radius: 12px; max-width: 350px; width: 90%; text-align: center; }
 
         #logs-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 99999; padding: 20px; }
-        .logs-box { background: white; width: 100%; max-width: 500px; border-radius: 12px; padding: 25px; box-sizing: border-box; max-height: 80vh; display: flex; flex-direction: column; }
+        .logs-box { background: white; width: 100%; max-width: 580px; border-radius: 12px; padding: 25px; box-sizing: border-box; max-height: 80vh; display: flex; flex-direction: column; }
         .logs-content { background: #202124; color: #34a853; font-family: monospace; font-size: 12px; padding: 15px; border-radius: 6px; overflow-y: auto; flex: 1; white-space: pre-wrap; margin-top: 15px; }
 
-        #db-preview-table th { background: #e8eaed; color: #202124; font-weight: bold; }
         .db-info-box { background: #e6f4ea; padding: 15px; border-radius: 8px; border: 1px solid #ceead6; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
-        
         .footer-brand { text-align: center; margin-top: 20px; margin-bottom: 40px; font-family: 'Brush Script MT', cursive; font-size: 18px; color: #888; font-style: italic; }
     </style>
 </head>
@@ -96,64 +102,61 @@
     <div id="auth-overlay">
         <div class="auth-box">
             <h2 style="margin-top: 0; color: var(--primary);">Pradyumn's Command Center</h2>
-            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;">Secure Faculty Access</p>
-            <input type="password" id="auth-input" placeholder="Enter Admin Key..." style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; margin-bottom: 15px; text-align: center; box-sizing: border-box;">
+            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;">Faculty Master Authentication</p>
+            <input type="password" id="auth-input" placeholder="Admin Secret Key..." style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; margin-bottom: 15px; text-align: center; box-sizing: border-box;">
             <button id="auth-btn" class="btn-primary" style="width: 100%;">Authenticate</button>
             <p id="auth-error" class="hidden" style="color: var(--danger); font-size: 12px; margin-top: 10px; font-weight: bold;">❌ Authentication failed.</p>
         </div>
     </div>
 
-    <!-- FORENSIC LOGS MODAL -->
+    <!-- Forensic Audit Modal -->
     <div id="logs-overlay" class="hidden">
         <div class="logs-box">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h2 style="margin: 0; font-size: 18px;">Forensic Session Logs</h2>
+                <h2 style="margin: 0; font-size: 18px;">Candidate Forensic Log</h2>
                 <button class="btn-danger" style="padding: 6px 12px;" onclick="document.getElementById('logs-overlay').classList.add('hidden')">Close</button>
             </div>
-            <div class="logs-content" id="logs-content-body">Loading...</div>
+            <div class="logs-content" id="logs-content-body">Loading forensic telemetry...</div>
         </div>
     </div>
 
     <div class="container hidden" id="main-panel">
-        
-        <!-- Custom Branded Top Bar with Logout -->
         <div class="top-bar">
             <div>
                 <div class="brand-title">🛡️ Pradyumn's Command Center</div>
-                <div class="brand-subtitle">B.Tech Secure Exam Portal | Master Control</div>
+                <div class="brand-subtitle">Enterprise B.Tech Exam Invigilation Engine</div>
             </div>
-            <button id="logout-btn" class="btn-secondary">🔒 Logout & Lock Console</button>
+            <button id="logout-btn" class="btn-secondary">🔒 Lock Console</button>
         </div>
 
         <div class="tab-nav">
-            <button class="tab-btn" onclick="switchTab('tab-db')" id="btn-tab-db">👥 1. Global Database Hub</button>
-            <button class="tab-btn active" onclick="switchTab('tab-live')" id="btn-tab-live">🚀 2. Exam Controller & Live Grid</button>
+            <button class="tab-btn" onclick="switchTab('tab-db')" id="btn-tab-db">👥 1. Global Registry</button>
+            <button class="tab-btn active" onclick="switchTab('tab-live')" id="btn-tab-live">🚀 2. Live Invigilation Grid</button>
+            <button class="tab-btn" onclick="switchTab('tab-history')" id="btn-tab-history">📚 3. Exam Archive & History</button>
         </div>
 
-        <!-- ================= TAB 1: DATABASE MANAGER ================= -->
+        <!-- TAB 1: MASTER REGISTRY -->
         <div id="tab-db" class="tab-pane">
             <div class="card">
                 <div class="header">
                     <h1>👥 Master Student Registry</h1>
-                    <span style="font-size: 13px; color: var(--text-secondary);">Stored securely in Supabase</span>
+                    <span style="font-size: 13px; color: var(--text-secondary);">Permanent records in Supabase</span>
                 </div>
                 
                 <div class="db-info-box">
-                    <div>
-                        <strong style="font-size: 18px; color: var(--success);" id="db-total-count">0</strong> Students Enrolled
-                    </div>
-                    <button class="btn-danger btn-small" onclick="clearDatabase()">🗑️ Clear Cloud DB</button>
+                    <div><strong style="font-size: 18px; color: var(--success);" id="db-total-count">0</strong> Students Enrolled</div>
+                    <button class="btn-danger btn-small" onclick="clearDatabase()">🗑️ Wipe Registry</button>
                 </div>
 
                 <div class="form-group" style="margin-bottom: 15px;">
-                    <label>Bulk Import Students (Format: Roll Number, Name, DOB, Year, Section, Course, Branch)</label>
-                    <textarea id="db-import-area" rows="6" placeholder="1300000000001, John Doe, 25/10/2004, 3RD YEAR, SEC-A, B.Tech, Computer Science and Engineering&#10;1300000000002, Alice Smith, 14/01/2005, 3RD YEAR, SEC-B, B.Tech, Computer Science and Engineering"></textarea>
+                    <label>Bulk CSV Import (Roll Number, Name, DOB, Year, Section, Course, Branch):</label>
+                    <textarea id="db-import-area" rows="6" placeholder="Paste CSV rows here..."></textarea>
                 </div>
-                <button id="btn-save-db" class="btn-primary" onclick="saveMasterDatabase()">💾 Save to Master Database</button>
+                <button id="btn-save-db" class="btn-primary" onclick="saveMasterDatabase()">💾 Save to Registry</button>
 
-                <h3 style="margin-top: 30px; font-size: 16px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">Database Preview</h3>
+                <h3 style="margin-top: 30px; font-size: 16px;">Enrolled Student Directory</h3>
                 <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                    <table id="db-preview-table">
+                    <table>
                         <thead style="position: sticky; top: 0;">
                             <tr>
                                 <th>Roll Number</th>
@@ -161,127 +164,172 @@
                                 <th>DOB</th>
                                 <th>Year</th>
                                 <th>Section</th>
-                                <th>Course</th>
                                 <th>Branch</th>
                             </tr>
                         </thead>
                         <tbody id="db-preview-rows">
-                            <tr><td colspan="7" style="text-align: center; padding: 20px;">Loading database...</td></tr>
+                            <tr><td colspan="6" style="text-align: center; padding: 20px;">Loading registry...</td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
 
-        <!-- ================= TAB 2: LIVE INVIGILATION ================= -->
+        <!-- TAB 2: LIVE INVIGILATION -->
         <div id="tab-live" class="tab-pane active">
             <div class="card">
                 <div class="header">
-                    <h1>🛡️ Edge Configurator</h1>
+                    <h1>🚀 Exam Configurator</h1>
                     <div id="status-badge" class="status-badge status-inactive">
                         <div class="status-dot"></div>
-                        <span id="status-text">Disconnected</span>
+                        <span id="status-text">Inactive</span>
                     </div>
                 </div>
 
                 <div class="form-grid">
                     <div class="form-group" style="grid-column: 1 / -1;">
+                        <label>Assessment Title / Subject:</label>
+                        <input type="text" id="target-title" placeholder="e.g. Web Technology Mid-Term 2026">
+                    </div>
+                    <div class="form-group" style="grid-column: 1 / -1;">
                         <label>Target Google Form URL (Must include embedded=true):</label>
-                        <input type="text" id="target-url" placeholder="https://docs.google.com/forms/...">
+                        <input type="text" id="target-url" placeholder="https://docs.google.com/forms/d/e/.../viewform?embedded=true">
                     </div>
                     <div class="form-group">
-                        <label>Total Sections:</label>
+                        <label>Exam Duration (Minutes):</label>
+                        <input type="number" id="target-duration" value="120" min="5">
+                    </div>
+                    <div class="form-group">
+                        <label>Form Page Sections:</label>
                         <input type="number" id="target-sections" value="2" min="1">
                     </div>
                     <div class="form-group">
-                        <label>Strike Threshold:</label>
+                        <label>Strike Limit:</label>
                         <input type="number" id="target-strikes" value="7">
                     </div>
                     <div class="form-group">
                         <label>Audio Limit:</label>
                         <select id="target-audio">
                             <option value="120">Strict (120)</option>
-                            <option value="150" selected>Balanced (150)</option>
+                            <option value="150" selected>Standard (150)</option>
                             <option value="9999">Disabled</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Screen Share (Desktop):</label>
+                        <label>Screen Share:</label>
                         <select id="target-screenshare">
-                            <option value="true" selected>Mandatory</option>
+                            <option value="true" selected>Mandatory (Desktop)</option>
                             <option value="false">Optional</option>
                         </select>
                     </div>
                     <div class="form-group" style="grid-column: 1 / -1;">
-                        <label style="color: var(--primary); font-size: 15px;">🎯 Target Audience:</label>
+                        <label style="color: var(--primary);">Target Audience Restriction:</label>
                         <select id="target-audience" style="border: 2px solid var(--primary); font-weight: bold; background: #e8f0fe; padding: 10px;">
-                            <option value="ALL" selected>Allow All Registered Students in Database</option>
-                            <option value="OPEN">Open Exam (No Identity Verification / Fallback)</option>
+                            <option value="ALL" selected>Allow All Students in Master Registry</option>
+                            <option value="OPEN">Open Assessment Mode (No Registry Enforced)</option>
                         </select>
                     </div>
                 </div>
 
                 <div class="btn-row">
-                    <button class="btn-primary" id="btn-deploy">🚀 Deploy Exam Configurations</button>
-                    <button class="btn-danger" id="btn-terminate">🛑 Terminate Exam</button>
+                    <button class="btn-primary" id="btn-deploy">🚀 Deploy New Exam Session</button>
+                    <button class="btn-danger" id="btn-terminate">🛑 Terminate Current Session</button>
                 </div>
             </div>
 
             <div class="card">
-                <div class="header" style="margin-bottom: 15px;">
-                    <h1>👥 Live Telemetry Grid</h1>
+                <div class="header">
+                    <h1>👥 Real-Time Candidate Grid</h1>
+                    <span id="active-exam-id-badge" style="font-family: monospace; font-size: 13px; color: var(--text-secondary);">Session: None</span>
                 </div>
 
                 <div class="analytics-grid">
-                    <div class="stat-card stat-clean"><h3 id="stat-clean-count">0</h3><p>Clean (0-1 Strikes)</p></div>
-                    <div class="stat-card stat-suspicious"><h3 id="stat-suspicious-count">0</h3><p>Suspicious (2-6 Strikes)</p></div>
-                    <div class="stat-card stat-locked"><h3 id="stat-locked-count">0</h3><p>Locked Out (7+)</p></div>
+                    <div class="stat-card stat-clean"><h3 id="stat-clean-count">0</h3><p>Clean (85%+)</p></div>
+                    <div class="stat-card stat-suspicious"><h3 id="stat-suspicious-count">0</h3><p>Suspicious (60-84%)</p></div>
+                    <div class="stat-card stat-locked"><h3 id="stat-locked-count">0</h3><p>High Risk (&lt;60%)</p></div>
+                    <div class="stat-card stat-avg"><h3 id="stat-avg-integrity">100%</h3><p>Avg Integrity</p></div>
                 </div>
 
                 <div class="tools-row">
                     <div style="display: flex; flex: 1; gap: 10px;">
-                        <input type="text" id="announce-input" placeholder="Broadcast live pop-up message to all students...">
+                        <input type="text" id="announce-input" placeholder="Broadcast live announcement to all candidate screens...">
                         <button class="btn-primary" onclick="broadcastMessage()">📢 Broadcast</button>
                     </div>
                     
                     <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                         <select id="live-section-filter" style="padding: 10px; border-radius: 6px; border: 1px solid var(--border); font-weight: 600;" onchange="renderTelemetryGrid()">
-                            <option value="ALL">View All Sections</option>
+                            <option value="ALL">All Sections</option>
                         </select>
                         <label class="auto-proctor-box">
-                            <input type="checkbox" id="auto-proctor-toggle"> 🤖 Auto-Proctor Kicks
+                            <input type="checkbox" id="auto-proctor-toggle"> 🤖 Auto-Kick at 7 Strikes
                         </label>
-                        <button class="btn-secondary" onclick="downloadCSV()">📥 Export Audit CSV</button>
+                        <button class="btn-secondary" onclick="downloadCSV(currentSessions, 'Active_Exam')">📥 Export CSV</button>
                     </div>
                 </div>
 
                 <div class="table-responsive">
-                    <table id="candidate-table">
+                    <table>
                         <thead>
                             <tr>
                                 <th>Roll Number</th>
-                                <th>Name</th>
-                                <th>Section / Branch</th>
+                                <th>Candidate</th>
+                                <th>Sec / Branch</th>
                                 <th>Net</th>
                                 <th>Status</th>
                                 <th>Strikes</th>
+                                <th>Integrity</th>
                                 <th>HW Hash</th>
-                                <th>Actions</th>
+                                <th>Invigilation Controls</th>
                             </tr>
                         </thead>
                         <tbody id="candidate-rows">
-                            <tr><td colspan="8" style="text-align: center; color: var(--text-secondary); padding: 30px;">No telemetry received.</td></tr>
+                            <tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 30px;">No telemetry received.</td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
-        
+
+        <!-- TAB 3: EXAM ARCHIVE & HISTORY -->
+        <div id="tab-history" class="tab-pane">
+            <div class="card">
+                <div class="header">
+                    <h1>📚 Historical Assessment Archive</h1>
+                    <button class="btn-secondary btn-small" onclick="fetchExamHistory()">🔄 Refresh Archives</button>
+                </div>
+                <div style="display: flex; gap: 15px; margin-bottom: 20px; align-items: center;">
+                    <label style="font-weight: bold;">Select Prior Exam:</label>
+                    <select id="history-exam-selector" style="flex: 1; padding: 10px; border-radius: 6px; border: 1px solid var(--border);" onchange="loadHistoricalSessionData()">
+                        <option value="">Select an archived exam...</option>
+                    </select>
+                    <button class="btn-secondary" onclick="exportHistoricalCSV()">📥 Export Historical CSV</button>
+                </div>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Roll Number</th>
+                                <th>Candidate</th>
+                                <th>Section</th>
+                                <th>Final Status</th>
+                                <th>Violations</th>
+                                <th>Integrity Score</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-rows">
+                            <tr><td colspan="7" style="text-align: center; padding: 30px; color: var(--text-secondary);">Select an exam above to view archived forensic data.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <div class="footer-brand">Architected and Designed by Pradyumn</div>
     </div>
 
     <script>
-        // ================= SUPABASE CONFIGURATION =================
         const SUPABASE_URL = "https://xvxrqyalzmldkorgtqhi.supabase.co/rest/v1"; 
         const SUPABASE_KEY = "sb_publishable_5R6XZ1enV3PJfk3Ju4vDVw_w25oPsJh"; 
 
@@ -292,192 +340,154 @@
             "Prefer": "return=representation"
         };
 
-        let currentSessions = []; 
+        let ACTIVE_EXAM_ID = null;
+        let currentSessions = [];
+        let historicalSessions = [];
         let globalDatabase = [];
         let telemetryInterval = null;
 
-        // ==== TAB MANAGEMENT ====
         function switchTab(tabId) {
             document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
             document.getElementById(`btn-${tabId}`).classList.add('active');
+            if (tabId === 'tab-history') fetchExamHistory();
         }
 
-        // ==== PERSISTENT AUTHENTICATION ====
-        
-        // 1. Check for existing session on page load
         if (localStorage.getItem('pradyumn_admin_auth') === 'true') {
             unlockDashboard();
         }
 
-        // 2. Login Event
         document.getElementById('auth-btn').addEventListener('click', () => {
-            const key = document.getElementById('auth-input').value.trim();
-            if (key === "pradyumnadmin") { 
-                localStorage.setItem('pradyumn_admin_auth', 'true'); // Save session
+            if (document.getElementById('auth-input').value.trim() === "pradyumnadmin") { 
+                localStorage.setItem('pradyumn_admin_auth', 'true');
                 unlockDashboard();
             } else {
                 document.getElementById('auth-error').classList.remove('hidden');
             }
         });
 
-        // 3. Logout Event
         document.getElementById('logout-btn').addEventListener('click', () => {
-            localStorage.removeItem('pradyumn_admin_auth'); // Clear session
-            location.reload(); // Reload page to show login screen
+            localStorage.removeItem('pradyumn_admin_auth');
+            location.reload();
         });
 
-        // Dashboard Unlock Sequence
         function unlockDashboard() {
             document.getElementById('auth-overlay').classList.add('hidden');
             document.getElementById('main-panel').classList.remove('hidden');
             fetchMasterDatabase();
             fetchServerState();
             if(telemetryInterval) clearInterval(telemetryInterval);
-            telemetryInterval = setInterval(fetchTelemetry, 5000);
+            telemetryInterval = setInterval(fetchTelemetry, 4000);
         }
 
-        // ==== DATABASE MANAGER LOGIC ====
+        // Master Registry
         async function fetchMasterDatabase() {
             try {
                 const res = await fetch(`${SUPABASE_URL}/students?select=*`, { headers: supabaseHeaders });
                 globalDatabase = await res.json();
                 refreshDBUI();
-            } catch (e) {
-                document.getElementById('db-preview-rows').innerHTML = `<tr><td colspan="7" style="text-align: center; color: red;">Failed to load database.</td></tr>`;
-            }
+            } catch (e) {}
         }
 
         async function saveMasterDatabase() {
             const rawText = document.getElementById('db-import-area').value.trim();
-            if (!rawText) return alert("Please paste the CSV data first.");
-            
+            if (!rawText) return alert("Paste CSV data first.");
             const btn = document.getElementById('btn-save-db');
-            btn.innerText = "Uploading to Supabase...";
-            btn.disabled = true;
+            btn.innerText = "Saving to Supabase..."; btn.disabled = true;
 
-            const lines = rawText.split('\n');
-            let studentRecords = [];
+            const records = rawText.split('\n').map(l => l.split(',')).filter(p => p.length >= 7).map(p => ({
+                roll_no: p[0].trim(), name: p[1].trim(), dob: p[2].trim(),
+                year: p[3].trim(), section: p[4].trim(), course: p[5].trim(),
+                branch: p.slice(6).join(',').trim()
+            }));
 
-            for (let line of lines) {
-                let parts = line.split(',');
-                if (parts.length >= 7) {
-                    let roll = parts[0].trim();
-                    if (roll.length > 0) {
-                        studentRecords.push({
-                            roll_no: roll,
-                            name: parts[1].trim(),
-                            dob: parts[2].trim(),
-                            year: parts[3].trim(),
-                            section: parts[4].trim(),
-                            course: parts[5].trim(),
-                            branch: parts.slice(6).join(',').trim()
-                        });
-                    }
-                }
-            }
-            
             try {
                 await fetch(`${SUPABASE_URL}/students`, {
                     method: 'POST',
                     headers: { ...supabaseHeaders, "Prefer": "resolution=merge-duplicates" },
-                    body: JSON.stringify(studentRecords)
+                    body: JSON.stringify(records)
                 });
-                document.getElementById('db-import-area').value = ""; 
-                alert(`✅ Successfully saved records to Supabase.`);
+                document.getElementById('db-import-area').value = "";
+                alert("✅ Successfully updated master registry.");
                 fetchMasterDatabase();
-            } catch(e) { alert("Failed to save to database."); }
-            
-            btn.innerText = "💾 Save to Master Database";
-            btn.disabled = false;
+            } catch(e) { alert("Failed to save registry."); }
+            btn.innerText = "💾 Save to Registry"; btn.disabled = false;
         }
 
         async function clearDatabase() {
-            if(!confirm("Are you sure you want to permanently delete the entire database from Supabase?")) return;
-            try {
-                await fetch(`${SUPABASE_URL}/students?roll_no=not.is.null`, {
-                    method: 'DELETE',
-                    headers: supabaseHeaders
-                });
-                fetchMasterDatabase();
-            } catch(e){ alert("Failed to clear database.")}
+            if(!confirm("Wipe entire student registry?")) return;
+            await fetch(`${SUPABASE_URL}/students?roll_no=not.is.null`, { method: 'DELETE', headers: supabaseHeaders });
+            fetchMasterDatabase();
         }
 
         function refreshDBUI() {
             document.getElementById('db-total-count').innerText = globalDatabase.length;
-            
             const tbody = document.getElementById('db-preview-rows');
             if (globalDatabase.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px;">No students enrolled. Import data above.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 20px;">No students enrolled.</td></tr>`;
             } else {
-                tbody.innerHTML = globalDatabase.slice(0, 100).map(s => {
-                    return `<tr>
+                tbody.innerHTML = globalDatabase.slice(0, 100).map(s => `
+                    <tr>
                         <td style="font-family: monospace;">${s.roll_no}</td>
                         <td style="font-weight: bold;">${s.name}</td>
                         <td>${s.dob}</td>
                         <td>${s.year}</td>
                         <td><span class="tag tag-section">${s.section}</span></td>
-                        <td>${s.course}</td>
                         <td style="font-size: 11px;">${s.branch}</td>
-                    </tr>`;
-                }).join('');
-                if (globalDatabase.length > 100) tbody.innerHTML += `<tr><td colspan="7" style="text-align: center; font-style: italic; color: gray;">... and ${globalDatabase.length - 100} more rows hidden.</td></tr>`;
+                    </tr>
+                `).join('');
             }
 
             let sections = new Set();
             globalDatabase.forEach(r => sections.add(r.section));
             let targetSelect = document.getElementById('target-audience');
-            targetSelect.innerHTML = `
-                <option value="ALL">Allow All Registered Students in Database</option>
-                <option value="OPEN">Open Exam (No Identity Verification / Fallback)</option>
-            `;
+            targetSelect.innerHTML = `<option value="ALL">Allow All Students in Master Registry</option><option value="OPEN">Open Assessment Mode (No Registry Enforced)</option>`;
             [...sections].sort().forEach(sec => {
-                if(sec && sec !== "N/A" && sec !== "Unknown") {
-                    targetSelect.innerHTML += `<option value="SEC:${sec}">Restrict strictly to ${sec}</option>`;
-                }
+                if(sec && sec !== "N/A") targetSelect.innerHTML += `<option value="SEC:${sec}">Strictly Restrict to ${sec}</option>`;
             });
         }
 
-        // ==== EXAM DEPLOYMENT LOGIC ====
+        // Exam Configurator & Non-Destructive Deploy
         document.getElementById('btn-deploy').addEventListener('click', async () => {
             const btn = document.getElementById('btn-deploy');
-            btn.innerText = "Deploying to Supabase..."; btn.disabled = true;
+            btn.innerText = "Deploying..."; btn.disabled = true;
+
             try {
                 let url = document.getElementById('target-url').value.trim();
                 if (!url.includes('embedded=true')) url += url.includes('?') ? '&embedded=true' : '?embedded=true';
                 
-                const audienceMode = document.getElementById('target-audience').value;
+                const newExamId = "EXAM_" + Date.now();
+                const examTitle = document.getElementById('target-title').value.trim() || "B.Tech Examination";
 
                 await fetch(`${SUPABASE_URL}/exam_config`, {
                     method: 'POST',
                     headers: { ...supabaseHeaders, "Prefer": "resolution=merge-duplicates" },
                     body: JSON.stringify({
-                        id: 1, 
+                        id: 1,
+                        exam_id: newExamId,
+                        exam_title: examTitle,
                         form_url: url,
-                        sections: parseInt(document.getElementById('target-sections').value),
-                        max_strikes: parseInt(document.getElementById('target-strikes').value),
+                        duration_minutes: parseInt(document.getElementById('target-duration').value) || 120,
+                        sections: parseInt(document.getElementById('target-sections').value) || 2,
+                        max_strikes: parseInt(document.getElementById('target-strikes').value) || 7,
                         audio_limit: parseInt(document.getElementById('target-audio').value),
                         require_screen_share: document.getElementById('target-screenshare').value === "true",
-                        target_audience: audienceMode,
+                        target_audience: document.getElementById('target-audience').value,
                         is_active: true,
+                        started_at: new Date().toISOString(),
                         updated_at: new Date().toISOString()
                     })
                 });
-                
-                await fetch(`${SUPABASE_URL}/exam_sessions?roll_no=not.is.null`, {
-                    method: 'DELETE',
-                    headers: supabaseHeaders
-                });
 
-                alert("✅ Configuration Deployed Globally!");
+                alert(`✅ Exam Deployed Successfully!\nSession ID: ${newExamId}`);
                 fetchServerState();
             } catch (e) { alert("Deploy Error: " + e.message); }
-            btn.innerText = "🚀 Deploy Exam Configurations"; btn.disabled = false;
+            btn.innerText = "🚀 Deploy New Exam Session"; btn.disabled = false;
         });
 
         document.getElementById('btn-terminate').addEventListener('click', async () => {
-            if (!confirm("Terminate exam globally?")) return;
+            if (!confirm("Terminate the current exam session globally?")) return;
             await fetch(`${SUPABASE_URL}/exam_config`, {
                 method: 'PATCH',
                 headers: { ...supabaseHeaders, "Prefer": "return=minimal" },
@@ -492,169 +502,224 @@
                 const [data] = await res.json();
                 
                 if (data && data.is_active && data.form_url) {
+                    ACTIVE_EXAM_ID = data.exam_id;
+                    document.getElementById('target-title').value = data.exam_title || "";
                     document.getElementById('target-url').value = data.form_url;
+                    document.getElementById('target-duration').value = data.duration_minutes || 120;
                     document.getElementById('target-sections').value = data.sections || 2;
                     document.getElementById('target-strikes').value = data.max_strikes || 7;
                     document.getElementById('target-audio').value = data.audio_limit || 150;
                     document.getElementById('target-screenshare').value = String(data.require_screen_share ?? true);
                     
                     document.getElementById('status-badge').className = "status-badge status-active";
-                    document.getElementById('status-text').innerText = "Exam is LIVE";
+                    document.getElementById('status-text').innerText = "LIVE: " + (data.exam_title || "Exam");
+                    document.getElementById('active-exam-id-badge').innerText = "Session: " + ACTIVE_EXAM_ID;
                 } else {
+                    ACTIVE_EXAM_ID = null;
                     document.getElementById('status-badge').className = "status-badge status-inactive";
                     document.getElementById('status-text').innerText = "No Exam Active";
+                    document.getElementById('active-exam-id-badge').innerText = "Session: Inactive";
                 }
             } catch (e) {}
         }
 
-        // ==== TELEMETRY & GRID LOGIC ====
+        // Live Telemetry Grid
         async function fetchTelemetry() {
+            if (!ACTIVE_EXAM_ID) return;
             try {
-                const res = await fetch(`${SUPABASE_URL}/exam_sessions?select=*`, { headers: supabaseHeaders });
+                const res = await fetch(`${SUPABASE_URL}/exam_sessions?exam_id=eq.${ACTIVE_EXAM_ID}&select=*`, { headers: supabaseHeaders });
                 currentSessions = await res.json();
                 renderTelemetryGrid();
             } catch (e) {}
         }
 
         function renderTelemetryGrid() {
-            let clean = 0, suspicious = 0, locked = 0;
+            let clean = 0, suspicious = 0, locked = 0, scoreSum = 0;
             const autoProctor = document.getElementById('auto-proctor-toggle').checked;
             
             const uniqueSections = [...new Set(currentSessions.map(s => s.section || "N/A"))].sort();
             const filterDropdown = document.getElementById('live-section-filter');
             const currentFilter = filterDropdown.value;
-            
-            filterDropdown.innerHTML = `<option value="ALL">View All Sections</option>` + 
-                uniqueSections.map(sec => `<option value="${sec}">${sec}</option>`).join('');
+            filterDropdown.innerHTML = `<option value="ALL">All Sections</option>` + uniqueSections.map(sec => `<option value="${sec}">${sec}</option>`).join('');
             if (uniqueSections.includes(currentFilter) || currentFilter === "ALL") filterDropdown.value = currentFilter;
 
             if (currentSessions.length === 0) {
-                document.getElementById('candidate-rows').innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-secondary); padding: 30px;">No telemetry received.</td></tr>`;
-            } else {
-                const hashCounts = {};
-                currentSessions.forEach(s => {
-                    if (s.hardware_hash && s.hardware_hash !== "Unavailable") {
-                        hashCounts[s.hardware_hash] = (hashCounts[s.hardware_hash] || 0) + 1;
-                    }
-                });
-
-                currentSessions.sort((a, b) => b.violations - a.violations || new Date(b.last_seen).getTime() - new Date(a.last_seen).getTime());
-                
-                let displayedSessions = currentSessions;
-                if (filterDropdown.value !== "ALL") {
-                    displayedSessions = currentSessions.filter(s => (s.section || "N/A") === filterDropdown.value);
-                }
-                
-                document.getElementById('candidate-rows').innerHTML = displayedSessions.map(s => {
-                    if (autoProctor && s.status === "LOCKED" && s.pending_action !== "KICK") {
-                        sendAction(s.roll_no, 'KICK', null);
-                    }
-
-                    let tagClass = s.status === "LOCKED" ? "tag-locked" : (s.status === "WARNING" || s.violations >= 2 ? "tag-warning" : "tag-active");
-                    
-                    if (s.status === "LOCKED" || s.violations >= 7) locked++;
-                    else if (s.violations >= 2) suspicious++;
-                    else clean++;
-
-                    const secs = Math.floor((Date.now() - new Date(s.last_seen).getTime()) / 1000);
-                    let netHealth = "🟢"; 
-                    if (secs >= 25 && secs < 45) netHealth = "🟡"; 
-                    if (secs >= 45) netHealth = "🔴"; 
-
-                    let hashDisplay = s.hardware_hash;
-                    let collisionFlag = false;
-                    if (s.hardware_hash && s.hardware_hash !== "Unavailable" && hashCounts[s.hardware_hash] > 1) {
-                        hashDisplay = `<span class="tag tag-collision">⚠️ ${s.hardware_hash}</span>`;
-                        collisionFlag = true;
-                    }
-
-                    const branchTrimmed = (s.branch && s.branch.includes("Artificial Intelligence")) ? "AI & ML" : (s.branch || "N/A");
-
-                    return `
-                        <tr style="${collisionFlag ? 'background-color: #fff9f9;' : ''}">
-                            <td style="font-family: monospace; font-weight: 600;">${s.roll_no}</td>
-                            <td style="font-weight: bold;">${s.name}</td>
-                            <td>
-                                <span class="tag tag-section" style="margin-bottom: 4px; display: inline-block;">${s.section || "N/A"}</span><br>
-                                <span style="font-size: 11px; color: var(--text-secondary);">${branchTrimmed}</span>
-                            </td>
-                            <td title="Last Ping: ${secs}s ago">${netHealth}</td>
-                            <td><span class="tag ${tagClass}">${s.status}</span></td>
-                            <td style="font-weight: 700; font-size: 16px; color: ${s.violations >= 7 ? 'var(--danger)' : 'inherit'};">${s.violations}</td>
-                            <td style="font-family: monospace; font-size: 11px;">${hashDisplay}</td>
-                            <td>
-                                <button class="btn-secondary btn-small" onclick="viewLogs('${s.roll_no}')">👁️ Logs</button>
-                                <button class="btn-secondary btn-small" onclick="sendAction('${s.roll_no}', 'UNLOCK', this)">Unlock</button>
-                                <button class="btn-danger btn-small" onclick="sendAction('${s.roll_no}', 'KICK', this)">Kick</button>
-                            </td>
-                        </tr>
-                    `;
-                }).join("");
+                document.getElementById('candidate-rows').innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 30px;">Waiting for student connections...</td></tr>`;
+                document.getElementById('stat-avg-integrity').innerText = "100%";
+                return;
             }
+
+            const hashCounts = {};
+            currentSessions.forEach(s => {
+                if (s.hardware_hash && s.hardware_hash !== "Unavailable") {
+                    hashCounts[s.hardware_hash] = (hashCounts[s.hardware_hash] || 0) + 1;
+                }
+            });
+
+            currentSessions.sort((a, b) => (a.integrity_score ?? 100) - (b.integrity_score ?? 100));
+            let displayedSessions = currentSessions;
+            if (filterDropdown.value !== "ALL") {
+                displayedSessions = currentSessions.filter(s => (s.section || "N/A") === filterDropdown.value);
+            }
+
+            document.getElementById('candidate-rows').innerHTML = displayedSessions.map(s => {
+                if (autoProctor && s.violations >= 7 && s.pending_action !== "KICK") {
+                    sendAction(s.session_key, 'KICK');
+                }
+
+                const score = s.integrity_score ?? Math.max(0, 100 - (s.violations * 8));
+                scoreSum += score;
+                if (score >= 85) clean++;
+                else if (score >= 60) suspicious++;
+                else locked++;
+
+                const scoreClass = score >= 85 ? "score-high" : (score >= 60 ? "score-med" : "score-low");
+                const secs = Math.floor((Date.now() - new Date(s.last_seen).getTime()) / 1000);
+                let netHealth = secs < 25 ? "🟢" : (secs < 50 ? "🟡" : "🔴");
+
+                let collisionFlag = s.hardware_hash && hashCounts[s.hardware_hash] > 1;
+                let hashDisplay = collisionFlag ? `<span class="tag tag-collision">⚠️ ${s.hardware_hash}</span>` : s.hardware_hash;
+
+                return `
+                    <tr style="${collisionFlag ? 'background-color: #fff9f9;' : ''}">
+                        <td style="font-family: monospace; font-weight: 600;">${s.roll_no}</td>
+                        <td style="font-weight: bold;">${s.name}</td>
+                        <td><span class="tag tag-section">${s.section || "N/A"}</span></td>
+                        <td title="Last Seen: ${secs}s ago">${netHealth}</td>
+                        <td><span class="tag ${s.status === 'PAUSED' ? 'tag-paused' : (s.status === 'LOCKED' ? 'tag-locked' : 'tag-active')}">${s.status}</span></td>
+                        <td style="font-weight: bold; color: ${s.violations >= 7 ? 'var(--danger)' : 'inherit'};">${s.violations}</td>
+                        <td><span class="score-pill ${scoreClass}">${score}%</span></td>
+                        <td style="font-family: monospace; font-size: 11px;">${hashDisplay}</td>
+                        <td>
+                            <button class="btn-secondary btn-small" onclick="viewLogs('${s.session_key}')">👁️ Log</button>
+                            <button class="btn-warning btn-small" onclick="sendAction('${s.session_key}', '${s.is_paused ? 'RESUME' : 'PAUSE'}')">${s.is_paused ? '▶️ Resume' : '⏸️ Pause'}</button>
+                            <button class="btn-secondary btn-small" onclick="addTime('${s.session_key}', ${s.time_added_seconds || 0})">+5m</button>
+                            <button class="btn-secondary btn-small" onclick="authorizeDevice('${s.session_key}', '${s.hardware_hash}')">🔑 Auth HW</button>
+                            <button class="btn-danger btn-small" onclick="sendAction('${s.session_key}', 'KICK')">Kick</button>
+                        </td>
+                    </tr>
+                `;
+            }).join("");
 
             document.getElementById('stat-clean-count').innerText = clean;
             document.getElementById('stat-suspicious-count').innerText = suspicious;
             document.getElementById('stat-locked-count').innerText = locked;
+            document.getElementById('stat-avg-integrity').innerText = Math.round(scoreSum / currentSessions.length) + "%";
         }
 
-        // ==== ACTION HANDLERS ====
-        function viewLogs(rollNo) {
-            const student = currentSessions.find(s => s.roll_no === rollNo);
-            if (!student) return;
-            const logBox = document.getElementById('logs-content-body');
-            
-            if (!student.logs || student.logs.length === 0) {
-                logBox.innerText = `No forensic logs found for ${student.name} (${student.roll_no}). Session is clean.`;
-            } else {
-                logBox.innerHTML = `<strong>Forensic Output for ${student.name} (${student.roll_no})</strong>\n\n` + 
-                    student.logs.map(log => `[${log.time}] => ${log.reason}`).join("\n");
-            }
-            
-            document.getElementById('logs-overlay').classList.remove('hidden');
-        }
-
-        async function sendAction(rollNo, action, btnElement) {
-            if(btnElement) { btnElement.disabled = true; btnElement.innerText = "..."; }
+        // Faculty Overrides
+        async function sendAction(sessionKey, action) {
             try {
-                await fetch(`${SUPABASE_URL}/exam_sessions?roll_no=eq.${rollNo}`, {
+                await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${sessionKey}`, {
                     method: 'PATCH',
                     headers: supabaseHeaders,
-                    body: JSON.stringify({ pending_action: action })
+                    body: JSON.stringify({ pending_action: action, is_paused: action === 'PAUSE' ? true : (action === 'RESUME' ? false : undefined) })
                 });
-                setTimeout(fetchTelemetry, 1000); 
-            } catch (e) { alert("Action Failed"); if(btnElement) btnElement.disabled = false; }
+                fetchTelemetry();
+            } catch (e) {}
+        }
+
+        async function addTime(sessionKey, currentAdded) {
+            try {
+                await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${sessionKey}`, {
+                    method: 'PATCH',
+                    headers: supabaseHeaders,
+                    body: JSON.stringify({ time_added_seconds: currentAdded + 300 })
+                });
+                alert("✅ Added +5 minutes to student.");
+                fetchTelemetry();
+            } catch (e) {}
+        }
+
+        async function authorizeDevice(sessionKey, currentHash) {
+            try {
+                await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${sessionKey}`, {
+                    method: 'PATCH',
+                    headers: supabaseHeaders,
+                    body: JSON.stringify({ authorized_hash: currentHash })
+                });
+                alert("✅ Machine authorized for this student.");
+                fetchTelemetry();
+            } catch(e) {}
+        }
+
+        function viewLogs(sessionKey) {
+            const student = [...currentSessions, ...historicalSessions].find(s => s.session_key === sessionKey);
+            if (!student) return;
+            const logBox = document.getElementById('logs-content-body');
+            if (!student.logs || student.logs.length === 0) {
+                logBox.innerText = `No infractions recorded for ${student.name} (${student.roll_no}). Full compliance.`;
+            } else {
+                logBox.innerHTML = `<strong>Audit Output for ${student.name} (${student.roll_no})</strong>\nIntegrity: ${student.integrity_score}%\n\n` + 
+                    student.logs.map(l => `[${l.time}] => ${l.reason}`).join("\n");
+            }
+            document.getElementById('logs-overlay').classList.remove('hidden');
         }
 
         async function broadcastMessage() {
             const msg = document.getElementById('announce-input').value.trim();
             if (!msg) return;
-            try {
-                await fetch(`${SUPABASE_URL}/exam_config?id=eq.1`, {
-                    method: 'PATCH',
-                    headers: supabaseHeaders,
-                    body: JSON.stringify({ announcement: msg })
-                });
-                alert("Announcement broadcasted successfully!");
-                document.getElementById('announce-input').value = "";
-            } catch (e) { alert("Broadcast Failed"); }
+            await fetch(`${SUPABASE_URL}/exam_config?id=eq.1`, {
+                method: 'PATCH',
+                headers: supabaseHeaders,
+                body: JSON.stringify({ announcement: msg })
+            });
+            alert("Broadcast sent.");
+            document.getElementById('announce-input').value = "";
         }
 
-        function downloadCSV() {
-            if (currentSessions.length === 0) return alert("No data to export.");
+        // Exam Archive & History (Tab 3)
+        async function fetchExamHistory() {
+            try {
+                const res = await fetch(`${SUPABASE_URL}/exam_sessions?select=exam_id`, { headers: supabaseHeaders });
+                const data = await res.json();
+                const uniqueExams = [...new Set(data.map(d => d.exam_id))].filter(id => id !== ACTIVE_EXAM_ID);
+                
+                const selector = document.getElementById('history-exam-selector');
+                selector.innerHTML = `<option value="">Select an archived exam...</option>` + 
+                    uniqueExams.map(id => `<option value="${id}">${id}</option>`).join('');
+            } catch(e) {}
+        }
+
+        async function loadHistoricalSessionData() {
+            const examId = document.getElementById('history-exam-selector').value;
+            if (!examId) return;
+            try {
+                const res = await fetch(`${SUPABASE_URL}/exam_sessions?exam_id=eq.${examId}&select=*`, { headers: supabaseHeaders });
+                historicalSessions = await res.json();
+                
+                document.getElementById('history-rows').innerHTML = historicalSessions.map(s => `
+                    <tr>
+                        <td style="font-family: monospace;">${s.roll_no}</td>
+                        <td style="font-weight: bold;">${s.name}</td>
+                        <td>${s.section || "N/A"}</td>
+                        <td><span class="tag ${s.status === 'LOCKED' ? 'tag-locked' : 'tag-active'}">${s.status}</span></td>
+                        <td>${s.violations}</td>
+                        <td><strong>${s.integrity_score ?? 100}%</strong></td>
+                        <td><button class="btn-secondary btn-small" onclick="viewLogs('${s.session_key}')">👁️ Audit Log</button></td>
+                    </tr>
+                `).join('');
+            } catch(e) {}
+        }
+
+        function downloadCSV(dataArray, filenamePrefix) {
+            if (!dataArray || dataArray.length === 0) return alert("No telemetry to export.");
             const rows = [
-                ["Roll Number", "Name", "Section", "Course", "Branch", "Status", "Strikes", "HW Hash", "Last Seen"],
-                ...currentSessions.map(s => [
-                    s.roll_no, `"${s.name}"`, s.section || "N/A", s.course || "N/A", `"${s.branch || "N/A"}"`, 
-                    s.status, s.violations, s.hardware_hash, new Date(s.last_seen).toISOString()
+                ["Roll Number", "Name", "Section", "Status", "Violations", "Integrity Score", "HW Hash", "Last Seen"],
+                ...dataArray.map(s => [
+                    s.roll_no, `"${s.name}"`, s.section || "N/A", s.status, s.violations, s.integrity_score, s.hardware_hash, s.last_seen
                 ])
             ];
-            const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
             const link = document.createElement("a");
-            link.setAttribute("href", encodeURI(csvContent));
-            link.setAttribute("download", `Exam_Audit_${new Date().toISOString().split('T')[0]}.csv`);
-            document.body.appendChild(link);
+            link.href = encodeURI("data:text/csv;charset=utf-8," + rows.map(r => r.join(",")).join("\n"));
+            link.download = `${filenamePrefix}_${new Date().toISOString().split('T')[0]}.csv`;
             link.click();
-            document.body.removeChild(link);
+        }
+
+        function exportHistoricalCSV() {
+            const examId = document.getElementById('history-exam-selector').value;
+            if (!examId) return alert("Select an exam first.");
+            downloadCSV(historicalSessions, examId);
         }
     </script>
 </body>
