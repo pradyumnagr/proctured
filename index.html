@@ -325,6 +325,17 @@
                 } catch(e) {}
             }
 
+            // Cross-platform robust fullscreen request handler (fixes Android issues)
+            function requestRobustFullscreen() {
+                const el = document.documentElement;
+                try {
+                    if (el.requestFullscreen) el.requestFullscreen();
+                    else if (el.mozRequestFullScreen) el.mozRequestFullScreen();
+                    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+                    else if (el.msRequestFullscreen) el.msRequestFullscreen();
+                } catch (e) {}
+            }
+
             function generateHardwareFingerprint() {
                 try {
                     const canvas = document.createElement('canvas');
@@ -345,17 +356,10 @@
             }
             hardwareHashValue = generateHardwareFingerprint();
 
-            // Zero-Tolerance Clipboard Lockdown
+            // Zero-Tolerance Clipboard Lockdown (Silent implementation - no browser popups)
             document.addEventListener('copy', (e) => { e.preventDefault(); triggerExactWarning("Copying text is prohibited."); });
             document.addEventListener('cut', (e) => { e.preventDefault(); triggerExactWarning("Cutting text is prohibited."); });
             document.addEventListener('paste', (e) => { e.preventDefault(); triggerExactWarning("Pasting text is prohibited."); });
-
-            // Periodic Clipboard Sanitizer
-            _setInterval(() => {
-                if (isExamActive && navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText('').catch(() => {});
-                }
-            }, 3000);
 
             // Watermark Generator
             function renderWatermark() {
@@ -806,9 +810,7 @@
                 _setTimeout(() => { isTransitioning = false; }, 3000);
                 document.getElementById('warning-overlay').style.display = 'none';
                 document.getElementById('exam-container').style.display = 'block';
-                if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
-                    try { await document.documentElement.requestFullscreen(); } catch (e) {}
-                }
+                requestRobustFullscreen();
                 activateLockdownProtocols();
                 lastInternalTick = _Date_now(); isExamActive = true; 
             });
@@ -859,7 +861,7 @@
 
             resumeFinalBtn.addEventListener('click', async () => {
                 try {
-                    if (document.documentElement.requestFullscreen) { await document.documentElement.requestFullscreen(); }
+                    requestRobustFullscreen();
                     document.getElementById('timeout-screen').classList.add('hidden');
                     document.getElementById('exam-container').style.display = 'block';
                     document.getElementById('status-bar-container').style.display = 'flex';
@@ -868,8 +870,12 @@
                 } catch (e) {}
             });
 
+            // Start Exam with Synchronous Mobile-Safe Fullscreen
             startBtn.addEventListener('click', async () => {
                 if (!examAgreementCheckbox.checked || STUDENT_NAME === '' || !permissionsGranted) return;
+                
+                // Fire fullscreen request synchronously BEFORE any awaits
+                requestRobustFullscreen();
 
                 document.getElementById('active-student-name').innerText = "👤 " + STUDENT_NAME;
                 watermarkOverlay.classList.remove('hidden');
@@ -877,7 +883,6 @@
                 try {
                     isTransitioning = true;
                     _setTimeout(() => { isTransitioning = false; }, 3000);
-                    if (document.documentElement.requestFullscreen) { await document.documentElement.requestFullscreen(); }
                     activateLockdownProtocols();
 
                     document.getElementById('instruction-screen').style.display = 'none';
@@ -968,6 +973,7 @@
                 document.getElementById('exam-container').style.display = 'block';
                 document.getElementById('status-bar-container').style.display = 'flex';
                 watermarkOverlay.classList.remove('hidden');
+                requestRobustFullscreen();
                 activateLockdownProtocols();
                 lastInternalTick = _Date_now(); isExamActive = true; 
             });
