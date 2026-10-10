@@ -4,11 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Proctored Exam Portal</title>
-    <!-- 1. Google reCAPTCHA Script -->
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f6f9; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; user-select: none; -webkit-user-select: none; overflow-x: hidden; }
-        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 90%; max-width: 650px; text-align: center; max-height: 90vh; overflow-y: auto; box-sizing: border-box; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 90%; max-width: 650px; text-align: center; max-height: 90vh; overflow-y: auto; box-sizing: border-box; position: relative; z-index: 10; }
         
         #status-bar-container { display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 1000; justify-content: space-between; align-items: center; background: #202124; color: white; padding: 10px 20px; font-weight: bold; font-size: 15px; }
         #timer-pill { background: #d93025; padding: 4px 12px; border-radius: 4px; }
@@ -17,10 +16,10 @@
         @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(1.2); } 100% { opacity: 1; transform: scale(1); } }
         .pulse-dot { width: 12px; height: 12px; background-color: #ff4444; border-radius: 50%; animation: pulse 1.5s infinite; }
 
-        #offline-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000000; z-index: 9999999; justify-content: center; align-items: center; color: white; flex-direction: column; text-align: center; padding: 20px; box-sizing: border-box; }
-
-        #warning-overlay, #screen-share-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.85); z-index: 99999; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
-        .warning-box { background: #ffffff; border-top: 8px solid #d93025; padding: 30px; border-radius: 10px; max-width: 480px; width: 90%; text-align: center; }
+        /* Full Screen Overlays */
+        #offline-overlay, #pause-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000000; z-index: 9999999; justify-content: center; align-items: center; color: white; flex-direction: column; text-align: center; padding: 20px; box-sizing: border-box; }
+        #warning-overlay, #screen-share-overlay, #hardware-lock-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.88); z-index: 99999; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
+        .warning-box { background: #ffffff; border-top: 8px solid #d93025; padding: 30px; border-radius: 10px; max-width: 480px; width: 90%; text-align: center; color: #202124; }
         .warning-box h3 { color: #d93025; margin-top: 0; font-size: 22px; }
         
         .ack-container { text-align: left; background: #fff3f3; padding: 12px; border-radius: 6px; border: 1px solid #ffcdd2; margin-bottom: 20px; }
@@ -32,7 +31,7 @@
         .btn-ack:not(:disabled):hover { background: #b3261e; cursor: pointer; }
 
         .instruction-box { background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; text-align: left; max-height: 200px; overflow-y: auto; margin-bottom: 20px; font-size: 14px; color: #333; line-height: 1.6; }
-        .instruction-box h4 { margin-top: 0; color: #1a73e8; font-size: 16px; margin-bottom: 10px;}
+        .instruction-box h4 { margin-top: 0; color: #1a73e8; font-size: 16px; margin-bottom: 10px; }
         .instruction-box ul { padding-left: 20px; margin-top: 5px; }
         .instruction-box li { margin-bottom: 8px; }
         
@@ -40,10 +39,10 @@
         .input-group label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #333; }
         .input-group input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
         
-        .system-check-box { background: #e8f0fe; padding: 15px; border-radius: 6px; border: 1px solid #d2e3fc; margin-bottom: 20px; text-align: left;}
+        .system-check-box { background: #e8f0fe; padding: 15px; border-radius: 6px; border: 1px solid #d2e3fc; margin-bottom: 20px; text-align: left; }
         
-        button.btn-primary { background: #1a73e8; color: white; border: none; padding: 14px; border-radius: 6px; width: 100%; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.2s;}
-        button.btn-primary:disabled { background: #cccccc; cursor: not-allowed; color: #666;}
+        button.btn-primary { background: #1a73e8; color: white; border: none; padding: 14px; border-radius: 6px; width: 100%; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.2s; }
+        button.btn-primary:disabled { background: #cccccc; cursor: not-allowed; color: #666; }
         button.btn-primary:not(:disabled):hover { background: #1557b0; }
         
         #penalty-timer { font-size: 48px; font-weight: bold; color: #d93025; font-family: monospace; display: block; margin: 20px 0; }
@@ -52,6 +51,16 @@
         #exam-container { display: none; width: 100vw; height: 100vh; padding-top: 40px; box-sizing: border-box; overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .hidden { display: none !important; }
         .designer-credit { margin-top: 25px; font-family: 'Brush Script MT', cursive; font-size: 15px; color: #888; font-style: italic; }
+
+        /* Dynamic Visual Watermark Overlay */
+        #watermark-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            pointer-events: none; z-index: 99990; opacity: 0.14;
+            display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(4, 1fr);
+            color: #000000; font-family: monospace; font-size: 14px; font-weight: bold;
+            padding: 20px; box-sizing: border-box; overflow: hidden;
+        }
+        .wm-item { transform: rotate(-25deg); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
     </style>
 </head>
 <body>
@@ -66,14 +75,20 @@
     </noscript>
 
     <div class="screenshot-flash" id="flash-overlay"></div>
+    <div id="watermark-overlay" class="hidden"></div>
 
     <div id="offline-overlay">
-        <h1 style="color: #d93025; font-size: 45px; margin-bottom: 10px; margin-top: 0;">⚠️ OFFLINE</h1>
-        <p style="font-size: 20px; font-weight: bold;">Exam Paused: Internet connection lost.</p>
-        <p style="font-size: 16px; color: #ccc; max-width: 400px; line-height: 1.5;">Please reconnect to Wi-Fi or Cellular Data to automatically resume.</p>
+        <h1 style="color: #d93025; font-size: 45px; margin-bottom: 10px; margin-top: 0;">⚠️ CONNECTION LOST</h1>
+        <p style="font-size: 20px; font-weight: bold;">Exam Paused: Background Security is Active</p>
+        <p style="font-size: 16px; color: #ccc; max-width: 450px; line-height: 1.5;">All background activities are monitored and spooled. Reconnect to resume your exam.</p>
     </div>
 
-    <!-- Status Bar with Bold Name Badge -->
+    <div id="pause-overlay">
+        <h1 style="color: #f9ab00; font-size: 45px; margin-bottom: 10px; margin-top: 0;">⏸️ EXAM PAUSED</h1>
+        <p style="font-size: 20px; font-weight: bold;">Your exam has been paused by the invigilator.</p>
+        <p style="font-size: 16px; color: #ccc; max-width: 450px; line-height: 1.5;">Your time has been frozen. Please wait for the faculty to resume your session.</p>
+    </div>
+
     <div id="status-bar-container">
         <div style="display: flex; align-items: center; gap: 8px;">
             <div class="pulse-dot"></div>
@@ -84,11 +99,11 @@
         <div>Strikes: <span id="violations-pill">0</span></div>
     </div>
 
+    <!-- Screen 1: Lobby with CAPTCHA -->
     <div id="lobby-screen" class="card hidden">
         <h2 style="margin-top: 0; color: #1a73e8;">🎓 Welcome to the Exam Portal</h2>
-        <p style="font-size: 15px; color: #333; margin-bottom: 25px;">Click below to connect to the server and fetch your active exam.</p>
+        <p style="font-size: 15px; color: #333; margin-bottom: 25px;">Solve the security verification below to connect to the active exam session.</p>
         
-        <!-- 2. Google reCAPTCHA Widget with Provided Key -->
         <div style="text-align: center; margin-bottom: 20px;">
             <div class="g-recaptcha" data-sitekey="6Lfw_OctAAAAANKh2H519OSbWgyyhhbCouWUA3yM" style="display: inline-block;"></div>
         </div>
@@ -100,27 +115,23 @@
         <div class="designer-credit">Designed by Pradyumn</div>
     </div>
 
+    <!-- Screen 2: Identity & Instructions -->
     <div id="instruction-screen" class="card hidden">
         <h2 style="margin-top: 0; color: #202124;">Exam Setup & Rules</h2>
         
-        <!-- PHASE 1: SECURE AUTHENTICATION -->
         <div id="auth-phase" class="input-group" style="background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #e0e0e0; margin-bottom: 20px;">
             <label style="color: #1a73e8; font-size: 16px; margin-bottom: 10px;">1. Identity Verification</label>
             <input type="text" id="roll-no-input" placeholder="13-Digit Roll Number" maxlength="13" required style="margin-bottom: 10px;">
             <input type="text" id="dob-input" placeholder="Date of Birth (DD/MM/YYYY)" maxlength="10" required style="margin-bottom: 10px; display: none;">
-            
             <input type="text" id="open-name-input" placeholder="Enter Full Name" style="margin-bottom: 10px; display: none;">
             
             <button id="verify-btn" class="btn-primary" style="width: 100%; background: #34a853; display: none;">🔍 Verify Identity</button>
-            <p id="roll-error" style="color: #d93025; font-size: 13px; margin-top: 10px; display: none; font-weight: bold;">❌ Authentication Failed: Invalid Details.</p>
+            <p id="roll-error" style="color: #d93025; font-size: 13px; margin-top: 10px; display: none; font-weight: bold;">❌ Authentication Failed.</p>
         </div>
 
-        <!-- PHASE 2: CONFIRMATION & SETUP -->
         <div id="setup-phase" style="display: none;">
-            
-            <!-- DIGITAL ID PROFILE CARD -->
             <div id="student-profile-card" style="background: #e8f0fe; border: 1px solid #d2e3fc; border-radius: 8px; padding: 15px; margin-bottom: 20px; text-align: left;">
-                <h4 style="margin: 0 0 10px 0; color: #1a73e8; border-bottom: 1px solid #adcbf9; padding-bottom: 5px;">✅ Verified Profile Information</h4>
+                <h4 style="margin: 0 0 10px 0; color: #1a73e8; border-bottom: 1px solid #adcbf9; padding-bottom: 5px;">✅ Verified Profile</h4>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; color: #202124;">
                     <div style="grid-column: 1 / -1;"><strong>Name:</strong> <span id="profile-name" style="font-size: 15px; font-weight: bold;"></span></div>
                     <div><strong>Roll No:</strong> <span id="profile-roll"></span></div>
@@ -129,69 +140,73 @@
                     <div><strong>Year:</strong> <span id="profile-year"></span></div>
                     <div><strong>Section:</strong> <span id="profile-section"></span></div>
                 </div>
-                <p style="margin: 12px 0 0 0; font-size: 12px; color: #d93025; font-weight: bold; background: #fff; padding: 8px; border-radius: 4px;">⚠️ Please verify the above details belong to you before proceeding.</p>
             </div>
 
             <div class="instruction-box">
-                <h4>2. Strict Proctoring Rules</h4>
+                <h4>2. Zero-Tolerance Proctoring Directives</h4>
                 <ul>
-                    <li><strong>No Tab Switching:</strong> You cannot open other tabs, browsers, or apps.</li>
-                    <li><strong>No Back Button:</strong> You must only move forward in the exam.</li>
-                    <li><strong>No Google Search PIP:</strong> Highlighting text triggers an instant violation.</li>
-                    <li><strong>Screen Share Required:</strong> (Desktop) You must select "Entire Screen".</li>
+                    <li><strong>Locked Environment:</strong> Fullscreen & OS shortcuts locked.</li>
+                    <li><strong>No External Displays:</strong> Dual monitors will terminate access.</li>
+                    <li><strong>Clipboard Locked:</strong> Copy and Paste are strictly disabled.</li>
+                    <li><strong>Screen Share Required:</strong> You must select "Entire Screen".</li>
                 </ul>
             </div>
 
             <div class="system-check-box">
-                <label style="display: block; color: #1a73e8; font-weight: bold; margin-bottom: 8px;">3. System Check (Required):</label>
-                <button id="grant-perm-btn" type="button" style="background: #1a73e8; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%;">📸 Grant Camera & Screen Share Access</button>
-                <p id="perm-status" style="font-size: 13px; color: #555; margin-top: 8px; margin-bottom: 0; font-weight: bold;">Status: Waiting for permission...</p>
+                <label style="display: block; color: #1a73e8; font-weight: bold; margin-bottom: 8px;">3. System Integrity Check (Required):</label>
+                <button id="grant-perm-btn" type="button" style="background: #1a73e8; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%;">📸 Authorize Camera & Screen Share</button>
+                <p id="perm-status" style="font-size: 13px; color: #555; margin-top: 8px; margin-bottom: 0; font-weight: bold;">Status: Waiting for verification...</p>
             </div>
 
             <div style="text-align: left; margin-bottom: 20px;">
                 <label class="ack-label">
                     <input type="checkbox" id="exam-agreement-checkbox" class="ack-checkbox">
-                    <strong>4. I confirm my details are correct and agree to the rules.</strong>
+                    <strong>4. I confirm my details are correct and submit to monitoring.</strong>
                 </label>
             </div>
 
-            <button id="start-btn" class="btn-primary" disabled>Complete All Steps Above to Start</button>
+            <button id="start-btn" class="btn-primary" disabled>Complete Steps Above to Start</button>
         </div>
         <div class="designer-credit">Designed by Pradyumn</div>
     </div>
 
-    <!-- Overlays -->
+    <!-- Warnings & Lockouts -->
     <div id="warning-overlay">
         <div class="warning-box">
-            <h3>⚠️ SECURITY WARNING</h3>
+            <h3>⚠️ SECURITY INFRACTION</h3>
             <p id="warning-detail" style="font-size: 15px;">Violation details go here.</p>
             <p style="color: #777; font-size: 13px;" id="warning-strike-count"></p>
-            <p style="color: #d93025; font-weight: bold; font-size: 14px; margin: 20px 0;">WARNING: Reaching the threshold will trigger a lockout.</p>
+            <p style="color: #d93025; font-weight: bold; font-size: 14px; margin: 20px 0;">Excessive violations will trigger an automated lockout.</p>
             <div class="ack-container">
                 <label class="ack-label">
                     <input type="checkbox" id="violation-checkbox" class="ack-checkbox">
-                    I acknowledge this security violation and understand the penalty rules.
+                    I acknowledge this violation and understand the consequences.
                 </label>
             </div>
             <button class="btn-ack" id="violation-ack-btn" disabled>Acknowledge & Return to Exam</button>
         </div>
     </div>
 
+    <div id="hardware-lock-overlay">
+        <div class="warning-box" style="border-top: 8px solid #d93025;">
+            <h3>⛔ CONCURRENT HARDWARE DETECTED</h3>
+            <p style="font-size: 14px; line-height: 1.5; color: #333;">This student identity is already active on a different computer hardware profile.</p>
+            <p style="font-size: 13px; color: #777; background: #f8f9fa; padding: 10px; border-radius: 6px; font-family: monospace;">A device transfer request has been flagged in the Faculty Command Center. Please ask your invigilator to authorize this machine.</p>
+            <button class="btn-primary" onclick="window.location.reload()">Retry Connection</button>
+        </div>
+    </div>
+
     <div id="screen-share-overlay">
         <div class="warning-box" style="border-top: 8px solid #ea8600;">
-            <h3 style="color: #ea8600;">⚠️ SCREEN SHARE STOPPED</h3>
-            <p style="font-size: 15px; margin-bottom: 15px;">You have stopped sharing your screen. This is a severe violation.</p>
-            <p style="color: #d93025; font-weight: bold; margin-bottom: 25px; background: #fff3f3; padding: 10px; border-radius: 6px;">
-                You have exactly ONE last chance to resume screen sharing.
-            </p>
+            <h3 style="color: #ea8600;">⚠️ SCREEN SHARE DROPPED</h3>
+            <p style="font-size: 15px;">Screen sharing was terminated. You have exactly one attempt to restore it.</p>
             <button id="restart-screen-btn" class="btn-primary" style="background: #ea8600;">Restart Screen Share Now</button>
         </div>
     </div>
 
     <div id="timeout-screen" class="card hidden" style="border-top: 10px solid #d93025;">
         <h2 style="color: #d93025; margin-top: 0;">TEMPORARY LOCKOUT</h2>
-        <p style="font-size: 16px; color: #333; font-weight: bold;">You have reached the maximum Security Violations.</p>
-        <p style="color: #555; font-size: 14px; margin-bottom: 5px;">Your exam has been paused as a penalty.</p>
+        <p style="font-size: 16px; color: #333; font-weight: bold;">Strike limit reached. Exam temporarily paused.</p>
         <span id="penalty-timer">05:00</span>
         <button id="resume-final-btn" class="btn-primary" disabled>Please wait...</button>
     </div>
@@ -203,22 +218,21 @@
         <p id="final-message">Please wait.</p>
         
         <div id="unlock-section" style="display: none; margin-top: 25px; border-top: 1px solid #eee; padding-top: 25px;">
-            <p style="color: #d93025; font-size: 15px; font-weight: bold; margin-bottom: 15px;">🔒 EXAM LOCKED DUE TO VIOLATIONS</p>
+            <p style="color: #d93025; font-size: 15px; font-weight: bold;">🔒 EXAM LOCKED</p>
             <div style="text-align: left; background: #fff3f3; padding: 12px; border-radius: 6px; border: 1px solid #ffcdd2; margin-bottom: 15px;">
-                <label style="display: flex; align-items: flex-start; cursor: pointer; font-size: 14px; color: #333; line-height: 1.4;">
-                    <input type="checkbox" id="confession-checkbox" style="margin-right: 12px; width: 18px; height: 18px; margin-top: 2px;">
-                    I accept that I violated the exam rules. I sincerely apologize to the faculty.
+                <label style="display: flex; align-items: flex-start; cursor: pointer; font-size: 14px;">
+                    <input type="checkbox" id="confession-checkbox" style="margin-right: 12px; width: 18px; height: 18px;">
+                    I accept responsibility for infractions and request authorization.
                 </label>
             </div>
-            <input type="password" id="unlock-key-input" placeholder="Enter Faculty Unlock Key" style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 14px; margin-bottom: 10px;">
-            <button id="unlock-btn" class="btn-primary" disabled style="background: #d93025; margin-top: 5px;">Submit Apology & Unlock Exam</button>
-            <p id="unlock-error" style="color: red; font-size: 13px; display: none; margin-top: 10px; font-weight: bold;">❌ Incorrect Unlock Key!</p>
+            <input type="password" id="unlock-key-input" placeholder="Faculty Unlock Key" style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 10px;">
+            <button id="unlock-btn" class="btn-primary" disabled style="background: #d93025;">Unlock Exam</button>
+            <p id="unlock-error" style="color: red; font-size: 13px; display: none; font-weight: bold;">❌ Invalid Key!</p>
         </div>
     </div>
 
     <script>
         (function() {
-            // ================= SUPABASE CONFIGURATION =================
             const SUPABASE_URL = "https://xvxrqyalzmldkorgtqhi.supabase.co/rest/v1";
             const SUPABASE_KEY = "sb_publishable_5R6XZ1enV3PJfk3Ju4vDVw_w25oPsJh"; 
 
@@ -234,39 +248,41 @@
             const _setInterval = setInterval;
             const _setTimeout = setTimeout;
 
-            const ENCRYPTED_KEY = [117, 119, 102, 105, 126, 122, 114, 115, 120, 110, 119, 120, 116, 119, 119, 126]; 
+            const ENCRYPTED_KEY = [117, 119, 102, 105, 126, 122, 114, 115, 120, 110, 119, 120, 116, 119, 119, 126];
 
-            let PREFIX = null;
+            let CURRENT_EXAM_ID = "DEFAULT";
             let DECODED_FORM_URL = "";
-            let TOTAL_FORM_SECTIONS = 0;
+            let TOTAL_FORM_SECTIONS = 2;
             let MAX_STRIKES = 7;
             let AUDIO_THRESHOLD = 150;
             let REQUIRE_SCREENSHARE = true;
             let TARGET_AUDIENCE = "ALL";
+            let EXAM_DURATION_MINUTES = 120;
             let lastAnnouncement = null;
 
-            // Global Student Data
             let STUDENT_NAME = "";
+            let STUDENT_ROLL = "";
             let STUDENT_SECTION = "N/A";
             let STUDENT_COURSE = "N/A";
             let STUDENT_BRANCH = "N/A";
 
-            let isExamActive = false; 
-            let isTransitioning = false; 
+            let isExamActive = false;
+            let isTransitioning = false;
+            let isPausedByFaculty = false;
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-            
+
             let tabSwitchCount = 0;
             let violationLogs = [];
+            let offlineSpooledLogs = [];
             let timerInterval, penaltyInterval, mediaStream = null, screenStream = null;
             let permissionsGranted = false;
-            let screenShareDrops = 0; 
-            
-            let initialWindowWidth = window.innerWidth;
-            let initialWindowHeight = window.innerHeight;
-            let lastWarningTime = 0;
-            let formLoadCount = 0; 
+            let screenShareDrops = 0;
+            let formLoadCount = 0;
             let hardwareHashValue = "Not Generated";
-            let lastInternalTick = _Date_now(); 
+            let lastInternalTick = _Date_now();
+            let serverTimeOffsetMs = 0;
+            let examServerEndTime = 0;
+            let addedTimeSeconds = 0;
 
             let audioInterval = null, audioContext = null, focusPollerInterval = null, masterSecurityInterval = null;
 
@@ -285,21 +301,105 @@
             const openNameInput = document.getElementById('open-name-input');
             const rollError = document.getElementById('roll-error');
             const profileCard = document.getElementById('student-profile-card');
-            
             const container = document.getElementById('exam-container');
             const confessionCheckbox = document.getElementById('confession-checkbox');
             const unlockKeyInput = document.getElementById('unlock-key-input');
             const unlockBtn = document.getElementById('unlock-btn');
             const unlockError = document.getElementById('unlock-error');
+            const watermarkOverlay = document.getElementById('watermark-overlay');
 
             if (isMobile) grantPermBtn.innerText = "📸 Grant Camera & Mic Access";
             document.getElementById('lobby-screen').classList.remove('hidden');
-            
-            // 3. Updated Connection Logic with CAPTCHA Validation
+
+            function getServerNow() {
+                return _Date_now() + serverTimeOffsetMs;
+            }
+
+            async function syncServerTime(responseObj) {
+                try {
+                    const dateHeader = responseObj.headers.get('date');
+                    if (dateHeader) {
+                        const serverUtc = new Date(dateHeader).getTime();
+                        serverTimeOffsetMs = serverUtc - _Date_now();
+                    }
+                } catch(e) {}
+            }
+
+            function generateHardwareFingerprint() {
+                try {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    ctx.textBaseline = "top"; ctx.font = "14px 'Arial'"; 
+                    ctx.fillStyle = "#f60"; ctx.fillRect(125,1,62,20);
+                    ctx.fillStyle = "#069"; ctx.fillText("ProctorHash", 2, 15);
+                    ctx.fillStyle = "rgba(102, 204, 0, 0.7)"; ctx.fillText("ProctorHash", 4, 17);
+                    const b64 = canvas.toDataURL();
+                    let hash = 0;
+                    for (let i = 0; i < b64.length; i++) {
+                        let char = b64.charCodeAt(i);
+                        hash = ((hash << 5) - hash) + char;
+                        hash = hash & hash;
+                    }
+                    return Math.abs(hash).toString(16);
+                } catch(e) { return "Unavailable"; }
+            }
+            hardwareHashValue = generateHardwareFingerprint();
+
+            // Zero-Tolerance Clipboard Lockdown
+            document.addEventListener('copy', (e) => { e.preventDefault(); triggerExactWarning("Copying text is prohibited."); });
+            document.addEventListener('cut', (e) => { e.preventDefault(); triggerExactWarning("Cutting text is prohibited."); });
+            document.addEventListener('paste', (e) => { e.preventDefault(); triggerExactWarning("Pasting text is prohibited."); });
+
+            // Periodic Clipboard Sanitizer
+            _setInterval(() => {
+                if (isExamActive && navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText('').catch(() => {});
+                }
+            }, 3000);
+
+            // Watermark Generator
+            function renderWatermark() {
+                if (!watermarkOverlay) return;
+                const ts = new Date(getServerNow()).toLocaleTimeString();
+                watermarkOverlay.innerHTML = Array(12).fill(0).map(() => `
+                    <div class="wm-item">
+                        <span>${STUDENT_NAME || "STUDENT"}</span>
+                        <span>${STUDENT_ROLL}</span>
+                        <span>${ts}</span>
+                    </div>
+                `).join('');
+            }
+            _setInterval(() => { if (isExamActive) renderWatermark(); }, 1000);
+
+            // Secondary Monitor Interceptor
+            function detectSecondaryMonitor() {
+                if (window.screen && window.screen.isExtended) return true;
+                return false;
+            }
+
+            // Virtual Webcam & Bot Automation Detector
+            async function verifyCleanHardwareEnvironment() {
+                if (navigator.webdriver) {
+                    alert("SECURITY TERMINATION: Automated bot browsers are prohibited.");
+                    return false;
+                }
+                try {
+                    const devices = await navigator.mediaDevices.enumerateDevices();
+                    const videoDevices = devices.filter(d => d.kind === 'videoinput');
+                    for (let dev of videoDevices) {
+                        const lbl = dev.label.toLowerCase();
+                        if (lbl.includes("obs") || lbl.includes("virtual") || lbl.includes("snap camera") || lbl.includes("manycam") || lbl.includes("vcam")) {
+                            alert("SECURITY VIOLATION: Virtual Camera Software (" + dev.label + ") detected. Uninstall or disable it to proceed.");
+                            return false;
+                        }
+                    }
+                } catch(e) {}
+                return true;
+            }
+
+            // Connection with CAPTCHA Gate
             document.getElementById('join-exam-btn').addEventListener('click', async () => {
                 const errorMsg = document.getElementById('lobby-error');
-                
-                // Verify CAPTCHA is solved
                 const recaptchaResponse = grecaptcha.getResponse();
                 if (recaptchaResponse.length === 0) {
                     errorMsg.innerText = "❌ Please complete the CAPTCHA to verify you are human.";
@@ -314,25 +414,28 @@
 
                 try {
                     const res = await fetch(`${SUPABASE_URL}/exam_config?id=eq.1&select=*`, { headers: supabaseHeaders });
+                    await syncServerTime(res);
                     const data = await res.json();
                     
                     if (!data || data.length === 0 || !data[0].is_active) {
-                        errorMsg.innerText = "❌ No exam is currently active. Please wait.";
+                        errorMsg.innerText = "❌ No exam is currently active. Please wait for faculty deployment.";
                         errorMsg.style.display = 'block';
                         btn.innerText = "Connect & Join Exam";
                         btn.disabled = false;
-                        grecaptcha.reset(); // Reset CAPTCHA on failure
+                        grecaptcha.reset();
                         return;
                     }
                     
                     const config = data[0];
+                    CURRENT_EXAM_ID = config.exam_id;
+                    EXAM_DURATION_MINUTES = config.duration_minutes || 120;
                     initStudentSession(config.form_url, config.sections, config.target_audience, config.max_strikes, config.audio_limit, config.require_screen_share);
                 } catch (e) {
                     errorMsg.innerText = "❌ Failed to reach exam server. Check your connection.";
                     errorMsg.style.display = 'block';
                     btn.innerText = "Connect & Join Exam";
                     btn.disabled = false;
-                    grecaptcha.reset(); // Reset CAPTCHA on failure
+                    grecaptcha.reset();
                 }
             });
 
@@ -345,18 +448,6 @@
                     AUDIO_THRESHOLD = audioLimit || 150;
                     REQUIRE_SCREENSHARE = reqScreenShare ?? true;
                     
-                    let urlHash = 0;
-                    for (let i = 0; i < DECODED_FORM_URL.length; i++) {
-                        urlHash = ((urlHash << 5) - urlHash) + DECODED_FORM_URL.charCodeAt(i);
-                        urlHash |= 0;
-                    }
-                    PREFIX = "ex_" + Math.abs(urlHash) + "_";
-                    
-                    tabSwitchCount = parseInt(localStorage.getItem(PREFIX + 'tabSwitches') || '0');
-                    violationLogs = JSON.parse(localStorage.getItem(PREFIX + 'violationLogs') || '[]');
-                    screenShareDrops = parseInt(localStorage.getItem(PREFIX + 'screenDrops') || '0');
-
-                    // Setup Auth UI Phase
                     if (TARGET_AUDIENCE !== "OPEN") {
                         dobInput.style.display = 'block';
                         verifyBtn.style.display = 'block';
@@ -371,24 +462,12 @@
                     }
 
                     document.getElementById('lobby-screen').classList.add('hidden');
-                    
-                    if (localStorage.getItem(PREFIX + 'examLocked') === 'true') {
-                        document.getElementById('result-screen').classList.remove('hidden');
-                        document.getElementById('final-title').innerText = "Exam Locked";
-                        document.getElementById('final-title').style.color = "#d93025";
-                        document.getElementById('final-message').innerText = "You have been locked out of this exam due to security violations.";
-                        document.getElementById('unlock-section').style.display = 'block';
-                        startTelemetryPing(); 
-                    } else {
-                        document.getElementById('instruction-screen').classList.remove('hidden');
-                    }
+                    document.getElementById('instruction-screen').classList.remove('hidden');
                 } catch(e) {
-                    alert("A critical initialization error occurred.");
                     window.location.reload();
                 }
             }
 
-            // AUTO-SLASH FORMATTER FOR DOB
             dobInput.addEventListener('input', function(e) {
                 let v = this.value.replace(/\D/g, ''); 
                 if (v.length > 2 && v.length <= 4) v = v.substring(0,2) + '/' + v.substring(2);
@@ -400,10 +479,11 @@
                 this.value = this.value.replace(/\D/g, ''); 
             });
 
-            // PHASE 1: EXPLICIT VERIFICATION VIA SUPABASE
+            // Identity Verification + Server-Authoritative Strike & Hardware Sync
             verifyBtn.addEventListener('click', async () => {
                 const roll = rollInput.value.trim();
                 const dob = dobInput.value.trim();
+                STUDENT_ROLL = roll;
                 
                 if (!/^\d{13}$/.test(roll) || dob.length !== 10) {
                     rollError.innerText = "❌ Please enter a valid 13-digit Roll No and DOB.";
@@ -416,6 +496,7 @@
 
                 try {
                     const res = await fetch(`${SUPABASE_URL}/students?roll_no=eq.${roll}&dob=eq.${dob}&select=*`, { headers: supabaseHeaders });
+                    await syncServerTime(res);
                     const data = await res.json();
                     
                     if (data && data.length > 0) {
@@ -426,6 +507,31 @@
                             rollError.style.display = 'block';
                             verifyBtn.innerText = "🔍 Verify Identity"; verifyBtn.disabled = false;
                             return;
+                        }
+
+                        // Check Backend Authoritative Session
+                        const sessionKey = `${CURRENT_EXAM_ID}_${roll}`;
+                        const sessRes = await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${sessionKey}&select=*`, { headers: supabaseHeaders });
+                        const existingSession = await sessRes.json();
+
+                        if (existingSession && existingSession.length > 0) {
+                            const sess = existingSession[0];
+                            tabSwitchCount = sess.violations || 0;
+                            violationLogs = sess.logs || [];
+                            addedTimeSeconds = sess.time_added_seconds || 0;
+
+                            // Anti-Impersonation Check
+                            if (sess.hardware_hash && sess.hardware_hash !== hardwareHashValue && sess.authorized_hash !== hardwareHashValue) {
+                                document.getElementById('instruction-screen').classList.add('hidden');
+                                document.getElementById('hardware-lock-overlay').style.display = 'flex';
+                                return;
+                            }
+
+                            // Strike Lockout Enforcement
+                            if (sess.status === "LOCKED" || sess.status === "TERMINATED") {
+                                lockOutStudent("Exam Terminated", "Session marked as Locked in server registry.", false);
+                                return;
+                            }
                         }
 
                         STUDENT_NAME = studentRecord.name;
@@ -449,21 +555,22 @@
                         document.getElementById('setup-phase').style.display = 'block';
                         profileCard.style.display = 'block';
                     } else {
-                        rollError.innerText = "❌ Authentication Failed: Details not found in registry.";
+                        rollError.innerText = "❌ Authentication Failed: Registry record not found.";
                         rollError.style.display = 'block';
                         verifyBtn.innerText = "🔍 Verify Identity"; verifyBtn.disabled = false;
                     }
                 } catch(e) {
-                    rollError.innerText = "❌ Network Error while verifying identity.";
+                    rollError.innerText = "❌ Network Error while checking registry.";
                     rollError.style.display = 'block';
                     verifyBtn.innerText = "🔍 Verify Identity"; verifyBtn.disabled = false;
                 }
             });
 
-            // PHASE 2: CHECK START CONDITIONS
             function checkStartConditions() {
-                if (TARGET_AUDIENCE === "OPEN") STUDENT_NAME = openNameInput.value.trim();
-                
+                if (TARGET_AUDIENCE === "OPEN") {
+                    STUDENT_NAME = openNameInput.value.trim();
+                    STUDENT_ROLL = rollInput.value.trim();
+                }
                 if (examAgreementCheckbox.checked && STUDENT_NAME !== '' && permissionsGranted) {
                     startBtn.disabled = false;
                     startBtn.innerText = "Confirm Details & Begin Exam";
@@ -476,29 +583,66 @@
             openNameInput.addEventListener('input', checkStartConditions);
             examAgreementCheckbox.addEventListener('change', checkStartConditions);
 
-            window.addEventListener('offline', () => { if (isExamActive) document.getElementById('offline-overlay').style.display = 'flex'; });
-            window.addEventListener('online', () => { document.getElementById('offline-overlay').style.display = 'none'; });
+            // Fake Disconnect & Offline Violation Spooling
+            window.addEventListener('offline', () => { 
+                if (isExamActive) {
+                    document.getElementById('offline-overlay').style.display = 'flex';
+                    const ts = new Date().toLocaleTimeString();
+                    offlineSpooledLogs.push({ time: ts, reason: "Network Disconnected (Exam Froze)" });
+                } 
+            });
 
-            function generateHardwareFingerprint() {
+            window.addEventListener('online', () => { 
+                document.getElementById('offline-overlay').style.display = 'none';
+                if (offlineSpooledLogs.length > 0) {
+                    violationLogs.push(...offlineSpooledLogs);
+                    offlineSpooledLogs = [];
+                }
+            });
+
+            grantPermBtn.addEventListener('click', async () => {
+                if (detectSecondaryMonitor()) { alert("SECURITY REJECTION: Multiple displays detected. Disconnect secondary screen."); return; }
+                const isClean = await verifyCleanHardwareEnvironment();
+                if (!isClean) return;
+
                 try {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    ctx.textBaseline = "top"; ctx.font = "14px 'Arial'"; 
-                    ctx.fillStyle = "#f60"; ctx.fillRect(125,1,62,20);
-                    ctx.fillStyle = "#069"; ctx.fillText("ProctorHash", 2, 15);
-                    ctx.fillStyle = "rgba(102, 204, 0, 0.7)"; ctx.fillText("ProctorHash", 4, 17);
-                    const b64 = canvas.toDataURL();
-                    let hash = 0;
-                    for (let i = 0; i < b64.length; i++) {
-                        let char = b64.charCodeAt(i);
-                        hash = ((hash << 5) - hash) + char;
-                        hash = hash & hash;
+                    if (!isMobile && REQUIRE_SCREENSHARE) {
+                        screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
+                        const surface = screenStream.getVideoTracks()[0].getSettings().displaySurface;
+                        if (surface && surface !== 'monitor' && surface !== 'display') {
+                            screenStream.getTracks().forEach(t => t.stop());
+                            screenStream = null;
+                            alert("SECURITY ERROR: You must select 'Entire Screen'.");
+                            return; 
+                        }
                     }
-                    return Math.abs(hash).toString(16);
-                } catch(e) { return "Unavailable"; }
-            }
-            hardwareHashValue = generateHardwareFingerprint();
+                    mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                    permStatus.innerText = "Status: Hardware Verified & Streams Active ✅";
+                    permStatus.style.color = "green";
+                    grantPermBtn.style.display = "none";
+                    permissionsGranted = true;
+                    checkStartConditions();
+                } catch(e) {
+                    if (screenStream) screenStream.getTracks().forEach(t => t.stop());
+                    if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
+                    permStatus.innerText = "Status: Access Denied ❌ Permissions Mandatory.";
+                    permStatus.style.color = "red";
+                }
+            });
 
+            // True Lockdown Execution
+            async function activateLockdownProtocols() {
+                try {
+                    if (navigator.keyboard && navigator.keyboard.lock) {
+                        await navigator.keyboard.lock(["Escape", "AltLeft", "AltRight", "Tab", "MetaLeft", "MetaRight"]);
+                    }
+                    if (document.body.requestPointerLock) {
+                        document.body.requestPointerLock();
+                    }
+                } catch(e) {}
+            }
+
+            // Audio Monitoring Engine
             function startAudioMonitoring(stream) {
                 if (AUDIO_THRESHOLD > 500) return; 
                 try {
@@ -512,250 +656,143 @@
                     const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
                     audioInterval = _setInterval(() => {
-                        if (!isExamActive) return;
+                        if (!isExamActive || isPausedByFaculty) return;
                         analyser.getByteFrequencyData(dataArray);
                         let sum = 0;
                         for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
                         let average = sum / dataArray.length;
-                        if (average > AUDIO_THRESHOLD) triggerExactWarning(`High audio levels detected (Threshold: ${AUDIO_THRESHOLD}).`);
+                        if (average > AUDIO_THRESHOLD) triggerExactWarning(`High ambient acoustic energy (Vol: ${Math.round(average)}/${AUDIO_THRESHOLD}).`);
                     }, 4000); 
                 } catch(e) {}
             }
 
-            function checkNativeIntegrity() {
-                const fns = [window.addEventListener, document.addEventListener, atob, fetch];
-                for (let fn of fns) { if (!fn.toString().includes('[native code]')) return false; }
-                return true;
-            }
-
-            const observer = new MutationObserver((mutations) => {
-                if (!isExamActive || isTransitioning) return;
-                mutations.forEach((mutation) => {
-                    if (mutation.type === 'childList') {
-                        mutation.removedNodes.forEach((node) => {
-                            if (node.id === 'warning-overlay' || node.id === 'timeout-screen' || node.id === 'exam-container' || node.id === 'screen-share-overlay') {
-                                triggerTamperProtocol("DOM Manipulation / Overlay Deletion");
-                            }
-                        });
-                    }
-                });
-            });
-            observer.observe(document.body, { childList: true, subtree: true });
-
-            function triggerTamperProtocol(reason) {
-                if (!isExamActive) return;
-                if (tabSwitchCount < (MAX_STRIKES - 1)) {
-                    tabSwitchCount = MAX_STRIKES - 1; 
-                    localStorage.setItem(PREFIX + 'tabSwitches', tabSwitchCount);
-                }
-                triggerExactWarning("SEVERE TAMPERING DETECTED: " + reason);
-            }
-
-            focusPollerInterval = _setInterval(() => {
-                if (!isExamActive || isTransitioning) return;
-                if (!document.hasFocus()) triggerExactWarning("System Overlay Detected (Google Search PIP, Notification, or Text Selection).");
-            }, 600);
-
+            // Master Security Watchdog
             masterSecurityInterval = _setInterval(() => {
-                if (!isExamActive) {
-                    if (document.getElementById('exam-container').style.display === 'block') document.getElementById('exam-container').style.display = 'none';
-                    return; 
+                if (!isExamActive || isPausedByFaculty) return;
+
+                if (detectSecondaryMonitor()) {
+                    triggerExactWarning("CRITICAL: Secondary monitor attached during active session!");
                 }
+
                 const now = _Date_now();
                 const timeDiff = now - lastInternalTick; 
                 lastInternalTick = now; 
-                if (timeDiff > 4500) triggerTamperProtocol("Process Suspension / System Freeze Detected");
+                if (timeDiff > 4500) triggerExactWarning("Process Suspension / System Freeze Intercepted");
 
                 const start = _performance_now(); debugger;
-                if (_performance_now() - start > 150) triggerTamperProtocol("Developer Tools Code Execution Paused");
-                
-                if (!checkNativeIntegrity()) triggerTamperProtocol("JavaScript Modification / Extension Interference");
-                if (parseInt(localStorage.getItem(PREFIX + 'tabSwitches') || '0') < tabSwitchCount) triggerTamperProtocol("LocalStorage Manipulation Attempted");
+                if (_performance_now() - start > 150) triggerExactWarning("Developer Console Execution Paused");
 
-                if (!isMobile && !isTransitioning && window.outerWidth > 0 && window.innerHeight > 0) {
-                    if (window.outerWidth - window.innerWidth > 330 || window.outerHeight - window.innerHeight > 330) {
-                        triggerTamperProtocol("Developer Tools Docked Panel Detected");
-                    }
-                }
-
-                if (REQUIRE_SCREENSHARE && !isMobile && !isTransitioning && isExamActive) {
+                if (REQUIRE_SCREENSHARE && !isMobile && !isTransitioning) {
                     let hasActiveScreen = false;
                     if (screenStream && screenStream.getVideoTracks().length > 0) {
                         if (screenStream.getVideoTracks()[0].readyState === 'live') hasActiveScreen = true;
                     }
-                    if (!hasActiveScreen) handleScreenShareDrop(); 
+                    if (!hasActiveScreen) handleScreenShareDrop();
                 }
             }, 2500);
 
+            // Telemetry & Remote Faculty Command Poller
             function startTelemetryPing() {
                 _setInterval(async () => {
-                    const rNo = rollInput.value || localStorage.getItem('gf_globalRoll');
+                    const rNo = STUDENT_ROLL;
                     if (!rNo) return;
+                    
+                    const sessionKey = `${CURRENT_EXAM_ID}_${rNo}`;
+                    const integrityScore = Math.max(0, 100 - (tabSwitchCount * 8) - (screenShareDrops * 20));
+
                     try {
-                        await fetch(`${SUPABASE_URL}/exam_sessions`, {
+                        const pingRes = await fetch(`${SUPABASE_URL}/exam_sessions`, {
                             method: 'POST',
                             headers: { ...supabaseHeaders, "Prefer": "resolution=merge-duplicates" },
                             body: JSON.stringify({
+                                session_key: sessionKey,
+                                exam_id: CURRENT_EXAM_ID,
                                 roll_no: rNo,
-                                name: STUDENT_NAME || localStorage.getItem('gf_globalName'),
+                                name: STUDENT_NAME,
                                 section: STUDENT_SECTION,
                                 course: STUDENT_COURSE,
                                 branch: STUDENT_BRANCH,
-                                status: tabSwitchCount >= MAX_STRIKES ? "LOCKED" : (tabSwitchCount >= Math.floor(MAX_STRIKES/2) ? "WARNING" : "ACTIVE"),
+                                status: isPausedByFaculty ? "PAUSED" : (tabSwitchCount >= MAX_STRIKES ? "LOCKED" : (tabSwitchCount >= Math.floor(MAX_STRIKES/2) ? "WARNING" : "ACTIVE")),
                                 violations: tabSwitchCount,
+                                integrity_score: integrityScore,
                                 hardware_hash: hardwareHashValue,
+                                time_added_seconds: addedTimeSeconds,
+                                is_paused: isPausedByFaculty,
                                 logs: violationLogs,
                                 last_seen: new Date().toISOString()
                             })
                         });
-                        
-                        const res = await fetch(`${SUPABASE_URL}/exam_sessions?roll_no=eq.${rNo}&select=pending_action`, { headers: supabaseHeaders });
+                        await syncServerTime(pingRes);
+
+                        // Read Faculty Overrides
+                        const res = await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${sessionKey}&select=*`, { headers: supabaseHeaders });
                         const [sessionData] = await res.json();
                         
-                        if (sessionData && sessionData.pending_action) {
-                            if (sessionData.pending_action === "KICK") {
-                                lockOutStudent("Exam Terminated by Faculty", "You have been forcibly removed from the session by the instructor.", false);
-                            } else if (sessionData.pending_action === "UNLOCK") {
-                                localStorage.removeItem(PREFIX + 'examLocked');
-                                tabSwitchCount = 0; localStorage.setItem(PREFIX + 'tabSwitches', '0');
-                                document.getElementById('violations-pill').innerText = '0';
-                                
-                                if (!isExamActive && !document.getElementById('result-screen').classList.contains('hidden')) {
-                                    alert("✅ Your instructor has remotely unlocked your exam. You may resume.");
-                                    document.getElementById('result-screen').classList.add('hidden');
-                                    document.getElementById('exam-container').style.display = 'block';
-                                    document.getElementById('status-bar-container').style.display = 'flex';
-                                    lastInternalTick = _Date_now(); isExamActive = true; 
-                                }
+                        if (sessionData) {
+                            if (sessionData.time_added_seconds !== undefined && sessionData.time_added_seconds !== addedTimeSeconds) {
+                                addedTimeSeconds = sessionData.time_added_seconds;
                             }
-                            await fetch(`${SUPABASE_URL}/exam_sessions?roll_no=eq.${rNo}`, {
-                                method: 'PATCH',
-                                headers: supabaseHeaders,
-                                body: JSON.stringify({ pending_action: null })
-                            });
+
+                            if (sessionData.pending_action) {
+                                const act = sessionData.pending_action;
+                                if (act === "KICK") {
+                                    lockOutStudent("Exam Terminated by Faculty", "You have been forcibly removed by the proctor.", false);
+                                } else if (act === "PAUSE") {
+                                    isPausedByFaculty = true;
+                                    document.getElementById('pause-overlay').style.display = 'flex';
+                                } else if (act === "RESUME") {
+                                    isPausedByFaculty = false;
+                                    document.getElementById('pause-overlay').style.display = 'none';
+                                } else if (act === "UNLOCK") {
+                                    tabSwitchCount = 0;
+                                    document.getElementById('violations-pill').innerText = '0';
+                                    if (!isExamActive) {
+                                        document.getElementById('result-screen').classList.add('hidden');
+                                        document.getElementById('exam-container').style.display = 'block';
+                                        document.getElementById('status-bar-container').style.display = 'flex';
+                                        lastInternalTick = _Date_now(); isExamActive = true; 
+                                    }
+                                }
+                                await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${sessionKey}`, {
+                                    method: 'PATCH',
+                                    headers: supabaseHeaders,
+                                    body: JSON.stringify({ pending_action: null })
+                                });
+                            }
                         }
 
+                        // Broadcast Messages
                         const confRes = await fetch(`${SUPABASE_URL}/exam_config?id=eq.1&select=announcement`, { headers: supabaseHeaders });
                         const [confData] = await confRes.json();
                         if (confData && confData.announcement && confData.announcement !== lastAnnouncement) {
-                            alert("📢 MESSAGE FROM INSTRUCTOR:\n\n" + confData.announcement);
+                            alert("📢 ANNOUNCEMENT FROM FACULTY:\n\n" + confData.announcement);
                             lastAnnouncement = confData.announcement;
                         }
                     } catch (e) {}
-                }, 15000); 
+                }, 10000); 
             }
-
-            function detectVirtualMachine() {
-                try {
-                    const canvas = document.createElement('canvas');
-                    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-                    if (!gl) return false;
-                    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-                    if (!debugInfo) return false;
-                    const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL).toLowerCase();
-                    if (renderer.includes('swiftshader') || renderer.includes('llvmpipe') || renderer.includes('vmware') || renderer.includes('virtualbox')) return true;
-                    return false;
-                } catch (e) { return false; }
-            }
-
-            grantPermBtn.addEventListener('click', async () => {
-                if (detectVirtualMachine()) { alert("SECURITY ERROR: Virtual Machines and Emulators are strictly prohibited."); return; }
-                try {
-                    if (!isMobile && REQUIRE_SCREENSHARE) {
-                        screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
-                        const surface = screenStream.getVideoTracks()[0].getSettings().displaySurface;
-                        if (surface && surface !== 'monitor' && surface !== 'display') {
-                            screenStream.getTracks().forEach(t => t.stop());
-                            screenStream = null;
-                            alert("SECURITY ERROR: You must select 'Entire Screen'. Windows or Tabs are strictly prohibited.");
-                            return; 
-                        }
-                    }
-                    mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                    permStatus.innerText = (!isMobile && REQUIRE_SCREENSHARE) ? "Status: Camera, Mic & Screen Active ✅" : "Status: Camera & Mic Active ✅";
-                    permStatus.style.color = "green";
-                    grantPermBtn.style.display = "none";
-                    permissionsGranted = true;
-                    checkStartConditions();
-                } catch(e) {
-                    if (screenStream) screenStream.getTracks().forEach(t => t.stop());
-                    if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
-                    permStatus.innerText = "Status: Access Denied ❌ You MUST grant permissions.";
-                    permStatus.style.color = "red";
-                }
-            });
-
-            function attachMediaListeners() {
-                if (mediaStream) {
-                    mediaStream.getTracks().forEach(t => {
-                        t.onended = () => { if (isExamActive) triggerExactWarning("Camera/Mic disconnected or screen locked."); };
-                    });
-                }
-            }
-            
-            function handleScreenShareDrop() {
-                if (document.getElementById('screen-share-overlay').style.display === 'flex') return; 
-                screenShareDrops++;
-                localStorage.setItem(PREFIX + 'screenDrops', screenShareDrops);
-                
-                if (screenShareDrops > 1) {
-                    lockOutStudent("Exam Terminated", "Screen sharing was stopped multiple times.", false);
-                } else {
-                    isExamActive = false;
-                    document.getElementById('exam-container').style.display = 'none';
-                    document.getElementById('screen-share-overlay').style.display = 'flex';
-                    const timestamp = new Date().toLocaleTimeString();
-                    violationLogs.push({ time: timestamp, reason: "Screen Sharing Stopped (Warning Issued)" });
-                    localStorage.setItem(PREFIX + 'violationLogs', JSON.stringify(violationLogs));
-                }
-            }
-
-            function attachScreenListeners() {
-                if (screenStream && !isMobile && REQUIRE_SCREENSHARE) screenStream.getVideoTracks()[0].onended = handleScreenShareDrop;
-            }
-
-            restartScreenBtn.addEventListener('click', async () => {
-                try {
-                    screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
-                    const surface = screenStream.getVideoTracks()[0].getSettings().displaySurface;
-                    if (surface && surface !== 'monitor' && surface !== 'display') {
-                        screenStream.getTracks().forEach(t => t.stop());
-                        alert("SECURITY ERROR: You must select 'Entire Screen'.");
-                        return;
-                    }
-                    document.getElementById('screen-share-overlay').style.display = 'none';
-                    document.getElementById('exam-container').style.display = 'block';
-                    attachScreenListeners(); 
-                    lastInternalTick = _Date_now(); isExamActive = true; 
-                } catch (e) { alert("You MUST share your screen to continue the exam."); }
-            });
 
             function triggerExactWarning(exactRuleMessage) {
-                if (!isExamActive) return; 
+                if (!isExamActive || isPausedByFaculty) return; 
                 const now = _Date_now();
-                if (now - lastWarningTime < 1200) return;
-                lastWarningTime = now;
+                if (now - lastInternalTick < 1000) return;
 
                 tabSwitchCount++;
-                localStorage.setItem(PREFIX + 'tabSwitches', tabSwitchCount);
                 const timestamp = new Date().toLocaleTimeString();
                 violationLogs.push({ time: timestamp, reason: exactRuleMessage });
-                localStorage.setItem(PREFIX + 'violationLogs', JSON.stringify(violationLogs));
-                
                 document.getElementById('violations-pill').innerText = tabSwitchCount;
 
                 if (tabSwitchCount === MAX_STRIKES) {
-                    let timeoutEnd = _Date_now() + (5 * 60 * 1000);
-                    localStorage.setItem(PREFIX + 'timeoutEndTime', timeoutEnd);
+                    let timeoutEnd = getServerNow() + (5 * 60 * 1000);
                     startPenaltyCountdown(timeoutEnd);
                     return;
                 }
                 if (tabSwitchCount > MAX_STRIKES) {
-                    lockOutStudent("Exam Terminated", "Maximum security violations reached.", false);
+                    lockOutStudent("Exam Terminated", "Maximum security threshold surpassed.", false);
                     return;
                 }
                 document.getElementById('warning-detail').innerHTML = `<strong>Rule Broken:</strong><br>${exactRuleMessage}`;
-                document.getElementById('warning-strike-count').innerText = `Recorded Infraction #${tabSwitchCount} of ${MAX_STRIKES-1} permitted before temporary lockout.`;
+                document.getElementById('warning-strike-count').innerText = `Infraction #${tabSwitchCount} of ${MAX_STRIKES-1} before lockout.`;
                 violationCheckbox.checked = false;
                 violationAckBtn.disabled = true;
                 document.getElementById('warning-overlay').style.display = 'flex';
@@ -764,44 +801,38 @@
 
             violationCheckbox.addEventListener('change', (e) => { violationAckBtn.disabled = !e.target.checked; });
             violationAckBtn.addEventListener('click', async () => {
-                if (!violationCheckbox.checked) return; 
-                if (!isMobile && REQUIRE_SCREENSHARE) {
-                    let needsScreen = false;
-                    if (screenStream) {
-                        screenStream.getVideoTracks().forEach(t => { if (t.readyState === 'ended') needsScreen = true; });
-                    } else { needsScreen = true; }
-                    if (needsScreen) {
-                        try {
-                            screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
-                            const surface = screenStream.getVideoTracks()[0].getSettings().displaySurface;
-                            if (surface && surface !== 'monitor' && surface !== 'display') {
-                                screenStream.getTracks().forEach(t => t.stop());
-                                alert("SECURITY ERROR: You must select 'Entire Screen'.");
-                                return;
-                            }
-                            attachScreenListeners();
-                        } catch(e) { alert("You MUST share your ENTIRE SCREEN to resume."); return; }
-                    }
-                }
-
-                let needsCamera = false;
-                if (mediaStream) { mediaStream.getTracks().forEach(t => { if (t.readyState === 'ended') needsCamera = true; }); } 
-                else { needsCamera = true; }
-
-                if (needsCamera) {
-                    try { mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true }); attachMediaListeners(); } 
-                    catch(e) { alert("You MUST allow camera/mic access to resume."); return; }
-                }
-
+                if (!violationCheckbox.checked) return;
                 isTransitioning = true;
                 _setTimeout(() => { isTransitioning = false; }, 3000);
                 document.getElementById('warning-overlay').style.display = 'none';
                 document.getElementById('exam-container').style.display = 'block';
-                
                 if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
                     try { await document.documentElement.requestFullscreen(); } catch (e) {}
                 }
+                activateLockdownProtocols();
                 lastInternalTick = _Date_now(); isExamActive = true; 
+            });
+
+            function handleScreenShareDrop() {
+                if (document.getElementById('screen-share-overlay').style.display === 'flex') return; 
+                screenShareDrops++;
+                if (screenShareDrops > 1) {
+                    lockOutStudent("Exam Terminated", "Screen sharing stopped repeatedly.", false);
+                } else {
+                    isExamActive = false;
+                    document.getElementById('exam-container').style.display = 'none';
+                    document.getElementById('screen-share-overlay').style.display = 'flex';
+                    violationLogs.push({ time: new Date().toLocaleTimeString(), reason: "Screen Share Aborted (Warning)" });
+                }
+            }
+
+            restartScreenBtn.addEventListener('click', async () => {
+                try {
+                    screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
+                    document.getElementById('screen-share-overlay').style.display = 'none';
+                    document.getElementById('exam-container').style.display = 'block';
+                    lastInternalTick = _Date_now(); isExamActive = true; 
+                } catch (e) { alert("Entire Screen sharing mandatory."); }
             });
 
             function startPenaltyCountdown(endTime) {
@@ -809,25 +840,18 @@
                 document.getElementById('exam-container').style.display = 'none';
                 document.getElementById('status-bar-container').style.display = 'none';
                 document.getElementById('warning-overlay').style.display = 'none';
-                
-                if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
-                if (screenStream) { screenStream.getTracks().forEach(t => t.stop()); screenStream = null; }
-                if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
-
                 document.getElementById('timeout-screen').classList.remove('hidden');
-                const timerDisplay = document.getElementById('penalty-timer');
-                resumeFinalBtn.disabled = true; resumeFinalBtn.innerText = "Please wait...";
-
+                
                 function tick() {
-                    const remaining = endTime - _Date_now();
+                    const remaining = endTime - getServerNow();
                     if (remaining <= 0) {
                         clearInterval(penaltyInterval);
-                        timerDisplay.innerText = "00:00";
+                        document.getElementById('penalty-timer').innerText = "00:00";
                         resumeFinalBtn.disabled = false;
                         resumeFinalBtn.innerText = "Acknowledge & Resume Final Chance";
                     } else {
                         const m = Math.floor(remaining / 60000), s = Math.floor((remaining % 60000) / 1000);
-                        timerDisplay.innerText = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+                        document.getElementById('penalty-timer').innerText = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
                     }
                 }
                 tick(); penaltyInterval = _setInterval(tick, 1000);
@@ -835,173 +859,35 @@
 
             resumeFinalBtn.addEventListener('click', async () => {
                 try {
-                    isTransitioning = true;
-                    _setTimeout(() => { isTransitioning = false; }, 3000);
-                    if (document.documentElement.requestFullscreen) { try { await document.documentElement.requestFullscreen(); } catch (e) {} }
-                    
-                    if (!isMobile && REQUIRE_SCREENSHARE) {
-                        screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
-                        const surface = screenStream.getVideoTracks()[0].getSettings().displaySurface;
-                        if (surface && surface !== 'monitor' && surface !== 'display') {
-                            screenStream.getTracks().forEach(t => t.stop());
-                            alert("SECURITY ERROR: You must select 'Entire Screen'.");
-                            isTransitioning = false; return;
-                        }
-                    }
-                    mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                    
-                    attachMediaListeners(); attachScreenListeners(); startAudioMonitoring(mediaStream); 
+                    if (document.documentElement.requestFullscreen) { await document.documentElement.requestFullscreen(); }
                     document.getElementById('timeout-screen').classList.add('hidden');
-                    localStorage.removeItem(PREFIX + 'timeoutEndTime');
                     document.getElementById('exam-container').style.display = 'block';
                     document.getElementById('status-bar-container').style.display = 'flex';
-                    
-                    initialWindowWidth = window.innerWidth; initialWindowHeight = window.innerHeight;
-                    if (!timerInterval) startCountdown();
+                    activateLockdownProtocols();
                     lastInternalTick = _Date_now(); isExamActive = true; 
-                } catch (e) { alert("Camera, Mic & Screen Share are mandatory to resume."); }
-            });
-
-            if (window.visualViewport) {
-                let maxVH = window.visualViewport.height; let resizeTimeout; 
-                window.addEventListener('orientationchange', () => {
-                    isTransitioning = true;
-                    _setTimeout(() => { maxVH = window.visualViewport.height; isTransitioning = false; }, 1000);
-                });
-                window.visualViewport.addEventListener('resize', () => {
-                    if (!isExamActive || isTransitioning) return;
-                    clearTimeout(resizeTimeout);
-                    resizeTimeout = _setTimeout(() => {
-                        let currentVH = window.visualViewport.height;
-                        if (currentVH > maxVH) maxVH = currentVH; 
-                        let shrinkRatio = (maxVH - currentVH) / maxVH;
-                        if (shrinkRatio > 0.02 && shrinkRatio < 0.24) triggerExactWarning("Illegal System Overlay Detected.");
-                    }, 600); 
-                });
-            }
-
-            document.addEventListener('visibilitychange', () => {
-                if (document.hidden && !isTransitioning) triggerExactWarning("Switched browser tabs or minimized window."); 
-            });
-            window.addEventListener('blur', () => { 
-                if (isTransitioning || !isExamActive) return; 
-                _setTimeout(() => { if (!document.hasFocus()) triggerExactWarning("System Overlay or App Switch Detected."); }, 300);
-            });
-            document.addEventListener('fullscreenchange', () => { 
-                isTransitioning = true; _setTimeout(() => { isTransitioning = false; }, 3000); 
-                if (!document.fullscreenElement) triggerExactWarning("Exited Fullscreen mode."); 
-            });
-            window.addEventListener('resize', () => {
-                if (document.fullscreenElement || isTransitioning) return; 
-                if (window.innerWidth < (initialWindowWidth * 0.85) || window.innerHeight < (initialWindowHeight * 0.85)) {
-                    triggerExactWarning("Split-screen mode or window resizing detected.");
-                    initialWindowWidth = window.innerWidth; initialWindowHeight = window.innerHeight;
-                }
-            });
-            document.addEventListener('contextmenu', (e) => {
-                e.preventDefault(); if (isExamActive) triggerExactWarning("Right-clicking is strictly prohibited.");
-            });
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) || (e.ctrlKey && ['u', 'p', 's'].includes(e.key.toLowerCase()))) {
-                    e.preventDefault(); triggerExactWarning("Prohibited keyboard shortcut used.");
-                }
-                if (e.key === 'PrintScreen') {
-                    e.preventDefault(); navigator.clipboard.writeText('');
-                    document.getElementById('flash-overlay').style.display = 'block';
-                    _setTimeout(() => document.getElementById('flash-overlay').style.display = 'none', 400);
-                    triggerExactWarning("Screenshot attempt blocked.");
-                }
-            });
-
-            function validateUnlockForm() {
-                unlockBtn.disabled = !(confessionCheckbox.checked && unlockKeyInput.value.trim() !== '');
-            }
-            confessionCheckbox.addEventListener('change', validateUnlockForm);
-            unlockKeyInput.addEventListener('input', validateUnlockForm);
-
-            unlockBtn.addEventListener('click', async () => {
-                let enteredKey = unlockKeyInput.value;
-                let isKeyCorrect = enteredKey.length === ENCRYPTED_KEY.length;
-                if (isKeyCorrect) {
-                    for (let i = 0; i < enteredKey.length; i++) {
-                        if (enteredKey.charCodeAt(i) + 5 !== ENCRYPTED_KEY[i]) { isKeyCorrect = false; break; }
-                    }
-                }
-                if (!isKeyCorrect) { unlockError.style.display = 'block'; return; }
-                unlockError.style.display = 'none';
-
-                try {
-                    isTransitioning = true;
-                    _setTimeout(() => { isTransitioning = false; }, 3000);
-                    if (document.documentElement.requestFullscreen) { try { await document.documentElement.requestFullscreen(); } catch (e) {} }
-                    
-                    if (!isMobile && REQUIRE_SCREENSHARE) {
-                        screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" } });
-                        const surface = screenStream.getVideoTracks()[0].getSettings().displaySurface;
-                        if (surface && surface !== 'monitor' && surface !== 'display') {
-                            screenStream.getTracks().forEach(t => t.stop());
-                            alert("SECURITY ERROR: You must select 'Entire Screen'.");
-                            isTransitioning = false; return;
-                        }
-                    }
-                    mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                    
-                    attachMediaListeners(); attachScreenListeners();
-                    localStorage.removeItem(PREFIX + 'examLocked');
-                    tabSwitchCount = 0; localStorage.setItem(PREFIX + 'tabSwitches', '0');
-                    screenShareDrops = 0; localStorage.setItem(PREFIX + 'screenDrops', '0');
-                    document.getElementById('violations-pill').innerText = '0';
-                    
-                    document.getElementById('result-screen').classList.add('hidden');
-                    document.getElementById('exam-container').style.display = 'block';
-                    document.getElementById('status-bar-container').style.display = 'flex';
-                    
-                    if (!document.getElementById("google-form-iframe")) {
-                        const iframe = document.createElement('iframe');
-                        
-                        let secureUrl = DECODED_FORM_URL
-                            .replace("ROLL", encodeURIComponent(rollInput.value))
-                            .replace("NAME", encodeURIComponent(STUDENT_NAME))
-                            .replace("SECTION", encodeURIComponent(STUDENT_SECTION));
-                            
-                        iframe.src = secureUrl; 
-                        iframe.id = "google-form-iframe";
-                        iframe.setAttribute("allow", "camera; microphone");
-                        iframe.style.width = "100%"; iframe.style.height = "100%"; iframe.style.border = "none";
-                        iframe.addEventListener('load', () => {
-                            formLoadCount++;
-                            if (formLoadCount === (TOTAL_FORM_SECTIONS + 1)) lockOutStudent("Exam Submitted Successfully", "Your responses and security logs have been recorded.", true); 
-                        });
-                        container.appendChild(iframe); startCountdown(); startAudioMonitoring(mediaStream);
-                    }
-                    lastInternalTick = _Date_now(); isExamActive = true; 
-                } catch (e) { alert("Camera, Mic & Screen Share are mandatory to unlock."); }
+                } catch (e) {}
             });
 
             startBtn.addEventListener('click', async () => {
                 if (!examAgreementCheckbox.checked || STUDENT_NAME === '' || !permissionsGranted) return;
 
-                localStorage.setItem('gf_globalName', STUDENT_NAME);
-                localStorage.setItem('gf_globalRoll', rollInput.value);
-                
                 document.getElementById('active-student-name').innerText = "👤 " + STUDENT_NAME;
+                watermarkOverlay.classList.remove('hidden');
 
                 try {
                     isTransitioning = true;
                     _setTimeout(() => { isTransitioning = false; }, 3000);
-                    if (document.documentElement.requestFullscreen) { try { await document.documentElement.requestFullscreen(); } catch (e) {} }
-                    
+                    if (document.documentElement.requestFullscreen) { await document.documentElement.requestFullscreen(); }
+                    activateLockdownProtocols();
+
                     document.getElementById('instruction-screen').style.display = 'none';
                     document.getElementById('exam-container').style.display = 'block';
                     document.getElementById('status-bar-container').style.display = 'flex';
                     document.getElementById('violations-pill').innerText = tabSwitchCount;
-                    
-                    initialWindowWidth = window.innerWidth; initialWindowHeight = window.innerHeight;
 
                     const iframe = document.createElement('iframe');
-                    
                     let secureUrl = DECODED_FORM_URL
-                        .replace("ROLL", encodeURIComponent(rollInput.value))
+                        .replace("ROLL", encodeURIComponent(STUDENT_ROLL))
                         .replace("NAME", encodeURIComponent(STUDENT_NAME))
                         .replace("SECTION", encodeURIComponent(STUDENT_SECTION));
                         
@@ -1011,22 +897,27 @@
                     iframe.style.width = "100%"; iframe.style.height = "100%"; iframe.style.border = "none";
                     iframe.addEventListener('load', () => {
                         formLoadCount++;
-                        if (formLoadCount === (TOTAL_FORM_SECTIONS + 1)) lockOutStudent("Exam Submitted Successfully", "Your responses and security logs have been recorded.", true); 
+                        if (formLoadCount === (TOTAL_FORM_SECTIONS + 1)) lockOutStudent("Exam Submitted Successfully", "Responses and forensic logs recorded.", true); 
                     });
                     
-                    container.appendChild(iframe); startCountdown(); attachMediaListeners(); attachScreenListeners(); startAudioMonitoring(mediaStream); 
+                    container.appendChild(iframe);
+                    examServerEndTime = getServerNow() + (EXAM_DURATION_MINUTES * 60 * 1000);
+                    startCountdown();
+                    startAudioMonitoring(mediaStream);
                     lastInternalTick = _Date_now(); isExamActive = true; 
                     startTelemetryPing(); 
-                } catch (err) { alert("A system error occurred. Please refresh the page."); }
+                } catch (err) { alert("Error launching exam."); }
             });
 
+            // Authoritative Server-Synced Countdown Engine
             function startCountdown() {
-                let endTime = localStorage.getItem(PREFIX + 'examEndTime');
-                if (!endTime) { endTime = _Date_now() + (2 * 60 * 60 * 1000); localStorage.setItem(PREFIX + 'examEndTime', endTime); }
                 function tick() {
-                    const remaining = endTime - _Date_now();
+                    if (isPausedByFaculty) return;
+                    const effectiveEnd = examServerEndTime + (addedTimeSeconds * 1000);
+                    const remaining = effectiveEnd - getServerNow();
                     if (remaining <= 0) { 
-                        clearInterval(timerInterval); lockOutStudent("Exam Terminated", "Time has expired.", false);
+                        clearInterval(timerInterval);
+                        lockOutStudent("Exam Terminated", "Allotted time expired.", false);
                     } else {
                         const h = Math.floor(remaining / 3600000), m = Math.floor((remaining % 3600000) / 60000), s = Math.floor((remaining % 60000) / 1000);
                         document.getElementById('timer-pill').innerText = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
@@ -1039,21 +930,16 @@
                 isExamActive = false; 
                 clearInterval(timerInterval);
                 if (audioInterval) clearInterval(audioInterval);
-                if (focusPollerInterval) clearInterval(focusPollerInterval);
-                if (masterSecurityInterval) clearInterval(masterSecurityInterval);
-                if (audioContext && audioContext.state !== 'closed') audioContext.close();
                 if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
                 if (screenStream) screenStream.getTracks().forEach(t => t.stop());
                 if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
-                observer.disconnect();
 
-                localStorage.setItem(PREFIX + 'examLocked', 'true');
                 document.getElementById('instruction-screen').style.display = 'none';
                 document.getElementById('exam-container').style.display = 'none';
                 document.getElementById('status-bar-container').style.display = 'none';
                 document.getElementById('warning-overlay').style.display = 'none';
                 document.getElementById('timeout-screen').style.display = 'none';
-                document.getElementById('screen-share-overlay').style.display = 'none';
+                watermarkOverlay.classList.add('hidden');
                 
                 document.getElementById('result-screen').classList.remove('hidden');
                 document.getElementById('final-title').innerText = title;
@@ -1062,26 +948,48 @@
 
                 if (!isSuccess && !message.includes("expired") && !message.includes("Faculty")) {
                     document.getElementById('unlock-section').style.display = 'block';
-                    document.getElementById('confession-checkbox').checked = false;
-                    document.getElementById('unlock-key-input').value = '';
-                    document.getElementById('unlock-btn').disabled = true;
-                    document.getElementById('unlock-error').style.display = 'none';
-                } else { document.getElementById('unlock-section').style.display = 'none'; }
-
-                let formattedLogs = violationLogs.map(log => `[${log.time}] ${log.reason}`).join("\n");
-                
-                fetch(`${SUPABASE_URL}/exam_sessions`, {
-                    method: 'POST', headers: { ...supabaseHeaders, "Prefer": "resolution=merge-duplicates" },
-                    body: JSON.stringify({ 
-                        roll_no: rollInput.value || localStorage.getItem('gf_globalRoll') || "Unknown", 
-                        name: STUDENT_NAME || localStorage.getItem('gf_globalName') || "Unknown", 
-                        section: STUDENT_SECTION, course: STUDENT_COURSE, branch: STUDENT_BRANCH, 
-                        status: isSuccess ? "SUBMITTED" : "LOCKED", violations: tabSwitchCount, 
-                        hardware_hash: hardwareHashValue, logs: violationLogs,
-                        last_seen: new Date().toISOString()
-                    })
-                }).catch(()=>{});
+                }
             }
+
+            unlockBtn.addEventListener('click', async () => {
+                let enteredKey = unlockKeyInput.value;
+                let isKeyCorrect = enteredKey.length === ENCRYPTED_KEY.length;
+                if (isKeyCorrect) {
+                    for (let i = 0; i < enteredKey.length; i++) {
+                        if (enteredKey.charCodeAt(i) + 5 !== ENCRYPTED_KEY[i]) { isKeyCorrect = false; break; }
+                    }
+                }
+                if (!isKeyCorrect) { unlockError.style.display = 'block'; return; }
+                unlockError.style.display = 'none';
+
+                tabSwitchCount = 0;
+                document.getElementById('violations-pill').innerText = '0';
+                document.getElementById('result-screen').classList.add('hidden');
+                document.getElementById('exam-container').style.display = 'block';
+                document.getElementById('status-bar-container').style.display = 'flex';
+                watermarkOverlay.classList.remove('hidden');
+                activateLockdownProtocols();
+                lastInternalTick = _Date_now(); isExamActive = true; 
+            });
+
+            confessionCheckbox.addEventListener('change', () => { unlockBtn.disabled = !confessionCheckbox.checked; });
+
+            // Environment event listeners
+            document.addEventListener('visibilitychange', () => { if (document.hidden && !isTransitioning) triggerExactWarning("Switched browser tabs or minimized window."); });
+            window.addEventListener('blur', () => { if (!isTransitioning && isExamActive) _setTimeout(() => { if (!document.hasFocus()) triggerExactWarning("Window lost OS focus."); }, 300); });
+            document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && !isTransitioning) triggerExactWarning("Fullscreen exited."); });
+            document.addEventListener('contextmenu', (e) => { e.preventDefault(); if (isExamActive) triggerExactWarning("Right click blocked."); });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) || (e.ctrlKey && ['u', 'p', 's'].includes(e.key.toLowerCase()))) {
+                    e.preventDefault(); triggerExactWarning("Prohibited shortcut intercepted.");
+                }
+                if (e.key === 'PrintScreen') {
+                    e.preventDefault();
+                    document.getElementById('flash-overlay').style.display = 'block';
+                    _setTimeout(() => document.getElementById('flash-overlay').style.display = 'none', 400);
+                    triggerExactWarning("Screenshot intercepted.");
+                }
+            });
         })();
     </script>
 </body>
