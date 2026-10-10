@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Proctored Exam Portal</title>
+    <!-- 1. Google reCAPTCHA Script -->
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f6f9; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; user-select: none; -webkit-user-select: none; overflow-x: hidden; }
         .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 90%; max-width: 650px; text-align: center; max-height: 90vh; overflow-y: auto; box-sizing: border-box; }
@@ -85,6 +87,12 @@
     <div id="lobby-screen" class="card hidden">
         <h2 style="margin-top: 0; color: #1a73e8;">🎓 Welcome to the Exam Portal</h2>
         <p style="font-size: 15px; color: #333; margin-bottom: 25px;">Click below to connect to the server and fetch your active exam.</p>
+        
+        <!-- 2. Google reCAPTCHA Widget with Provided Key -->
+        <div style="text-align: center; margin-bottom: 20px;">
+            <div class="g-recaptcha" data-sitekey="6Lfw_OctAAAAANKh2H519OSbWgyyhhbCouWUA3yM" style="display: inline-block;"></div>
+        </div>
+        
         <div style="text-align: left;">
             <button id="join-exam-btn" class="btn-primary">Connect & Join Exam</button>
             <p id="lobby-error" style="color: #d93025; font-size: 13px; display: none; margin-top: 15px; font-weight: bold; text-align: center;">❌ Failed to connect to server.</p>
@@ -107,7 +115,7 @@
             <p id="roll-error" style="color: #d93025; font-size: 13px; margin-top: 10px; display: none; font-weight: bold;">❌ Authentication Failed: Invalid Details.</p>
         </div>
 
-        <!-- PHASE 2: CONFIRMATION & SETUP (Hidden until Verified) -->
+        <!-- PHASE 2: CONFIRMATION & SETUP -->
         <div id="setup-phase" style="display: none;">
             
             <!-- DIGITAL ID PROFILE CARD -->
@@ -287,9 +295,19 @@
             if (isMobile) grantPermBtn.innerText = "📸 Grant Camera & Mic Access";
             document.getElementById('lobby-screen').classList.remove('hidden');
             
+            // 3. Updated Connection Logic with CAPTCHA Validation
             document.getElementById('join-exam-btn').addEventListener('click', async () => {
-                const btn = document.getElementById('join-exam-btn');
                 const errorMsg = document.getElementById('lobby-error');
+                
+                // Verify CAPTCHA is solved
+                const recaptchaResponse = grecaptcha.getResponse();
+                if (recaptchaResponse.length === 0) {
+                    errorMsg.innerText = "❌ Please complete the CAPTCHA to verify you are human.";
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+
+                const btn = document.getElementById('join-exam-btn');
                 btn.innerText = "Connecting to Server...";
                 btn.disabled = true;
                 errorMsg.style.display = 'none';
@@ -303,6 +321,7 @@
                         errorMsg.style.display = 'block';
                         btn.innerText = "Connect & Join Exam";
                         btn.disabled = false;
+                        grecaptcha.reset(); // Reset CAPTCHA on failure
                         return;
                     }
                     
@@ -313,6 +332,7 @@
                     errorMsg.style.display = 'block';
                     btn.innerText = "Connect & Join Exam";
                     btn.disabled = false;
+                    grecaptcha.reset(); // Reset CAPTCHA on failure
                 }
             });
 
@@ -964,7 +984,6 @@
                 localStorage.setItem('gf_globalName', STUDENT_NAME);
                 localStorage.setItem('gf_globalRoll', rollInput.value);
                 
-                // Name highly visible in the Top Bar during the exam
                 document.getElementById('active-student-name').innerText = "👤 " + STUDENT_NAME;
 
                 try {
