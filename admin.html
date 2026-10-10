@@ -79,7 +79,6 @@
         .tag-collision { background: #fce8e6; color: var(--danger); border: 1px solid var(--danger); }
         .tag-section { background: #e8f0fe; color: var(--primary); border: 1px solid var(--d2e3fc); }
 
-        /* Integrity Score Badges */
         .score-pill { padding: 4px 10px; border-radius: 12px; font-weight: 800; font-size: 12px; display: inline-block; }
         .score-high { background: #e6f4ea; color: var(--success); border: 1px solid #ceead6; }
         .score-med { background: #fef7e0; color: #b07d00; border: 1px solid #feefc3; }
@@ -448,8 +447,12 @@
             });
         }
 
-        // Exam Configurator & Non-Destructive Deploy
+        // Exam Configurator & Deploy Safeguard
         document.getElementById('btn-deploy').addEventListener('click', async () => {
+            if (ACTIVE_EXAM_ID) {
+                return alert("⛔ An exam is currently LIVE. You must terminate the active session before deploying a new one.");
+            }
+
             const btn = document.getElementById('btn-deploy');
             btn.innerText = "Deploying..."; btn.disabled = true;
 
@@ -486,14 +489,38 @@
             btn.innerText = "🚀 Deploy New Exam Session"; btn.disabled = false;
         });
 
+        // Terminate and Archive Flow
         document.getElementById('btn-terminate').addEventListener('click', async () => {
-            if (!confirm("Terminate the current exam session globally?")) return;
-            await fetch(`${SUPABASE_URL}/exam_config`, {
-                method: 'PATCH',
-                headers: { ...supabaseHeaders, "Prefer": "return=minimal" },
-                body: JSON.stringify({ is_active: false })
-            });
-            fetchServerState();
+            if (!ACTIVE_EXAM_ID) return alert("No active exam to terminate.");
+            if (!confirm("Terminate the current exam session globally? All active students will be locked out and the session will be archived.")) return;
+            
+            const btn = document.getElementById('btn-terminate');
+            btn.innerText = "Terminating..."; btn.disabled = true;
+
+            try {
+                // 1. Force-kick active students & update status
+                await fetch(`${SUPABASE_URL}/exam_sessions?exam_id=eq.${ACTIVE_EXAM_ID}`, {
+                    method: 'PATCH',
+                    headers: supabaseHeaders,
+                    body: JSON.stringify({ status: 'TERMINATED', pending_action: 'KICK' })
+                });
+
+                // 2. Shut down configuration
+                await fetch(`${SUPABASE_URL}/exam_config?id=eq.1`, {
+                    method: 'PATCH',
+                    headers: { ...supabaseHeaders, "Prefer": "return=minimal" },
+                    body: JSON.stringify({ is_active: false })
+                });
+
+                alert("✅ Exam terminated and successfully moved to Archive.");
+                await fetchServerState(); 
+                fetchExamHistory(); 
+                switchTab('tab-history'); 
+            } catch (e) {
+                alert("Error terminating exam: " + e.message);
+            }
+            
+            btn.innerText = "🛑 Terminate Current Session"; btn.disabled = false;
         });
 
         async function fetchServerState() {
@@ -525,7 +552,11 @@
 
         // Live Telemetry Grid
         async function fetchTelemetry() {
-            if (!ACTIVE_EXAM_ID) return;
+            if (!ACTIVE_EXAM_ID) {
+                currentSessions = [];
+                renderTelemetryGrid();
+                return;
+            }
             try {
                 const res = await fetch(`${SUPABASE_URL}/exam_sessions?exam_id=eq.${ACTIVE_EXAM_ID}&select=*`, { headers: supabaseHeaders });
                 currentSessions = await res.json();
@@ -545,6 +576,9 @@
 
             if (currentSessions.length === 0) {
                 document.getElementById('candidate-rows').innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 30px;">Waiting for student connections...</td></tr>`;
+                document.getElementById('stat-clean-count').innerText = "0";
+                document.getElementById('stat-suspicious-count').innerText = "0";
+                document.getElementById('stat-locked-count').innerText = "0";
                 document.getElementById('stat-avg-integrity').innerText = "100%";
                 return;
             }
@@ -693,7 +727,7 @@
                         <td style="font-family: monospace;">${s.roll_no}</td>
                         <td style="font-weight: bold;">${s.name}</td>
                         <td>${s.section || "N/A"}</td>
-                        <td><span class="tag ${s.status === 'LOCKED' ? 'tag-locked' : 'tag-active'}">${s.status}</span></td>
+                        <td><span class="tag ${s.status === 'LOCKED' || s.status === 'TERMINATED' ? 'tag-locked' : 'tag-active'}">${s.status}</span></td>
                         <td>${s.violations}</td>
                         <td><strong>${s.integrity_score ?? 100}%</strong></td>
                         <td><button class="btn-secondary btn-small" onclick="viewLogs('${s.session_key}')">👁️ Audit Log</button></td>
