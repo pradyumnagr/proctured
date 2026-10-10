@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Faculty Command Center | Secure Exam Portal</title>
+    <title>Pradyumn's Command Center | Secure Exam Portal</title>
     <style>
         :root {
             --bg-color: #f4f6f9; --surface-color: #ffffff; --primary: #1a73e8; --primary-hover: #1557b0;
@@ -14,6 +14,11 @@
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
         .container { width: 100%; max-width: 1200px; margin: 20px auto; padding: 0 15px; box-sizing: border-box; }
         
+        /* Branding & Top Bar */
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 15px 25px; background: var(--surface-color); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid var(--border); }
+        .brand-title { font-size: 22px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 10px; }
+        .brand-subtitle { font-size: 13px; color: var(--text-secondary); font-weight: 600; margin-top: 2px; }
+
         /* Tab System */
         .tab-nav { display: flex; gap: 10px; margin-bottom: 20px; background: var(--surface-color); padding: 10px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid var(--border); }
         .tab-btn { flex: 1; padding: 12px 20px; border: none; background: transparent; font-size: 15px; font-weight: 700; color: var(--text-secondary); cursor: pointer; border-radius: 8px; transition: 0.2s; }
@@ -82,13 +87,16 @@
 
         #db-preview-table th { background: #e8eaed; color: #202124; font-weight: bold; }
         .db-info-box { background: #e6f4ea; padding: 15px; border-radius: 8px; border: 1px solid #ceead6; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
+        
+        .footer-brand { text-align: center; margin-top: 20px; margin-bottom: 40px; font-family: 'Brush Script MT', cursive; font-size: 18px; color: #888; font-style: italic; }
     </style>
 </head>
 <body>
 
     <div id="auth-overlay">
         <div class="auth-box">
-            <h2 style="margin-top: 0; color: var(--primary);">Faculty Access</h2>
+            <h2 style="margin-top: 0; color: var(--primary);">Pradyumn's Command Center</h2>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;">Secure Faculty Access</p>
             <input type="password" id="auth-input" placeholder="Enter Admin Key..." style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; margin-bottom: 15px; text-align: center; box-sizing: border-box;">
             <button id="auth-btn" class="btn-primary" style="width: 100%;">Authenticate</button>
             <p id="auth-error" class="hidden" style="color: var(--danger); font-size: 12px; margin-top: 10px; font-weight: bold;">❌ Authentication failed.</p>
@@ -108,6 +116,15 @@
 
     <div class="container hidden" id="main-panel">
         
+        <!-- Custom Branded Top Bar with Logout -->
+        <div class="top-bar">
+            <div>
+                <div class="brand-title">🛡️ Pradyumn's Command Center</div>
+                <div class="brand-subtitle">B.Tech Secure Exam Portal | Master Control</div>
+            </div>
+            <button id="logout-btn" class="btn-secondary">🔒 Logout & Lock Console</button>
+        </div>
+
         <div class="tab-nav">
             <button class="tab-btn" onclick="switchTab('tab-db')" id="btn-tab-db">👥 1. Global Database Hub</button>
             <button class="tab-btn active" onclick="switchTab('tab-live')" id="btn-tab-live">🚀 2. Exam Controller & Live Grid</button>
@@ -259,6 +276,8 @@
                 </div>
             </div>
         </div>
+        
+        <div class="footer-brand">Architected and Designed by Pradyumn</div>
     </div>
 
     <script>
@@ -275,6 +294,7 @@
 
         let currentSessions = []; 
         let globalDatabase = [];
+        let telemetryInterval = null;
 
         // ==== TAB MANAGEMENT ====
         function switchTab(tabId) {
@@ -284,19 +304,39 @@
             document.getElementById(`btn-${tabId}`).classList.add('active');
         }
 
-        // ==== AUTHENTICATION ====
+        // ==== PERSISTENT AUTHENTICATION ====
+        
+        // 1. Check for existing session on page load
+        if (localStorage.getItem('pradyumn_admin_auth') === 'true') {
+            unlockDashboard();
+        }
+
+        // 2. Login Event
         document.getElementById('auth-btn').addEventListener('click', () => {
             const key = document.getElementById('auth-input').value.trim();
             if (key === "pradyumnadmin") { 
-                document.getElementById('auth-overlay').classList.add('hidden');
-                document.getElementById('main-panel').classList.remove('hidden');
-                fetchMasterDatabase();
-                fetchServerState();
-                setInterval(fetchTelemetry, 5000);
+                localStorage.setItem('pradyumn_admin_auth', 'true'); // Save session
+                unlockDashboard();
             } else {
                 document.getElementById('auth-error').classList.remove('hidden');
             }
         });
+
+        // 3. Logout Event
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            localStorage.removeItem('pradyumn_admin_auth'); // Clear session
+            location.reload(); // Reload page to show login screen
+        });
+
+        // Dashboard Unlock Sequence
+        function unlockDashboard() {
+            document.getElementById('auth-overlay').classList.add('hidden');
+            document.getElementById('main-panel').classList.remove('hidden');
+            fetchMasterDatabase();
+            fetchServerState();
+            if(telemetryInterval) clearInterval(telemetryInterval);
+            telemetryInterval = setInterval(fetchTelemetry, 5000);
+        }
 
         // ==== DATABASE MANAGER LOGIC ====
         async function fetchMasterDatabase() {
