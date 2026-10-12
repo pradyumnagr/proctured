@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pradyumn's Command Center | Enterprise Invigilation</title>
+    <!-- Google reCAPTCHA Library -->
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
         :root {
             --bg-color: #f4f6f9; --surface-color: #ffffff; --primary: #1a73e8; --primary-hover: #1557b0;
@@ -89,7 +91,7 @@
 
         .hidden { display: none !important; }
         #auth-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(32, 33, 36, 0.95); display: flex; justify-content: center; align-items: center; z-index: 9999; padding: 20px; }
-        .auth-box { background: white; padding: 40px; border-radius: 12px; max-width: 380px; width: 100%; text-align: center; box-sizing: border-box; }
+        .auth-box { background: white; padding: 40px; border-radius: 12px; max-width: 400px; width: 100%; text-align: center; box-sizing: border-box; }
 
         #logs-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 99999; padding: 15px; }
         .logs-box { background: white; width: 100%; max-width: 580px; border-radius: 12px; padding: 25px; box-sizing: border-box; max-height: 85vh; display: flex; flex-direction: column; }
@@ -119,10 +121,18 @@
 
     <div id="auth-overlay">
         <div class="auth-box">
-            <h2 style="margin-top: 0; color: var(--primary);">Pradyumn's Command Center</h2>
-            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;">Faculty Master Authentication</p>
-            <input type="password" id="auth-input" placeholder="Admin Secret Key..." style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; margin-bottom: 15px; text-align: center; box-sizing: border-box;">
-            <button id="auth-btn" class="btn-primary" style="width: 100%;">Authenticate</button>
+            <h2 style="margin-top: 0; color: var(--primary);">Command Center</h2>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;">Supabase Enterprise Authentication</p>
+            
+            <input type="email" id="auth-email" placeholder="Admin Email" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; margin-bottom: 10px; text-align: center; box-sizing: border-box;">
+            <input type="password" id="auth-password" placeholder="Password" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; margin-bottom: 15px; text-align: center; box-sizing: border-box;">
+            
+            <!-- Enterprise Security: Google reCAPTCHA v2 -->
+            <div style="margin-bottom: 15px; display: flex; justify-content: center;">
+                <div class="g-recaptcha" data-sitekey="6Lfw_OctAAAAANKh2H519OSbWgyyhhbCouWUA3yM"></div>
+            </div>
+
+            <button id="auth-btn" class="btn-primary" style="width: 100%;">Secure Login</button>
             <p id="auth-error" class="hidden" style="color: var(--danger); font-size: 12px; margin-top: 10px; font-weight: bold;">❌ Authentication failed.</p>
         </div>
     </div>
@@ -144,7 +154,7 @@
                 <div class="brand-title">🛡️ Pradyumn's Command Center</div>
                 <div class="brand-subtitle">Enterprise B.Tech Exam Invigilation Engine</div>
             </div>
-            <button id="logout-btn" class="btn-secondary">🔒 Lock Console</button>
+            <button id="logout-btn" class="btn-secondary">🔒 Secure Logout</button>
         </div>
 
         <div class="tab-nav">
@@ -359,12 +369,19 @@
         const SUPABASE_URL = "https://xvxrqyalzmldkorgtqhi.supabase.co/rest/v1"; 
         const SUPABASE_KEY = "sb_publishable_5R6XZ1enV3PJfk3Ju4vDVw_w25oPsJh"; 
 
-        const supabaseHeaders = {
-            "apikey": SUPABASE_KEY,
-            "Authorization": `Bearer ${SUPABASE_KEY}`,
-            "Content-Type": "application/json",
-            "Prefer": "return=representation"
-        };
+        // Enterprise Security: We now hold the Secure JWT instead of trusting client JS
+        let ADMIN_TOKEN = sessionStorage.getItem('pradyumn_admin_token') || null;
+
+        // Dynamic header generator for all API requests
+        function getHeaders() {
+            return {
+                "apikey": SUPABASE_KEY,
+                // If logged in, send the real JWT. Otherwise, use the anon key.
+                "Authorization": `Bearer ${ADMIN_TOKEN || SUPABASE_KEY}`,
+                "Content-Type": "application/json",
+                "Prefer": "return=representation"
+            };
+        }
 
         let ACTIVE_EXAM_ID = null;
         let GLOBAL_EXAM_DURATION = 120;
@@ -381,19 +398,57 @@
             if (tabId === 'tab-history') fetchExamHistory();
         }
 
-        if (localStorage.getItem('pradyumn_admin_auth') === 'true') unlockDashboard();
+        // Auto-login if session token exists
+        if (ADMIN_TOKEN) unlockDashboard();
 
-        document.getElementById('auth-btn').addEventListener('click', () => {
-            if (document.getElementById('auth-input').value.trim() === "pradyumnadmin") { 
-                localStorage.setItem('pradyumn_admin_auth', 'true');
-                unlockDashboard();
-            } else {
-                document.getElementById('auth-error').classList.remove('hidden');
+        // The secure Supabase Auth Login flow
+        document.getElementById('auth-btn').addEventListener('click', async () => {
+            const errorMsg = document.getElementById('auth-error');
+            const emailInput = document.getElementById('auth-email').value.trim();
+            const passwordInput = document.getElementById('auth-password').value.trim();
+            
+            const recaptchaResponse = grecaptcha.getResponse();
+            if (recaptchaResponse.length === 0) {
+                errorMsg.innerText = "❌ Please complete the CAPTCHA to verify you are human.";
+                errorMsg.classList.remove('hidden');
+                return;
             }
+
+            const btn = document.getElementById('auth-btn');
+            btn.innerText = "Authenticating with Supabase..."; 
+            btn.disabled = true;
+
+            try {
+                // Sent credentials directly to Supabase Auth API
+                const res = await fetch(`${SUPABASE_URL.replace('/rest/v1', '/auth/v1')}/token?grant_type=password`, {
+                    method: 'POST',
+                    headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: emailInput, password: passwordInput })
+                });
+                
+                const data = await res.json();
+
+                if (data.access_token) {
+                    // Success! Save the JWT
+                    ADMIN_TOKEN = data.access_token;
+                    sessionStorage.setItem('pradyumn_admin_token', ADMIN_TOKEN);
+                    unlockDashboard();
+                } else {
+                    errorMsg.innerText = "❌ Login Failed: " + (data.error_description || "Invalid Email or Password");
+                    errorMsg.classList.remove('hidden');
+                    grecaptcha.reset();
+                }
+            } catch (err) {
+                errorMsg.innerText = "❌ Network Error connecting to Supabase Auth.";
+                errorMsg.classList.remove('hidden');
+                grecaptcha.reset();
+            }
+            btn.innerText = "Secure Login"; 
+            btn.disabled = false;
         });
 
         document.getElementById('logout-btn').addEventListener('click', () => {
-            localStorage.removeItem('pradyumn_admin_auth');
+            sessionStorage.removeItem('pradyumn_admin_token');
             location.reload();
         });
 
@@ -409,7 +464,7 @@
         // --- TAB 1: MASTER REGISTRY ---
         async function fetchMasterDatabase() {
             try {
-                const res = await fetch(`${SUPABASE_URL}/students?select=*`, { headers: supabaseHeaders });
+                const res = await fetch(`${SUPABASE_URL}/students?select=*`, { headers: getHeaders() });
                 globalDatabase = await res.json();
                 refreshDBUI();
             } catch (e) {}
@@ -430,7 +485,7 @@
             try {
                 await fetch(`${SUPABASE_URL}/students`, {
                     method: 'POST',
-                    headers: { ...supabaseHeaders, "Prefer": "resolution=merge-duplicates" },
+                    headers: { ...getHeaders(), "Prefer": "resolution=merge-duplicates" },
                     body: JSON.stringify(records)
                 });
                 document.getElementById('db-import-area').value = "";
@@ -442,7 +497,7 @@
 
         async function clearDatabase() {
             if(!confirm("Wipe entire student registry?")) return;
-            await fetch(`${SUPABASE_URL}/students?roll_no=not.is.null`, { method: 'DELETE', headers: supabaseHeaders });
+            await fetch(`${SUPABASE_URL}/students?roll_no=not.is.null`, { method: 'DELETE', headers: getHeaders() });
             fetchMasterDatabase();
         }
 
@@ -488,11 +543,11 @@
                 
                 const newExamId = "EXAM_" + Date.now();
                 const examTitle = document.getElementById('target-title').value.trim() || "B.Tech Examination";
-                const randId = Math.floor(Math.random() * 2000000000); // Create unique INT ID for archive rows
+                const randId = Math.floor(Math.random() * 2000000000); 
 
                 await fetch(`${SUPABASE_URL}/exam_config`, {
                     method: 'POST',
-                    headers: { ...supabaseHeaders, "Prefer": "return=minimal" },
+                    headers: { ...getHeaders(), "Prefer": "return=minimal" },
                     body: JSON.stringify({
                         id: randId, 
                         exam_id: newExamId,
@@ -526,13 +581,13 @@
             try {
                 await fetch(`${SUPABASE_URL}/exam_sessions?exam_id=eq.${ACTIVE_EXAM_ID}`, {
                     method: 'PATCH',
-                    headers: supabaseHeaders,
+                    headers: getHeaders(),
                     body: JSON.stringify({ status: 'TERMINATED', pending_action: 'KICK' })
                 });
 
                 await fetch(`${SUPABASE_URL}/exam_config?is_active=eq.true`, {
                     method: 'PATCH',
-                    headers: { ...supabaseHeaders, "Prefer": "return=minimal" },
+                    headers: { ...getHeaders(), "Prefer": "return=minimal" },
                     body: JSON.stringify({ is_active: false })
                 });
 
@@ -546,8 +601,7 @@
 
         async function fetchServerState() {
             try {
-                // Fetch only the currently active exam config
-                const res = await fetch(`${SUPABASE_URL}/exam_config?is_active=eq.true&select=*`, { headers: supabaseHeaders });
+                const res = await fetch(`${SUPABASE_URL}/exam_config?is_active=eq.true&select=*`, { headers: getHeaders() });
                 const data = await res.json();
                 
                 if (data && data.length > 0) {
@@ -582,7 +636,7 @@
                 return;
             }
             try {
-                const res = await fetch(`${SUPABASE_URL}/exam_sessions?exam_id=eq.${ACTIVE_EXAM_ID}&select=*`, { headers: supabaseHeaders });
+                const res = await fetch(`${SUPABASE_URL}/exam_sessions?exam_id=eq.${ACTIVE_EXAM_ID}&select=*`, { headers: getHeaders() });
                 currentSessions = await res.json();
                 renderTelemetryGrid();
             } catch (e) {}
@@ -638,7 +692,6 @@
                 let collisionFlag = s.hardware_hash && hashCounts[s.hardware_hash] > 1;
                 let hashDisplay = collisionFlag ? `<span class="tag tag-collision">⚠️ ${s.hardware_hash}</span>` : s.hardware_hash;
 
-                // Time Left Calculation
                 const startTime = new Date(s.created_at).getTime();
                 const endTime = startTime + (GLOBAL_EXAM_DURATION * 60 * 1000) + ((s.time_added_seconds || 0) * 1000);
                 const timeLeftSecs = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
@@ -683,7 +736,7 @@
             try {
                 await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${sessionKey}`, {
                     method: 'PATCH',
-                    headers: supabaseHeaders,
+                    headers: getHeaders(),
                     body: JSON.stringify({ pending_action: action, is_paused: action === 'PAUSE' ? true : (action === 'RESUME' ? false : undefined) })
                 });
                 if (action === 'KICK') alert("✅ Student has been successfully kicked.");
@@ -696,7 +749,7 @@
             try {
                 await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${sessionKey}`, {
                     method: 'PATCH',
-                    headers: supabaseHeaders,
+                    headers: getHeaders(),
                     body: JSON.stringify({ time_added_seconds: currentAdded + 300 })
                 });
                 alert("✅ Added +5 minutes to student.");
@@ -708,7 +761,7 @@
             try {
                 await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${sessionKey}`, {
                     method: 'PATCH',
-                    headers: supabaseHeaders,
+                    headers: getHeaders(),
                     body: JSON.stringify({ authorized_hash: currentHash })
                 });
                 alert("✅ Machine authorized for this student.");
@@ -734,7 +787,7 @@
             if (!msg) return;
             await fetch(`${SUPABASE_URL}/exam_config?is_active=eq.true`, {
                 method: 'PATCH',
-                headers: supabaseHeaders,
+                headers: getHeaders(),
                 body: JSON.stringify({ announcement: msg })
             });
             alert("Broadcast sent.");
@@ -744,7 +797,7 @@
         // --- TAB 3: EXAM ARCHIVE & HISTORY ---
         async function fetchExamHistory() {
             try {
-                const res = await fetch(`${SUPABASE_URL}/exam_config?is_active=eq.false&select=exam_id,exam_title,started_at&order=started_at.desc`, { headers: supabaseHeaders });
+                const res = await fetch(`${SUPABASE_URL}/exam_config?is_active=eq.false&select=exam_id,exam_title,started_at&order=started_at.desc`, { headers: getHeaders() });
                 const configHistory = await res.json();
                 
                 const selector = document.getElementById('history-exam-selector');
@@ -762,7 +815,7 @@
             const examId = document.getElementById('history-exam-selector').value;
             if (!examId) return;
             try {
-                const res = await fetch(`${SUPABASE_URL}/exam_sessions?exam_id=eq.${examId}&select=*`, { headers: supabaseHeaders });
+                const res = await fetch(`${SUPABASE_URL}/exam_sessions?exam_id=eq.${examId}&select=*`, { headers: getHeaders() });
                 historicalSessions = await res.json();
                 
                 document.getElementById('history-rows').innerHTML = historicalSessions.map(s => `
@@ -785,8 +838,8 @@
             if (!confirm("Are you SURE you want to permanently delete all records and telemetry for this archived exam? This cannot be undone.")) return;
 
             try {
-                await fetch(`${SUPABASE_URL}/exam_sessions?exam_id=eq.${examId}`, { method: 'DELETE', headers: supabaseHeaders });
-                await fetch(`${SUPABASE_URL}/exam_config?exam_id=eq.${examId}`, { method: 'DELETE', headers: supabaseHeaders });
+                await fetch(`${SUPABASE_URL}/exam_sessions?exam_id=eq.${examId}`, { method: 'DELETE', headers: getHeaders() });
+                await fetch(`${SUPABASE_URL}/exam_config?exam_id=eq.${examId}`, { method: 'DELETE', headers: getHeaders() });
 
                 alert("✅ Archived exam deleted successfully.");
                 document.getElementById('history-rows').innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 30px; color: var(--text-secondary);">Select an exam above to view archived forensic data.</td></tr>';
