@@ -417,11 +417,11 @@
                 errorMsg.style.display = 'none';
 
                 try {
-                    const res = await fetch(`${SUPABASE_URL}/exam_config?id=eq.1&select=*`, { headers: supabaseHeaders });
+                    const res = await fetch(`${SUPABASE_URL}/exam_config?is_active=eq.true&select=*`, { headers: supabaseHeaders });
                     await syncServerTime(res);
                     const data = await res.json();
                     
-                    if (!data || data.length === 0 || !data[0].is_active) {
+                    if (!data || data.length === 0) {
                         errorMsg.innerText = "❌ No exam is currently active. Please wait for faculty deployment.";
                         errorMsg.style.display = 'block';
                         btn.innerText = "Connect & Join Exam";
@@ -766,7 +766,7 @@
                         }
 
                         // Broadcast Messages
-                        const confRes = await fetch(`${SUPABASE_URL}/exam_config?id=eq.1&select=announcement`, { headers: supabaseHeaders });
+                        const confRes = await fetch(`${SUPABASE_URL}/exam_config?is_active=eq.true&select=announcement`, { headers: supabaseHeaders });
                         const [confData] = await confRes.json();
                         if (confData && confData.announcement && confData.announcement !== lastAnnouncement) {
                             alert("📢 ANNOUNCEMENT FROM FACULTY:\n\n" + confData.announcement);
@@ -890,6 +890,7 @@
                     document.getElementById('status-bar-container').style.display = 'flex';
                     document.getElementById('violations-pill').innerText = tabSwitchCount;
 
+                    // Inject the pre-filled Google Form URL
                     const iframe = document.createElement('iframe');
                     let secureUrl = DECODED_FORM_URL
                         .replace("ROLL", encodeURIComponent(STUDENT_ROLL))
