@@ -243,7 +243,6 @@
                 "Prefer": "return=representation"
             };
 
-            // FIX: Safely bound anti-tamper interval references to prevent background crash
             const _Date_now = Date.now;
             const _performance_now = performance.now.bind(performance);
             const _setInterval = window.setInterval.bind(window);
@@ -270,7 +269,9 @@
             let isExamActive = false;
             let isTransitioning = false;
             let isPausedByFaculty = false;
+            
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            const isAppleDevice = /Mac|iPhone|iPod|iPad/i.test(navigator.userAgent) && !window.MSStream;
 
             let tabSwitchCount = 0;
             let violationLogs = [];
@@ -691,15 +692,26 @@
                 }
             }, 2500);
 
-            // AGGRESSIVE SYSTEM FOCUS POLLER (Defeats OS Overlays & Search Popups)
+            // -------------------------------------------------------------
+            // THE ACTIVE FAILSAFE POLLER (Defeats OS Overlays & Search Popups)
+            // -------------------------------------------------------------
             focusPollerInterval = _setInterval(() => {
                 if (!isExamActive || isPausedByFaculty || isTransitioning) return;
                 
-                // If the OS pulls focus away from the browser app entirely (e.g. Android Bottom Sheet, Google Assistant)
+                // 1. Check for stolen OS focus (Web Search Popups)
                 if (!document.hasFocus()) {
                     triggerExactWarning("System focus lost: OS overlay, Web Search, or external popup intercepted the screen.");
                 }
-            }, 500); // Evaluates 2 times per second
+
+                // 2. Aggressively verify Fullscreen state (Defeats the silent Android Back Button exit)
+                if (!isAppleDevice) {
+                    const isFS = document.fullscreenElement || document.webkitFullscreenElement || document.webkitIsFullScreen || document.mozFullScreenElement || document.msFullscreenElement;
+                    if (!isFS) {
+                        triggerExactWarning("Fullscreen mode forcibly exited.");
+                        requestRobustFullscreen(); // Instantly try to shove them back in
+                    }
+                }
+            }, 500); // Evaluates twice every second
 
             // Telemetry & Remote Faculty Command Poller
             function startTelemetryPing() {
@@ -886,6 +898,18 @@
                 document.getElementById('active-student-name').innerText = "👤 " + STUDENT_NAME;
                 watermarkOverlay.classList.remove('hidden');
 
+                // -------------------------------------------------------------
+                // HARDWARE BACK BUTTON HIJACK (Locks student in the portal page)
+                // -------------------------------------------------------------
+                history.pushState(null, null, location.href); 
+                window.addEventListener('popstate', () => {
+                    if (isExamActive && !isTransitioning) {
+                        history.pushState(null, null, location.href); 
+                        triggerExactWarning("Hardware Back Button / Swipe-back gesture intercepted.");
+                        requestRobustFullscreen();
+                    }
+                });
+
                 try {
                     isTransitioning = true;
                     _setTimeout(() => { isTransitioning = false; }, 3000);
@@ -896,7 +920,6 @@
                     document.getElementById('status-bar-container').style.display = 'flex';
                     document.getElementById('violations-pill').innerText = tabSwitchCount;
 
-                    // Iframe Injection (SANDBOX REMOVED TO FIX GOOGLE FORMS CRASH)
                     const iframe = document.createElement('iframe');
                     let secureUrl = DECODED_FORM_URL
                         .replace("ROLL", encodeURIComponent(STUDENT_ROLL))
@@ -1002,17 +1025,18 @@
                 if (isExamActive && !isTransitioning) triggerExactWarning("Exam moved to background."); 
             });
 
-            // Mobile System Gesture Interception
+            // Mobile System Gesture Interception (e.g. Swiping home)
             document.addEventListener('touchcancel', () => {
                 if (isExamActive && !isTransitioning) triggerExactWarning("System gesture intercepted touch.");
             });
 
-            // Desktop Fullscreen Exit (Vendor Prefixed)
+            // Desktop Fullscreen Exit (Vendor Prefixed Event Listener)
             ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(evt => {
                 document.addEventListener(evt, () => {
-                    const isFS = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+                    const isFS = document.fullscreenElement || document.webkitFullscreenElement || document.webkitIsFullScreen || document.mozFullScreenElement || document.msFullscreenElement;
                     if (!isFS && !isTransitioning && isExamActive) {
-                        triggerExactWarning("Fullscreen mode exited or bypassed.");
+                        triggerExactWarning("Fullscreen mode exited (Hardware button or OS gesture).");
+                        _setTimeout(requestRobustFullscreen, 500); // Try to force them back in
                     }
                 });
             });
