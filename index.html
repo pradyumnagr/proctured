@@ -284,7 +284,7 @@
             let examServerEndTime = 0;
             let addedTimeSeconds = 0;
 
-            let audioInterval = null, audioContext = null, focusPollerInterval = null, masterSecurityInterval = null;
+            let audioInterval = null, audioContext = null, masterSecurityInterval = null;
 
             const examAgreementCheckbox = document.getElementById('exam-agreement-checkbox');
             const startBtn = document.getElementById('start-btn');
@@ -681,7 +681,9 @@
                 const now = _Date_now();
                 const timeDiff = now - lastInternalTick; 
                 lastInternalTick = now; 
-                if (timeDiff > 4500) triggerExactWarning("Process Suspension / System Freeze Intercepted");
+                
+                // Tightened Thread Drift monitor down to 3.5s to catch Google Assistant/Circle to Search screen-freeze
+                if (timeDiff > 3500) triggerExactWarning("Process Suspension / System Freeze Intercepted");
 
                 const start = _performance_now(); debugger;
                 if (_performance_now() - start > 150) triggerExactWarning("Developer Console Execution Paused");
@@ -981,11 +983,47 @@
 
             confessionCheckbox.addEventListener('change', () => { unlockBtn.disabled = !confessionCheckbox.checked; });
 
-            // Environment event listeners
-            document.addEventListener('visibilitychange', () => { if (document.hidden && !isTransitioning) triggerExactWarning("Switched browser tabs or minimized window."); });
-            window.addEventListener('blur', () => { if (!isTransitioning && isExamActive) _setTimeout(() => { if (!document.hasFocus()) triggerExactWarning("Window lost OS focus."); }, 300); });
-            document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && !isTransitioning) triggerExactWarning("Fullscreen exited."); });
-            document.addEventListener('contextmenu', (e) => { e.preventDefault(); if (isExamActive) triggerExactWarning("Right click blocked."); });
+
+            // ---------------------------------------------------------
+            // FORTIFIED ANTI-CHEAT EVENT LISTENERS (MOBILE OVERLAY FIXES)
+            // ---------------------------------------------------------
+            
+            // 1. Standard Visibility & Backgrounding
+            document.addEventListener('visibilitychange', () => { 
+                if (document.visibilityState === 'hidden' && !isTransitioning) triggerExactWarning("Switched browser tabs or minimized window."); 
+            });
+            window.addEventListener('pagehide', () => { 
+                if (isExamActive && !isTransitioning) triggerExactWarning("Exam moved to background."); 
+            });
+
+            // 2. Enhanced OS Overlay & Search Detection (Fixes Circle to Search / Assistant)
+            window.addEventListener('blur', () => { 
+                if (!isTransitioning && isExamActive) {
+                    _setTimeout(() => { 
+                        const active = document.activeElement;
+                        // Determine if the user is just legitimately clicking inside the Google Form
+                        const isFormFocus = active && active.tagName.toLowerCase() === 'iframe';
+                        
+                        // If they aren't clicking the form, and the whole window lost focus, an OS overlay intercepted them
+                        if (!isFormFocus && !document.hasFocus()) {
+                            triggerExactWarning("OS overlay, Assistant, or Search intercepted the screen."); 
+                        }
+                    }, 100); 
+                }
+            });
+
+            // 3. Mobile System Gesture Interception (Crucial for swiping up/down on Android/iOS)
+            document.addEventListener('touchcancel', () => {
+                if (isExamActive && !isTransitioning) triggerExactWarning("System gesture (e.g., Circle to Search) intercepted touch.");
+            });
+
+            // 4. Desktop Fullscreen & Hardware Keys
+            document.addEventListener('fullscreenchange', () => { 
+                if (!document.fullscreenElement && !isTransitioning) triggerExactWarning("Fullscreen exited."); 
+            });
+            document.addEventListener('contextmenu', (e) => { 
+                e.preventDefault(); if (isExamActive) triggerExactWarning("Right click blocked."); 
+            });
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) || (e.ctrlKey && ['u', 'p', 's'].includes(e.key.toLowerCase()))) {
                     e.preventDefault(); triggerExactWarning("Prohibited shortcut intercepted.");
