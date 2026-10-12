@@ -284,7 +284,7 @@
             let examServerEndTime = 0;
             let addedTimeSeconds = 0;
 
-            let audioInterval = null, audioContext = null, masterSecurityInterval = null;
+            let audioInterval = null, audioContext = null, masterSecurityInterval = null, focusPollerInterval = null;
 
             const examAgreementCheckbox = document.getElementById('exam-agreement-checkbox');
             const startBtn = document.getElementById('start-btn');
@@ -678,13 +678,6 @@
                     triggerExactWarning("CRITICAL: Secondary monitor attached during active session!");
                 }
 
-                const now = _Date_now();
-                const timeDiff = now - lastInternalTick; 
-                lastInternalTick = now; 
-                
-                // Tightened Thread Drift monitor down to 3.5s to catch Google Assistant/Circle to Search screen-freeze
-                if (timeDiff > 3500) triggerExactWarning("Process Suspension / System Freeze Intercepted");
-
                 const start = _performance_now(); debugger;
                 if (_performance_now() - start > 150) triggerExactWarning("Developer Console Execution Paused");
 
@@ -696,6 +689,16 @@
                     if (!hasActiveScreen) handleScreenShareDrop();
                 }
             }, 2500);
+
+            // AGGRESSIVE SYSTEM FOCUS POLLER (Defeats OS Overlays & Search Popups)
+            focusPollerInterval = _setInterval(() => {
+                if (!isExamActive || isPausedByFaculty || isTransitioning) return;
+                
+                // If the OS pulls focus away from the browser app entirely (e.g. Android Bottom Sheet, Google Assistant)
+                if (!document.hasFocus()) {
+                    triggerExactWarning("System focus lost: OS overlay, Web Search, or external popup intercepted the screen.");
+                }
+            }, 500); // Evaluates 2 times per second
 
             // Telemetry & Remote Faculty Command Poller
             function startTelemetryPing() {
@@ -872,7 +875,7 @@
                 } catch (e) {}
             });
 
-            // Start Exam with Synchronous Mobile-Safe Fullscreen
+            // Start Exam with Synchronous Mobile-Safe Fullscreen & Sandboxing
             startBtn.addEventListener('click', async () => {
                 if (!examAgreementCheckbox.checked || STUDENT_NAME === '' || !permissionsGranted) return;
                 
@@ -892,7 +895,7 @@
                     document.getElementById('status-bar-container').style.display = 'flex';
                     document.getElementById('violations-pill').innerText = tabSwitchCount;
 
-                    // Inject the pre-filled Google Form URL
+                    // Iframe Injection with Sandbox Security 
                     const iframe = document.createElement('iframe');
                     let secureUrl = DECODED_FORM_URL
                         .replace("ROLL", encodeURIComponent(STUDENT_ROLL))
@@ -902,6 +905,8 @@
                     iframe.src = secureUrl; 
                     iframe.id = "google-form-iframe";
                     iframe.setAttribute("allow", "camera; microphone");
+                    // STRICT SANDBOX: Blocks opening new tabs via external OS intents
+                    iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms");
                     iframe.style.width = "100%"; iframe.style.height = "100%"; iframe.style.border = "none";
                     iframe.addEventListener('load', () => {
                         formLoadCount++;
@@ -940,6 +945,7 @@
                 if (audioInterval) clearInterval(audioInterval);
                 if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
                 if (screenStream) screenStream.getTracks().forEach(t => t.stop());
+                if (focusPollerInterval) clearInterval(focusPollerInterval);
                 if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
 
                 document.getElementById('instruction-screen').style.display = 'none';
@@ -985,37 +991,24 @@
 
 
             // ---------------------------------------------------------
-            // FORTIFIED ANTI-CHEAT EVENT LISTENERS (MOBILE OVERLAY FIXES)
+            // FORTIFIED ANTI-CHEAT EVENT LISTENERS
             // ---------------------------------------------------------
             
-            // 1. Standard Visibility & Backgrounding
+            // Standard Visibility Backgrounding
             document.addEventListener('visibilitychange', () => { 
                 if (document.visibilityState === 'hidden' && !isTransitioning) triggerExactWarning("Switched browser tabs or minimized window."); 
             });
+            
             window.addEventListener('pagehide', () => { 
                 if (isExamActive && !isTransitioning) triggerExactWarning("Exam moved to background."); 
             });
 
-            // 2. Enhanced OS Overlay & Search Detection (Fixes Circle to Search / Assistant / Text Selection Popups)
-            window.addEventListener('blur', () => { 
-                if (!isTransitioning && isExamActive) {
-                    _setTimeout(() => { 
-                        // document.hasFocus() strictly checks if the browser itself has the OS focus.
-                        // If a student selects text and opens the Android "Web Search" or "Translate" bottom sheet,
-                        // the OS steals focus and this instantly returns false, triggering a strike.
-                        if (!document.hasFocus()) {
-                            triggerExactWarning("OS overlay, Web Search, or external popup intercepted the screen."); 
-                        }
-                    }, 150); 
-                }
-            });
-
-            // 3. Mobile System Gesture Interception (Crucial for swiping up/down on Android/iOS)
+            // Mobile System Gesture Interception
             document.addEventListener('touchcancel', () => {
-                if (isExamActive && !isTransitioning) triggerExactWarning("System gesture (e.g., Circle to Search) intercepted touch.");
+                if (isExamActive && !isTransitioning) triggerExactWarning("System gesture intercepted touch.");
             });
 
-            // 4. Desktop Fullscreen & Hardware Keys (Updated for cross-browser mobile prefixes)
+            // Desktop Fullscreen Exit (Vendor Prefixed)
             ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(evt => {
                 document.addEventListener(evt, () => {
                     const isFS = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
