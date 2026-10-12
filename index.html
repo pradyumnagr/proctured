@@ -642,9 +642,7 @@
                     if (navigator.keyboard && navigator.keyboard.lock) {
                         await navigator.keyboard.lock(["Escape", "AltLeft", "AltRight", "Tab", "MetaLeft", "MetaRight"]);
                     }
-                    if (document.body.requestPointerLock) {
-                        document.body.requestPointerLock();
-                    }
+                    // requestPointerLock() removed to ensure mouse cursor remains visible on desktop
                 } catch(e) {}
             }
 
@@ -766,8 +764,10 @@
                                     isPausedByFaculty = false;
                                     document.getElementById('pause-overlay').style.display = 'none';
                                 } else if (act === "UNLOCK") {
-                                    tabSwitchCount = 0;
-                                    document.getElementById('violations-pill').innerText = '0';
+                                    // "Sudden Death" mode: Drop them to exactly 1 strike below the maximum
+                                    tabSwitchCount = MAX_STRIKES - 1; 
+                                    document.getElementById('violations-pill').innerText = tabSwitchCount;
+                                    
                                     if (!isExamActive) {
                                         document.getElementById('result-screen').classList.add('hidden');
                                         document.getElementById('exam-container').style.display = 'block';
@@ -998,8 +998,9 @@
                 if (!isKeyCorrect) { unlockError.style.display = 'block'; return; }
                 unlockError.style.display = 'none';
 
-                tabSwitchCount = 0;
-                document.getElementById('violations-pill').innerText = '0';
+                // Local Unlock Logic applies "Sudden Death" state as well
+                tabSwitchCount = MAX_STRIKES - 1;
+                document.getElementById('violations-pill').innerText = tabSwitchCount;
                 document.getElementById('result-screen').classList.add('hidden');
                 document.getElementById('exam-container').style.display = 'block';
                 document.getElementById('status-bar-container').style.display = 'flex';
