@@ -243,10 +243,11 @@
                 "Prefer": "return=representation"
             };
 
+            // FIX: Safely bound anti-tamper interval references to prevent background crash
             const _Date_now = Date.now;
             const _performance_now = performance.now.bind(performance);
-            const _setInterval = setInterval;
-            const _setTimeout = setTimeout;
+            const _setInterval = window.setInterval.bind(window);
+            const _setTimeout = window.setTimeout.bind(window);
 
             const ENCRYPTED_KEY = [117, 119, 102, 105, 126, 122, 114, 115, 120, 110, 119, 120, 116, 119, 119, 126];
 
@@ -325,7 +326,7 @@
                 } catch(e) {}
             }
 
-            // Cross-platform robust fullscreen request handler (fixes Android issues)
+            // Cross-platform robust fullscreen request handler
             function requestRobustFullscreen() {
                 const el = document.documentElement;
                 try {
@@ -356,7 +357,7 @@
             }
             hardwareHashValue = generateHardwareFingerprint();
 
-            // Zero-Tolerance Clipboard Lockdown (Silent implementation - no browser popups)
+            // Zero-Tolerance Clipboard Lockdown (Silent implementation)
             document.addEventListener('copy', (e) => { e.preventDefault(); triggerExactWarning("Copying text is prohibited."); });
             document.addEventListener('cut', (e) => { e.preventDefault(); triggerExactWarning("Cutting text is prohibited."); });
             document.addEventListener('paste', (e) => { e.preventDefault(); triggerExactWarning("Pasting text is prohibited."); });
@@ -875,7 +876,7 @@
                 } catch (e) {}
             });
 
-            // Start Exam with Synchronous Mobile-Safe Fullscreen & Sandboxing
+            // Start Exam with Synchronous Mobile-Safe Fullscreen
             startBtn.addEventListener('click', async () => {
                 if (!examAgreementCheckbox.checked || STUDENT_NAME === '' || !permissionsGranted) return;
                 
@@ -895,7 +896,7 @@
                     document.getElementById('status-bar-container').style.display = 'flex';
                     document.getElementById('violations-pill').innerText = tabSwitchCount;
 
-                    // Iframe Injection with Sandbox Security 
+                    // Iframe Injection (SANDBOX REMOVED TO FIX GOOGLE FORMS CRASH)
                     const iframe = document.createElement('iframe');
                     let secureUrl = DECODED_FORM_URL
                         .replace("ROLL", encodeURIComponent(STUDENT_ROLL))
@@ -905,8 +906,6 @@
                     iframe.src = secureUrl; 
                     iframe.id = "google-form-iframe";
                     iframe.setAttribute("allow", "camera; microphone");
-                    // STRICT SANDBOX: Blocks opening new tabs via external OS intents
-                    iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms");
                     iframe.style.width = "100%"; iframe.style.height = "100%"; iframe.style.border = "none";
                     iframe.addEventListener('load', () => {
                         formLoadCount++;
