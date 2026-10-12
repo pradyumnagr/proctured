@@ -51,6 +51,8 @@
         .btn-secondary:hover { background: #e8eaed; }
         .btn-warning { background: var(--warning); color: #202124; }
         .btn-warning:hover { background: #e09900; }
+        .btn-success { background: #1e8e3e; color: white; }
+        .btn-success:hover { background: #177130; }
         .btn-small { padding: 6px 10px; font-size: 11px; margin: 2px; }
 
         .analytics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
@@ -67,7 +69,7 @@
         .auto-proctor-box { background: #fff3e0; padding: 8px 12px; border-radius: 6px; border: 1px solid #ffe0b2; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: bold; color: #e65100; cursor: pointer; white-space: nowrap; }
 
         .table-responsive { width: 100%; overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); -webkit-overflow-scrolling: touch; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1100px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1150px; }
         table th { background: #f8f9fa; text-align: left; padding: 12px 14px; border-bottom: 2px solid var(--border); color: var(--text-secondary); white-space: nowrap; }
         table td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
         
@@ -658,6 +660,7 @@
                             <button class="btn-warning btn-small" onclick="sendAction('${s.session_key}', '${s.is_paused ? 'RESUME' : 'PAUSE'}')">${s.is_paused ? '▶️ Resume' : '⏸️ Pause'}</button>
                             <button class="btn-secondary btn-small" onclick="addTime('${s.session_key}', ${s.time_added_seconds || 0})">+5m</button>
                             <button class="btn-secondary btn-small" onclick="authorizeDevice('${s.session_key}', '${s.hardware_hash}')">🔑 Auth HW</button>
+                            <button class="btn-success btn-small" onclick="sendAction('${s.session_key}', 'UNLOCK')">🔓 Unlock</button>
                             <button class="btn-danger btn-small" onclick="sendAction('${s.session_key}', 'KICK')">Kick</button>
                         </td>
                     </tr>
@@ -674,6 +677,9 @@
             if (action === 'KICK') {
                 if (!confirm("Are you sure you want to forcibly KICK this student out of the exam?")) return;
             }
+            if (action === 'UNLOCK') {
+                if (!confirm("Grant Remote Unlock? They will be given exactly 1 final strike remaining.")) return;
+            }
             try {
                 await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${sessionKey}`, {
                     method: 'PATCH',
@@ -681,6 +687,7 @@
                     body: JSON.stringify({ pending_action: action, is_paused: action === 'PAUSE' ? true : (action === 'RESUME' ? false : undefined) })
                 });
                 if (action === 'KICK') alert("✅ Student has been successfully kicked.");
+                if (action === 'UNLOCK') alert("✅ Remote unlock command sent. The student will re-enter the exam on their next heartbeat.");
                 fetchTelemetry();
             } catch (e) { alert("Error: " + e.message); }
         }
