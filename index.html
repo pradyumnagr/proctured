@@ -996,19 +996,17 @@
                 if (isExamActive && !isTransitioning) triggerExactWarning("Exam moved to background."); 
             });
 
-            // 2. Enhanced OS Overlay & Search Detection (Fixes Circle to Search / Assistant)
+            // 2. Enhanced OS Overlay & Search Detection (Fixes Circle to Search / Assistant / Text Selection Popups)
             window.addEventListener('blur', () => { 
                 if (!isTransitioning && isExamActive) {
                     _setTimeout(() => { 
-                        const active = document.activeElement;
-                        // Determine if the user is just legitimately clicking inside the Google Form
-                        const isFormFocus = active && active.tagName.toLowerCase() === 'iframe';
-                        
-                        // If they aren't clicking the form, and the whole window lost focus, an OS overlay intercepted them
-                        if (!isFormFocus && !document.hasFocus()) {
-                            triggerExactWarning("OS overlay, Assistant, or Search intercepted the screen."); 
+                        // document.hasFocus() strictly checks if the browser itself has the OS focus.
+                        // If a student selects text and opens the Android "Web Search" or "Translate" bottom sheet,
+                        // the OS steals focus and this instantly returns false, triggering a strike.
+                        if (!document.hasFocus()) {
+                            triggerExactWarning("OS overlay, Web Search, or external popup intercepted the screen."); 
                         }
-                    }, 100); 
+                    }, 150); 
                 }
             });
 
@@ -1017,13 +1015,20 @@
                 if (isExamActive && !isTransitioning) triggerExactWarning("System gesture (e.g., Circle to Search) intercepted touch.");
             });
 
-            // 4. Desktop Fullscreen & Hardware Keys
-            document.addEventListener('fullscreenchange', () => { 
-                if (!document.fullscreenElement && !isTransitioning) triggerExactWarning("Fullscreen exited."); 
+            // 4. Desktop Fullscreen & Hardware Keys (Updated for cross-browser mobile prefixes)
+            ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(evt => {
+                document.addEventListener(evt, () => {
+                    const isFS = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+                    if (!isFS && !isTransitioning && isExamActive) {
+                        triggerExactWarning("Fullscreen mode exited or bypassed.");
+                    }
+                });
             });
+
             document.addEventListener('contextmenu', (e) => { 
                 e.preventDefault(); if (isExamActive) triggerExactWarning("Right click blocked."); 
             });
+            
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) || (e.ctrlKey && ['u', 'p', 's'].includes(e.key.toLowerCase()))) {
                     e.preventDefault(); triggerExactWarning("Prohibited shortcut intercepted.");
