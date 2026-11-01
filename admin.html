@@ -11,36 +11,41 @@
             --bg-color: #f4f6f9; --surface-color: #ffffff; --primary: #1a73e8; --primary-hover: #1557b0;
             --danger: #d93025; --danger-hover: #b3261e; --success: #1e8e3e; --warning: #f9ab00;
             --text-main: #202124; --text-secondary: #5f6368; --border: #e0e0e0;
-            --focus-ring: rgba(26, 115, 232, 0.2);
+            --focus-ring: rgba(26, 115, 232, 0.2); --table-head: #f8f9fa; --input-bg: #fafafa;
         }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
-        .container { width: 100%; max-width: 1350px; margin: 20px auto; padding: 0 15px; box-sizing: border-box; }
+        /* Dark Mode Variables */
+        [data-theme="dark"] {
+            --bg-color: #121212; --surface-color: #1e1e1e; --text-main: #e8eaed; --text-secondary: #9aa0a6; --border: #3c4043;
+            --table-head: #2d2d2d; --input-bg: #2a2a2a;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; transition: background 0.3s, color 0.3s; }
+        .container { width: 100%; max-width: 1450px; margin: 20px auto; padding: 0 15px; box-sizing: border-box; }
         
-        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 15px 25px; background: var(--surface-color); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid var(--border); flex-wrap: wrap; gap: 15px; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 15px 25px; background: var(--surface-color); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid var(--border); flex-wrap: wrap; gap: 15px; transition: 0.3s; }
         .brand-title { font-size: 22px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 10px; }
         .brand-subtitle { font-size: 13px; color: var(--text-secondary); font-weight: 600; margin-top: 2px; }
 
-        .tab-nav { display: flex; gap: 10px; margin-bottom: 20px; background: var(--surface-color); padding: 10px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid var(--border); flex-wrap: wrap; }
+        .tab-nav { display: flex; gap: 10px; margin-bottom: 20px; background: var(--surface-color); padding: 10px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid var(--border); flex-wrap: wrap; transition: 0.3s; }
         .tab-btn { flex: 1; padding: 12px 20px; border: none; background: transparent; font-size: 15px; font-weight: 700; color: var(--text-secondary); cursor: pointer; border-radius: 8px; transition: 0.2s; white-space: nowrap; text-align: center; }
-        .tab-btn:hover { background: #f1f3f4; }
+        .tab-btn:hover { background: var(--border); color: var(--text-main); }
         .tab-btn.active { background: var(--primary); color: white; }
         .tab-pane { display: none; }
         .tab-pane.active { display: block; }
 
-        .card { background: var(--surface-color); border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); border: 1px solid var(--border); padding: 25px; margin-bottom: 25px; box-sizing: border-box; width: 100%; }
+        .card { background: var(--surface-color); border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); border: 1px solid var(--border); padding: 25px; margin-bottom: 25px; box-sizing: border-box; width: 100%; transition: 0.3s; }
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
         .header h1 { font-size: 20px; margin: 0; font-weight: 600; display: flex; align-items: center; gap: 8px; }
         
         .status-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 30px; font-size: 13px; font-weight: 600; }
-        .status-active { background: #e6f4ea; color: var(--success); }
-        .status-inactive { background: #fce8e6; color: var(--danger); }
+        .status-active { background: #e6f4ea; color: #1e8e3e; }
+        .status-inactive { background: #fce8e6; color: #d93025; }
         .status-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; box-shadow: 0 0 6px currentColor; }
 
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; margin-bottom: 20px; }
         .form-group { display: flex; flex-direction: column; gap: 6px; }
         .form-group label { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
-        .form-group input, .form-group select, .form-group textarea { padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; outline: none; background: #fafafa; font-family: inherit; width: 100%; box-sizing: border-box; }
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px var(--focus-ring); }
+        .form-group input, .form-group select, .form-group textarea { padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; outline: none; background: var(--input-bg); color: var(--text-main); font-family: inherit; width: 100%; box-sizing: border-box; transition: 0.3s; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--focus-ring); }
         
         .btn-row { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
         button { cursor: pointer; border: none; padding: 10px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
@@ -49,11 +54,11 @@
         .btn-primary:hover { background: var(--primary-hover); }
         .btn-danger { background: var(--danger); color: white; }
         .btn-danger:hover { background: var(--danger-hover); }
-        .btn-secondary { background: #f1f3f4; color: var(--text-main); border: 1px solid var(--border); }
-        .btn-secondary:hover { background: #e8eaed; }
+        .btn-secondary { background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border); }
+        .btn-secondary:hover { background: var(--border); }
         .btn-warning { background: var(--warning); color: #202124; }
         .btn-warning:hover { background: #e09900; }
-        .btn-success { background: #1e8e3e; color: white; }
+        .btn-success { background: var(--success); color: white; }
         .btn-success:hover { background: #177130; }
         .btn-small { padding: 6px 10px; font-size: 11px; margin: 2px; }
 
@@ -61,62 +66,40 @@
         .stat-card { padding: 15px; border-radius: 8px; border: 1px solid var(--border); text-align: center; }
         .stat-card h3 { margin: 0 0 5px 0; font-size: 24px; font-weight: 700; }
         .stat-card p { margin: 0; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-        .stat-clean { background: #e6f4ea; color: var(--success); border-color: #ceead6; }
-        .stat-suspicious { background: #fef7e0; color: #b07d00; border-color: #feefc3; }
-        .stat-locked { background: #fce8e6; color: var(--danger); border-color: #fad2cf; }
-        .stat-avg { background: #e8f0fe; color: var(--primary); border-color: #d2e3fc; }
+        .stat-clean { background: rgba(30,142,62,0.1); color: #1e8e3e; border-color: rgba(30,142,62,0.2); }
+        .stat-suspicious { background: rgba(249,171,0,0.1); color: #f9ab00; border-color: rgba(249,171,0,0.2); }
+        .stat-locked { background: rgba(217,48,37,0.1); color: #d93025; border-color: rgba(217,48,37,0.2); }
+        .stat-avg { background: rgba(26,115,232,0.1); color: var(--primary); border-color: rgba(26,115,232,0.2); }
 
         .tools-row { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; justify-content: space-between; flex-wrap: wrap; width: 100%; }
-        .tools-row input { flex: 1; min-width: 200px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
-        .auto-proctor-box { background: #fff3e0; padding: 8px 12px; border-radius: 6px; border: 1px solid #ffe0b2; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: bold; color: #e65100; cursor: pointer; white-space: nowrap; }
+        .tools-row input { flex: 1; min-width: 200px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; background: var(--input-bg); color: var(--text-main); }
+        .auto-proctor-box { background: rgba(249,171,0,0.15); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(249,171,0,0.3); display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: bold; color: #d97706; cursor: pointer; white-space: nowrap; }
 
         .table-responsive { width: 100%; overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); -webkit-overflow-scrolling: touch; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1150px; }
-        table th { background: #f8f9fa; text-align: left; padding: 12px 14px; border-bottom: 2px solid var(--border); color: var(--text-secondary); white-space: nowrap; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1200px; }
+        table th { background: var(--table-head); text-align: left; padding: 12px 14px; border-bottom: 2px solid var(--border); color: var(--text-secondary); white-space: nowrap; }
         table td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
         
         .tag { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; white-space: nowrap; display: inline-block; }
-        .tag-active { background: #e6f4ea; color: var(--success); }
-        .tag-warning { background: #fef7e0; color: #b07d00; }
-        .tag-locked { background: #fce8e6; color: var(--danger); }
-        .tag-paused { background: #e8eaed; color: #5f6368; }
-        .tag-collision { background: #fce8e6; color: var(--danger); border: 1px solid var(--danger); }
-        .tag-section { background: #e8f0fe; color: var(--primary); border: 1px solid #d2e3fc; }
-        .tag-time { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; font-family: monospace; font-size: 12px; }
+        .tag-active { background: rgba(30,142,62,0.15); color: #1e8e3e; }
+        .tag-warning { background: rgba(249,171,0,0.15); color: #d97706; }
+        .tag-locked { background: rgba(217,48,37,0.15); color: #d93025; }
+        .tag-section { background: rgba(26,115,232,0.15); color: var(--primary); border: 1px solid rgba(26,115,232,0.2); }
 
         .score-pill { padding: 4px 10px; border-radius: 12px; font-weight: 800; font-size: 12px; display: inline-block; }
-        .score-high { background: #e6f4ea; color: var(--success); border: 1px solid #ceead6; }
-        .score-med { background: #fef7e0; color: #b07d00; border: 1px solid #feefc3; }
-        .score-low { background: #fce8e6; color: var(--danger); border: 1px solid #fad2cf; }
+        .score-high { background: rgba(30,142,62,0.1); color: #1e8e3e; border: 1px solid rgba(30,142,62,0.3); }
+        .score-med { background: rgba(249,171,0,0.1); color: #d97706; border: 1px solid rgba(249,171,0,0.3); }
+        .score-low { background: rgba(217,48,37,0.1); color: #d93025; border: 1px solid rgba(217,48,37,0.3); }
         
         .snap-thumb { width: 42px; height: 32px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); cursor: pointer; }
 
         .hidden { display: none !important; }
         #auth-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(32, 33, 36, 0.95); display: flex; justify-content: center; align-items: center; z-index: 9999; padding: 20px; }
-        .auth-box { background: white; padding: 40px; border-radius: 12px; max-width: 400px; width: 100%; text-align: center; box-sizing: border-box; }
+        .auth-box { background: var(--surface-color); padding: 40px; border-radius: 12px; max-width: 400px; width: 100%; text-align: center; box-sizing: border-box; }
 
         #logs-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 99999; padding: 15px; }
-        .logs-box { background: white; width: 100%; max-width: 650px; border-radius: 12px; padding: 25px; box-sizing: border-box; max-height: 85vh; display: flex; flex-direction: column; }
-        .logs-content { background: #202124; color: #34a853; font-family: monospace; font-size: 12px; padding: 15px; border-radius: 6px; overflow-y: auto; flex: 1; white-space: pre-wrap; margin-top: 15px; }
-
-        .db-info-box { background: #e6f4ea; padding: 15px; border-radius: 8px; border: 1px solid #ceead6; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
-        .footer-brand { text-align: center; margin-top: 20px; margin-bottom: 40px; font-family: 'Brush Script MT', cursive; font-size: 16px; color: #888; font-style: italic; }
-
-        /* Mobile Responsiveness */
-        @media (max-width: 768px) {
-            .top-bar { flex-direction: column; text-align: center; justify-content: center; }
-            .tab-nav { flex-direction: column; }
-            .analytics-grid { grid-template-columns: 1fr 1fr; }
-            .tools-row { flex-direction: column; align-items: flex-start; }
-            .tools-row > div { width: 100%; flex-wrap: wrap; }
-            .card { padding: 15px; }
-        }
-        @media (max-width: 480px) {
-            .analytics-grid { grid-template-columns: 1fr; }
-            .btn-row { flex-direction: column; width: 100%; }
-            .btn-row button { width: 100%; }
-            .header h1 { font-size: 18px; }
-        }
+        .logs-box { background: var(--surface-color); width: 100%; max-width: 650px; border-radius: 12px; padding: 25px; box-sizing: border-box; max-height: 85vh; display: flex; flex-direction: column; }
+        .logs-content { background: #121212; color: #34a853; font-family: monospace; font-size: 12px; padding: 15px; border-radius: 6px; overflow-y: auto; flex: 1; white-space: pre-wrap; margin-top: 15px; border: 1px solid var(--border); }
     </style>
 </head>
 <body>
@@ -126,8 +109,8 @@
             <h2 style="margin-top: 0; color: var(--primary);">Command Center</h2>
             <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;">Supabase Enterprise Authentication</p>
             
-            <input type="email" id="auth-email" placeholder="Admin Email" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; margin-bottom: 10px; text-align: center; box-sizing: border-box;">
-            <input type="password" id="auth-password" placeholder="Password" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; margin-bottom: 15px; text-align: center; box-sizing: border-box;">
+            <input type="email" id="auth-email" placeholder="Admin Email" style="width: 100%; padding: 12px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); border-radius: 6px; font-size: 14px; margin-bottom: 10px; text-align: center; box-sizing: border-box;">
+            <input type="password" id="auth-password" placeholder="Password" style="width: 100%; padding: 12px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); border-radius: 6px; font-size: 14px; margin-bottom: 15px; text-align: center; box-sizing: border-box;">
             
             <div style="margin-bottom: 15px; display: flex; justify-content: center;">
                 <div class="g-recaptcha" data-sitekey="6Leofe4tAAAAAID1p1Me1NtLrEjhMQJ9QUKYq1Bg"></div>
@@ -144,8 +127,8 @@
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                 <h2 style="margin: 0; font-size: 18px;">Candidate Forensic Log</h2>
                 <div>
-                    <button class="btn-secondary" style="padding: 6px 12px;" onclick="printForensicDossier()">🖨️ Print PDF</button>
-                    <button class="btn-danger" style="padding: 6px 12px;" onclick="document.getElementById('logs-overlay').classList.add('hidden')">Close</button>
+                    <button class="btn-secondary" style="padding: 6px 12px;" onclick="printForensicDossier()" title="Print this audit as a formal PDF document">🖨️ Print PDF</button>
+                    <button class="btn-danger" style="padding: 6px 12px;" onclick="document.getElementById('logs-overlay').classList.add('hidden')" title="Close the audit viewer">Close</button>
                 </div>
             </div>
             <div class="logs-content" id="logs-content-body">Loading forensic telemetry...</div>
@@ -159,15 +142,16 @@
                 <div class="brand-subtitle">Enterprise B.Tech Exam Invigilation Engine</div>
             </div>
             <div style="display: flex; gap: 10px;">
-                <button id="audio-toggle-btn" class="btn-secondary" onclick="toggleAudioAlerts()">🔔 Chimes: ON</button>
-                <button id="logout-btn" class="btn-secondary">🔒 Secure Logout</button>
+                <button id="theme-toggle-btn" class="btn-secondary" onclick="toggleTheme()" title="Toggle Dark or Light Mode for the Command Center">🌙 Dark Mode</button>
+                <button id="audio-toggle-btn" class="btn-secondary" onclick="toggleAudioAlerts()" title="Toggle audible chime alerts for new infractions">🔔 Chimes: ON</button>
+                <button id="logout-btn" class="btn-secondary" title="Securely end your admin session">🔒 Logout</button>
             </div>
         </div>
 
         <div class="tab-nav">
-            <button class="tab-btn" onclick="switchTab('tab-db')" id="btn-tab-db">👥 1. Global Registry</button>
-            <button class="tab-btn active" onclick="switchTab('tab-live')" id="btn-tab-live">🚀 2. Live Invigilation Grid</button>
-            <button class="tab-btn" onclick="switchTab('tab-history')" id="btn-tab-history">📚 3. Exam Archive & History</button>
+            <button class="tab-btn" onclick="switchTab('tab-db')" id="btn-tab-db" title="Manage the database of allowed students">👥 1. Global Registry</button>
+            <button class="tab-btn active" onclick="switchTab('tab-live')" id="btn-tab-live" title="Configure, deploy, and monitor live exams">🚀 2. Live Invigilation Grid</button>
+            <button class="tab-btn" onclick="switchTab('tab-history')" id="btn-tab-history" title="View forensic data for past, completed exams">📚 3. Exam Archive & History</button>
         </div>
 
         <!-- TAB 1: MASTER REGISTRY -->
@@ -178,33 +162,24 @@
                     <span style="font-size: 13px; color: var(--text-secondary);">Permanent records in Supabase</span>
                 </div>
                 
-                <div class="db-info-box">
-                    <div><strong style="font-size: 18px; color: var(--success);" id="db-total-count">0</strong> Students Enrolled</div>
-                    <button class="btn-danger btn-small" onclick="clearDatabase()">🗑️ Wipe Registry</button>
+                <div style="background: rgba(30,142,62,0.1); padding: 15px; border-radius: 8px; border: 1px solid rgba(30,142,62,0.3); margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                    <div><strong style="font-size: 18px; color: #1e8e3e;" id="db-total-count">0</strong> Students Enrolled</div>
+                    <button class="btn-danger btn-small" onclick="clearDatabase()" title="Permanently delete all students from the database">🗑️ Wipe Registry</button>
                 </div>
 
                 <div class="form-group" style="margin-bottom: 15px;">
                     <label>Bulk CSV Import (Roll Number, Name, DOB, Year, Section, Course, Branch):</label>
-                    <textarea id="db-import-area" rows="6" placeholder="Paste CSV rows here. The smart sanitizer will automatically format dates and remove duplicates."></textarea>
+                    <textarea id="db-import-area" rows="6" placeholder="Paste CSV rows here. The smart sanitizer will automatically format dates and remove duplicates." title="Paste data directly from Excel or Sheets. Commas inside quotes are handled safely."></textarea>
                 </div>
-                <button id="btn-save-db" class="btn-primary" onclick="saveMasterDatabase()">💾 Sanitize & Save to Registry</button>
+                <button id="btn-save-db" class="btn-primary" onclick="saveMasterDatabase()" title="Clean, parse, and upload the pasted text into the Supabase database">💾 Sanitize & Save to Registry</button>
 
                 <h3 style="margin-top: 30px; font-size: 16px;">Enrolled Student Directory</h3>
                 <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
                     <table>
                         <thead style="position: sticky; top: 0;">
-                            <tr>
-                                <th>Roll Number</th>
-                                <th>Name</th>
-                                <th>DOB</th>
-                                <th>Year</th>
-                                <th>Section</th>
-                                <th>Branch</th>
-                            </tr>
+                            <tr><th>Roll Number</th><th>Name</th><th>DOB</th><th>Year</th><th>Section</th><th>Branch</th></tr>
                         </thead>
-                        <tbody id="db-preview-rows">
-                            <tr><td colspan="6" style="text-align: center; padding: 20px;">Loading registry...</td></tr>
-                        </tbody>
+                        <tbody id="db-preview-rows"><tr><td colspan="6" style="text-align: center;">Loading registry...</td></tr></tbody>
                     </table>
                 </div>
             </div>
@@ -215,41 +190,40 @@
             <div class="card">
                 <div class="header">
                     <h1>🚀 Exam Configurator</h1>
-                    <div id="status-badge" class="status-badge status-inactive">
-                        <div class="status-dot"></div>
-                        <span id="status-text">Inactive</span>
+                    <div id="status-badge" class="status-badge status-inactive" title="Shows if an exam is currently accepting connections">
+                        <div class="status-dot"></div><span id="status-text">Inactive</span>
                     </div>
                 </div>
 
                 <div class="form-grid">
                     <div class="form-group" style="grid-column: 1 / -1;">
                         <label>Assessment Title / Subject:</label>
-                        <input type="text" id="target-title" placeholder="e.g. Web Technology Mid-Term 2026">
+                        <input type="text" id="target-title" placeholder="e.g. Web Technology Mid-Term 2026" title="This title will be saved in the archive for future reference">
                     </div>
                     <div class="form-group" style="grid-column: 1 / -1;">
                         <label>Target Google Form URL (Must include embedded=true):</label>
-                        <input type="text" id="target-url" placeholder="https://docs.google.com/forms/d/e/.../viewform?embedded=true">
+                        <input type="text" id="target-url" placeholder="https://docs.google.com/forms/d/e/.../viewform?embedded=true" title="The exact URL of the Google Form to embed in the student portal">
                     </div>
                     <div class="form-group" style="grid-column: 1 / -1;">
                         <label>Google Sheet Response URL (For Zero-Script Marks Sync):</label>
-                        <input type="text" id="target-sheet" placeholder="https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit">
+                        <input type="text" id="target-sheet" placeholder="https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit" title="Link to the Google Sheet where Form responses are saved. Used to automatically pull marks.">
                     </div>
                     
                     <div class="form-group">
                         <label>Exam Duration (Minutes):</label>
-                        <input type="number" id="target-duration" value="120" min="5">
+                        <input type="number" id="target-duration" value="120" min="5" title="Base time limit for the exam. Can be extended for specific students later.">
                     </div>
                     <div class="form-group">
                         <label>Form Page Sections:</label>
-                        <input type="number" id="target-sections" value="2" min="1">
+                        <input type="number" id="target-sections" value="2" min="1" title="The number of 'Next' button pages in the Google Form">
                     </div>
                     <div class="form-group">
                         <label>Strike Limit:</label>
-                        <input type="number" id="target-strikes" value="7">
+                        <input type="number" id="target-strikes" value="7" title="Number of infractions before the student is permanently locked out">
                     </div>
                     <div class="form-group">
                         <label>Audio Limit:</label>
-                        <select id="target-audio">
+                        <select id="target-audio" title="Sensitivity for ambient noise monitoring">
                             <option value="120">Strict (120)</option>
                             <option value="150" selected>Standard (150)</option>
                             <option value="9999">Disabled</option>
@@ -257,14 +231,14 @@
                     </div>
                     <div class="form-group">
                         <label>Screen Share:</label>
-                        <select id="target-screenshare">
+                        <select id="target-screenshare" title="Force students on desktop to share their 'Entire Screen'">
                             <option value="true" selected>Mandatory (Desktop)</option>
                             <option value="false">Optional</option>
                         </select>
                     </div>
                     <div class="form-group" style="grid-column: 1 / -1;">
                         <label style="color: var(--primary);">Target Audience Restriction:</label>
-                        <select id="target-audience" style="border: 2px solid var(--primary); font-weight: bold; background: #e8f0fe; padding: 10px;">
+                        <select id="target-audience" style="border: 2px solid var(--primary); font-weight: bold; background: rgba(26,115,232,0.1); padding: 10px;" title="Restrict access to specific class sections, or open the exam to anyone">
                             <option value="ALL" selected>Allow All Students in Master Registry</option>
                             <option value="OPEN">Open Assessment Mode (No Registry Enforced)</option>
                         </select>
@@ -272,8 +246,8 @@
                 </div>
 
                 <div class="btn-row">
-                    <button class="btn-primary" id="btn-deploy">🚀 Deploy New Exam Session</button>
-                    <button class="btn-danger" id="btn-terminate">🛑 Terminate & Archive Session</button>
+                    <button class="btn-primary" id="btn-deploy" title="Make this configuration LIVE. Students will immediately be able to join.">🚀 Deploy New Exam Session</button>
+                    <button class="btn-danger" id="btn-terminate" title="Forcefully end the current exam, lock out all active students, and move data to the Archive tab">🛑 Terminate & Archive Session</button>
                 </div>
             </div>
 
@@ -293,18 +267,18 @@
                 <div class="tools-row">
                     <div style="display: flex; flex: 1; gap: 10px;">
                         <input type="text" id="announce-input" placeholder="Broadcast live announcement to all candidate screens...">
-                        <button class="btn-primary" onclick="broadcastMessage()">📢 Broadcast</button>
+                        <button class="btn-primary" onclick="broadcastMessage()" title="Send a pop-up alert to every connected student's screen instantly">📢 Broadcast</button>
                     </div>
                     
                     <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                        <select id="live-section-filter" style="padding: 10px; border-radius: 6px; border: 1px solid var(--border); font-weight: 600;" onchange="renderTelemetryGrid()">
+                        <select id="live-section-filter" style="padding: 10px; border-radius: 6px; border: 1px solid var(--border); font-weight: 600;" onchange="renderTelemetryGrid()" title="Filter the telemetry grid to show only a specific section">
                             <option value="ALL">All Sections</option>
                         </select>
-                        <label class="auto-proctor-box">
+                        <label class="auto-proctor-box" title="When checked, the server will automatically terminate a student's session if they hit 7 strikes">
                             <input type="checkbox" id="auto-proctor-toggle"> 🤖 Auto-Kick at 7 Strikes
                         </label>
-                        <button class="btn-success" onclick="syncMarksForActiveExam()">📊 Sync Marks</button>
-                        <button class="btn-secondary" onclick="downloadCSV(currentSessions, 'Active_Exam')">📥 Export CSV</button>
+                        <button class="btn-success" onclick="syncMarksForActiveExam()" title="Fetch marks from the linked Google Sheet to update the telemetry grid">📊 Sync Marks</button>
+                        <button class="btn-secondary" onclick="downloadCSV(currentSessions, 'Active_Exam')" title="Download the current telemetry grid as an Excel-compatible CSV">📥 Export CSV</button>
                     </div>
                 </div>
 
@@ -312,20 +286,14 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Roll Number</th>
-                                <th>Candidate</th>
-                                <th>Sec / Branch</th>
-                                <th>Net</th>
-                                <th>Status</th>
-                                <th>Strikes</th>
-                                <th>Integrity</th>
-                                <th>Marks</th>
-                                <th>Snap</th>
-                                <th>Invigilation Controls</th>
+                                <th>Roll Number</th><th>Candidate</th><th>Sec</th><th>Net</th>
+                                <th>Status</th><th>Strikes</th><th>Integrity</th>
+                                <th>Time Left</th> <!-- NEW SERVER SYNCED TIMER -->
+                                <th>Marks</th><th>Snap</th><th>Invigilation Controls</th>
                             </tr>
                         </thead>
                         <tbody id="candidate-rows">
-                            <tr><td colspan="10" style="text-align: center; color: var(--text-secondary); padding: 30px;">No telemetry received.</td></tr>
+                            <tr><td colspan="11" style="text-align: center; color: var(--text-secondary); padding: 30px;">No telemetry received.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -337,35 +305,26 @@
             <div class="card">
                 <div class="header">
                     <h1>📚 Historical Assessment Archive</h1>
-                    <button class="btn-secondary btn-small" onclick="fetchExamHistory()">🔄 Refresh Archives</button>
+                    <button class="btn-secondary btn-small" onclick="fetchExamHistory()" title="Fetch the latest list of terminated exams">🔄 Refresh Archives</button>
                 </div>
                 
-                <div style="display: flex; gap: 15px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
+                <div style="display: flex; gap: 15px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; background: var(--table-head); padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
                     <div style="flex: 1; min-width: 250px;">
                         <label style="font-weight: bold; font-size: 13px; display: block; margin-bottom: 5px;">Select Prior Exam:</label>
-                        <select id="history-exam-selector" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border); font-weight: bold;" onchange="loadHistoricalSessionData()">
+                        <select id="history-exam-selector" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border); font-weight: bold; background: var(--input-bg); color: var(--text-main);" onchange="loadHistoricalSessionData()">
                             <option value="">Select an archived exam...</option>
                         </select>
                     </div>
                     <div style="display: flex; gap: 10px; margin-top: 20px;">
-                        <button class="btn-secondary" onclick="exportHistoricalCSV()">📥 Export Historical CSV</button>
-                        <button class="btn-danger" onclick="deleteHistoricalExam()">🗑️ Delete Exam Record</button>
+                        <button class="btn-secondary" onclick="exportHistoricalCSV()" title="Export the forensic data for the selected archived exam to CSV">📥 Export Historical CSV</button>
+                        <button class="btn-danger" onclick="deleteHistoricalExam()" title="Permanently delete this exam and all its logs from Supabase">🗑️ Delete Exam Record</button>
                     </div>
                 </div>
 
                 <div class="table-responsive">
                     <table>
                         <thead>
-                            <tr>
-                                <th>Roll Number</th>
-                                <th>Candidate</th>
-                                <th>Section</th>
-                                <th>Final Status</th>
-                                <th>Violations</th>
-                                <th>Integrity Score</th>
-                                <th>Marks</th>
-                                <th>Action</th>
-                            </tr>
+                            <tr><th>Roll Number</th><th>Candidate</th><th>Section</th><th>Final Status</th><th>Violations</th><th>Integrity Score</th><th>Marks</th><th>Action</th></tr>
                         </thead>
                         <tbody id="history-rows">
                             <tr><td colspan="8" style="text-align: center; padding: 30px; color: var(--text-secondary);">Select an exam above to view archived forensic data.</td></tr>
@@ -379,7 +338,6 @@
     </div>
 
     <script>
-        // Enterprise Setup with Verified Endpoints
         const SUPABASE_URL = "https://xvxrqyalzmldkorgtqhi.supabase.co/rest/v1"; 
         const SUPABASE_KEY = "sb_publishable_5R6XZ1enV3PJfk3Ju4vDVw_w25oPsJh"; 
         let ADMIN_TOKEN = sessionStorage.getItem('pradyumn_admin_token') || null;
@@ -403,7 +361,6 @@
             };
         }
 
-        // Centralized API Error Interceptor
         async function handleApiError(response) {
             if (!response.ok) {
                 if (response.status === 401 || response.status === 403) {
@@ -416,6 +373,25 @@
                 throw new Error(err.message || err.details || `Database operation failed (Code: ${response.status})`);
             }
             return response;
+        }
+
+        // --- DARK MODE LOGIC ---
+        function toggleTheme() {
+            const body = document.body;
+            const isDark = body.getAttribute('data-theme') === 'dark';
+            if (isDark) {
+                body.removeAttribute('data-theme');
+                localStorage.setItem('admin_theme', 'light');
+                document.getElementById('theme-toggle-btn').innerText = "🌙 Dark Mode";
+            } else {
+                body.setAttribute('data-theme', 'dark');
+                localStorage.setItem('admin_theme', 'dark');
+                document.getElementById('theme-toggle-btn').innerText = "☀️ Light Mode";
+            }
+        }
+        if (localStorage.getItem('admin_theme') === 'dark') {
+            document.body.setAttribute('data-theme', 'dark');
+            document.addEventListener('DOMContentLoaded', () => { document.getElementById('theme-toggle-btn').innerText = "☀️ Light Mode"; });
         }
 
         function toggleAudioAlerts() {
@@ -450,17 +426,14 @@
             const errorMsg = document.getElementById('auth-error');
             const emailInput = document.getElementById('auth-email').value.trim();
             const passwordInput = document.getElementById('auth-password').value.trim();
-            
             const recaptchaResponse = typeof grecaptcha !== 'undefined' ? grecaptcha.getResponse() : '';
             if (recaptchaResponse.length === 0) {
                 errorMsg.innerText = "❌ Please complete the CAPTCHA to verify you are human.";
-                errorMsg.classList.remove('hidden');
-                return;
+                errorMsg.classList.remove('hidden'); return;
             }
 
             const btn = document.getElementById('auth-btn');
-            btn.innerText = "Authenticating with Supabase..."; 
-            btn.disabled = true;
+            btn.innerText = "Authenticating with Supabase..."; btn.disabled = true;
 
             try {
                 const res = await fetch(`${SUPABASE_URL.replace('/rest/v1', '/auth/v1')}/token?grant_type=password`, {
@@ -469,49 +442,39 @@
                     body: JSON.stringify({ email: emailInput, password: passwordInput, gotrue_meta_security: { captcha_token: recaptchaResponse } })
                 });
                 const data = await res.json();
-
                 if (data.access_token) {
                     ADMIN_TOKEN = data.access_token;
                     sessionStorage.setItem('pradyumn_admin_token', ADMIN_TOKEN);
                     unlockDashboard();
                 } else {
-                    errorMsg.innerText = "❌ Login Failed: " + (data.error_description || "Invalid Email or Password");
-                    errorMsg.classList.remove('hidden');
-                    grecaptcha.reset();
+                    errorMsg.innerText = "❌ Login Failed: " + (data.error_description || "Invalid Email/Password");
+                    errorMsg.classList.remove('hidden'); grecaptcha.reset();
                 }
             } catch (err) {
                 errorMsg.innerText = "❌ Network Error connecting to Supabase Auth.";
-                errorMsg.classList.remove('hidden');
-                grecaptcha.reset();
+                errorMsg.classList.remove('hidden'); grecaptcha.reset();
             }
-            btn.innerText = "Secure Login"; 
-            btn.disabled = false;
+            btn.innerText = "Secure Login"; btn.disabled = false;
         });
 
         document.getElementById('logout-btn').addEventListener('click', () => {
-            sessionStorage.removeItem('pradyumn_admin_token');
-            location.reload();
+            sessionStorage.removeItem('pradyumn_admin_token'); location.reload();
         });
 
         function unlockDashboard() {
             document.getElementById('auth-overlay').classList.add('hidden');
             document.getElementById('main-panel').classList.remove('hidden');
-            fetchMasterDatabase();
-            fetchServerState();
+            fetchMasterDatabase(); fetchServerState();
             if(telemetryInterval) clearInterval(telemetryInterval);
             telemetryInterval = setInterval(fetchTelemetry, 4000);
         }
 
-        // --- TAB 1: MASTER REGISTRY & CSV SANITIZER ---
         async function fetchMasterDatabase() {
             try {
                 let res = await fetch(`${SUPABASE_URL}/student_registry?select=*`, { headers: getHeaders() });
                 await handleApiError(res);
-                globalDatabase = await res.json();
-                refreshDBUI();
-            } catch (e) {
-                console.error("Registry fetch error:", e);
-            }
+                globalDatabase = await res.json(); refreshDBUI();
+            } catch (e) {}
         }
 
         async function saveMasterDatabase() {
@@ -522,45 +485,22 @@
 
             const dedupMap = new Map();
             const lines = rawText.split(/\r?\n/);
-            
             for (let line of lines) {
                 if (!line.trim()) continue;
-                // Advanced regex to parse CSV while ignoring commas inside quotation marks
                 const p = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(s => s.replace(/^"|"$/g, '').trim());
                 if (p.length < 2) continue;
                 const roll_no = p[0].toUpperCase();
-                if (roll_no.includes('ROLL')) continue; // Skip header
-
-                const rawDob = (p[2] || '').replace(/[-.]/g, '/'); // Normalize dates
-                
-                dedupMap.set(roll_no, {
-                    roll_no: roll_no, 
-                    name: p[1], 
-                    dob: rawDob,
-                    year: p[3] || '', 
-                    section: (p[4] || 'A').toUpperCase(), 
-                    course: p[5] || 'B.Tech',
-                    branch: p.slice(6).join(',').toUpperCase() || 'CSE'
-                });
+                if (roll_no.includes('ROLL')) continue; 
+                dedupMap.set(roll_no, { roll_no: roll_no, name: p[1], dob: (p[2] || '').replace(/[-.]/g, '/'), year: p[3] || '', section: (p[4] || 'A').toUpperCase(), course: p[5] || 'B.Tech', branch: p.slice(6).join(',').toUpperCase() || 'CSE' });
             }
-            
             const cleanRecords = Array.from(dedupMap.values());
-
             try {
-                // FIXED: Added ?on_conflict parameter to explicitly satisfy Postgres merge-duplicates constraints
-                let res = await fetch(`${SUPABASE_URL}/student_registry?on_conflict=roll_no`, {
-                    method: 'POST',
-                    headers: { ...getHeaders(), "Prefer": "resolution=merge-duplicates" },
-                    body: JSON.stringify(cleanRecords)
-                });
+                let res = await fetch(`${SUPABASE_URL}/student_registry?on_conflict=roll_no`, { method: 'POST', headers: { ...getHeaders(), "Prefer": "resolution=merge-duplicates" }, body: JSON.stringify(cleanRecords) });
                 await handleApiError(res);
-                
                 document.getElementById('db-import-area').value = "";
                 alert(`✅ Successfully sanitized and uploaded ${cleanRecords.length} unique records to master registry.`);
                 fetchMasterDatabase();
-            } catch(e) { 
-                alert("❌ Failed to save registry: " + e.message); 
-            }
+            } catch(e) { alert("❌ Failed to save registry: " + e.message); }
             btn.innerText = "💾 Sanitize & Save to Registry"; btn.disabled = false;
         }
 
@@ -568,289 +508,179 @@
             if(!confirm("Wipe entire student registry?")) return;
             try {
                 let res = await fetch(`${SUPABASE_URL}/student_registry?roll_no=not.is.null`, { method: 'DELETE', headers: getHeaders() });
-                await handleApiError(res);
-                fetchMasterDatabase();
-            } catch(e) {
-                alert("❌ Wipe Failed: " + e.message);
-            }
+                await handleApiError(res); fetchMasterDatabase();
+            } catch(e) { alert("❌ Wipe Failed: " + e.message); }
         }
 
         function refreshDBUI() {
             document.getElementById('db-total-count').innerText = globalDatabase.length;
             const tbody = document.getElementById('db-preview-rows');
-            if (globalDatabase.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 20px;">No students enrolled.</td></tr>`;
-            } else {
-                tbody.innerHTML = globalDatabase.slice(0, 100).map(s => `
-                    <tr>
-                        <td style="font-family: monospace;">${s.roll_no}</td>
-                        <td style="font-weight: bold;">${s.name}</td>
-                        <td>${s.dob}</td>
-                        <td>${s.year || '-'}</td>
-                        <td><span class="tag tag-section">${s.section}</span></td>
-                        <td style="font-size: 11px;">${s.branch}</td>
-                    </tr>
-                `).join('');
-            }
-
-            let sections = new Set();
-            globalDatabase.forEach(r => sections.add(r.section));
+            if (globalDatabase.length === 0) tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 20px;">No students enrolled.</td></tr>`;
+            else tbody.innerHTML = globalDatabase.slice(0, 100).map(s => `<tr><td style="font-family: monospace;">${s.roll_no}</td><td style="font-weight: bold;">${s.name}</td><td>${s.dob}</td><td>${s.year || '-'}</td><td><span class="tag tag-section">${s.section}</span></td><td style="font-size: 11px;">${s.branch}</td></tr>`).join('');
+            
+            let sections = new Set(); globalDatabase.forEach(r => sections.add(r.section));
             let targetSelect = document.getElementById('target-audience');
             targetSelect.innerHTML = `<option value="ALL">Allow All Students in Master Registry</option><option value="OPEN">Open Assessment Mode (No Registry Enforced)</option>`;
-            [...sections].sort().forEach(sec => {
-                if(sec && sec !== "N/A") targetSelect.innerHTML += `<option value="SEC:${sec}">Strictly Restrict to ${sec}</option>`;
-            });
+            [...sections].sort().forEach(sec => { if(sec && sec !== "N/A") targetSelect.innerHTML += `<option value="SEC:${sec}">Strictly Restrict to ${sec}</option>`; });
         }
 
-        // --- TAB 2: EXAM DEPLOY & TELEMETRY ---
         document.getElementById('btn-deploy').addEventListener('click', async () => {
-            if (ACTIVE_EXAM_ID) {
-                return alert("⛔ An exam is currently LIVE. You must Terminate & Archive the active session before deploying a new one.");
-            }
-            const btn = document.getElementById('btn-deploy');
-            btn.innerText = "Deploying..."; btn.disabled = true;
-
+            if (ACTIVE_EXAM_ID) return alert("⛔ An exam is currently LIVE. You must Terminate & Archive the active session before deploying a new one.");
+            const btn = document.getElementById('btn-deploy'); btn.innerText = "Deploying..."; btn.disabled = true;
             try {
                 let url = document.getElementById('target-url').value.trim();
                 if (!url.includes('embedded=true')) url += url.includes('?') ? '&embedded=true' : '?embedded=true';
-                const sheetUrl = document.getElementById('target-sheet').value.trim();
-                
                 const newExamId = "EXAM_" + Date.now();
-                const examTitle = document.getElementById('target-title').value.trim() || "B.Tech Examination";
-
-                // FIXED: Direct payload creation with error interceptor to surface specific database/RLS issues
                 let res = await fetch(`${SUPABASE_URL}/exam_config`, {
-                    method: 'POST',
-                    headers: { ...getHeaders(), "Prefer": "return=representation" },
-                    body: JSON.stringify({
-                        exam_id: newExamId,
-                        title: examTitle,
-                        form_url: url,
-                        sheet_response_url: sheetUrl,
-                        duration_minutes: parseInt(document.getElementById('target-duration').value) || 120,
-                        max_strikes: parseInt(document.getElementById('target-strikes').value) || 7,
-                        verify_mode: document.getElementById('target-audience').value === "OPEN" ? "open" : "dob",
-                        is_active: true,
-                        updated_at: new Date().toISOString()
-                    })
+                    method: 'POST', headers: { ...getHeaders(), "Prefer": "return=representation" },
+                    body: JSON.stringify({ exam_id: newExamId, title: document.getElementById('target-title').value.trim() || "B.Tech Examination", form_url: url, sheet_response_url: document.getElementById('target-sheet').value.trim(), duration_minutes: parseInt(document.getElementById('target-duration').value) || 120, max_strikes: parseInt(document.getElementById('target-strikes').value) || 7, verify_mode: document.getElementById('target-audience').value === "OPEN" ? "open" : "dob", is_active: true, updated_at: new Date().toISOString() })
                 });
-                await handleApiError(res);
-
-                alert(`✅ Exam Deployed Successfully!\nSession ID: ${newExamId}`);
-                await fetchServerState();
-            } catch (e) { 
-                alert("❌ Deploy Error: " + e.message); 
-            }
+                await handleApiError(res); alert(`✅ Exam Deployed Successfully!\nSession ID: ${newExamId}`); await fetchServerState();
+            } catch (e) { alert("❌ Deploy Error: " + e.message); }
             btn.innerText = "🚀 Deploy New Exam Session"; btn.disabled = false;
         });
 
         document.getElementById('btn-terminate').addEventListener('click', async () => {
             if (!ACTIVE_EXAM_ID) return alert("No active exam to terminate.");
             if (!confirm("Terminate the current exam session globally? All active students will be locked out and the session will be archived.")) return;
-            
-            const btn = document.getElementById('btn-terminate');
-            btn.innerText = "Terminating..."; btn.disabled = true;
-
+            const btn = document.getElementById('btn-terminate'); btn.innerText = "Terminating..."; btn.disabled = true;
             try {
-                let res1 = await fetch(`${SUPABASE_URL}/exam_sessions?exam_id=eq.${ACTIVE_EXAM_ID}`, {
-                    method: 'PATCH',
-                    headers: getHeaders(),
-                    body: JSON.stringify({ status: 'TERMINATED' })
-                });
+                let res1 = await fetch(`${SUPABASE_URL}/exam_sessions?exam_id=eq.${ACTIVE_EXAM_ID}`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify({ status: 'TERMINATED' }) });
                 await handleApiError(res1);
-
-                let res2 = await fetch(`${SUPABASE_URL}/exam_config?is_active=eq.true`, {
-                    method: 'PATCH',
-                    headers: getHeaders(),
-                    body: JSON.stringify({ is_active: false })
-                });
+                let res2 = await fetch(`${SUPABASE_URL}/exam_config?is_active=eq.true`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify({ is_active: false }) });
                 await handleApiError(res2);
-
-                alert("✅ Exam terminated and successfully moved to Archive.");
-                await fetchServerState(); 
-                switchTab('tab-history'); 
-            } catch (e) { 
-                alert("❌ Error terminating exam: " + e.message); 
-            }
+                alert("✅ Exam terminated and successfully moved to Archive."); await fetchServerState(); switchTab('tab-history'); 
+            } catch (e) { alert("❌ Error terminating exam: " + e.message); }
             btn.innerText = "🛑 Terminate & Archive Session"; btn.disabled = false;
         });
 
         async function fetchServerState() {
             try {
                 let res = await fetch(`${SUPABASE_URL}/exam_config?is_active=eq.true&select=*`, { headers: getHeaders() });
-                await handleApiError(res);
-                const data = await res.json();
-                
+                await handleApiError(res); const data = await res.json();
                 if (data && data.length > 0) {
-                    const c = data[0];
-                    ACTIVE_EXAM_ID = c.exam_id;
-                    GLOBAL_EXAM_DURATION = c.duration_minutes || 120;
-                    
+                    const c = data[0]; ACTIVE_EXAM_ID = c.exam_id; GLOBAL_EXAM_DURATION = c.duration_minutes || 120;
                     document.getElementById('target-title').value = c.title || "";
                     document.getElementById('target-url').value = c.form_url;
                     document.getElementById('target-sheet').value = c.sheet_response_url || "";
                     document.getElementById('target-duration').value = GLOBAL_EXAM_DURATION;
                     document.getElementById('target-strikes').value = c.max_strikes || 7;
                     document.getElementById('target-audience').value = c.verify_mode === "open" ? "OPEN" : "ALL";
-                    
-                    document.getElementById('status-badge').className = "status-badge status-active";
-                    document.getElementById('status-text').innerText = "LIVE: " + (c.title || "Exam");
-                    document.getElementById('active-exam-id-badge').innerText = "Session: " + ACTIVE_EXAM_ID;
+                    document.getElementById('status-badge').className = "status-badge status-active"; document.getElementById('status-text').innerText = "LIVE: " + (c.title || "Exam"); document.getElementById('active-exam-id-badge').innerText = "Session: " + ACTIVE_EXAM_ID;
                 } else {
-                    ACTIVE_EXAM_ID = null;
-                    document.getElementById('status-badge').className = "status-badge status-inactive";
-                    document.getElementById('status-text').innerText = "No Exam Active";
-                    document.getElementById('active-exam-id-badge').innerText = "Session: Inactive";
+                    ACTIVE_EXAM_ID = null; document.getElementById('status-badge').className = "status-badge status-inactive"; document.getElementById('status-text').innerText = "No Exam Active"; document.getElementById('active-exam-id-badge').innerText = "Session: Inactive";
                 }
-            } catch (e) {
-                console.error("Config fetch error:", e);
-            }
+            } catch (e) {}
         }
 
-        // --- UNIVERSAL GOOGLE SHEET SYNC ---
         async function syncMarksForActiveExam() {
             try {
                 const sheetUrl = document.getElementById('target-sheet').value.trim();
                 if (!sheetUrl) return alert("⚠️ Please provide the Google Sheet Response URL in the Configurator first.");
-                const match = sheetUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
-                if (!match) return alert("❌ Invalid Google Sheet URL.");
-                const spreadsheetId = match[1];
-                const csvExportUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv`;
-
-                const response = await fetch(csvExportUrl);
-                const csvText = await response.text();
-                // Enhanced robust CSV parsing
+                const match = sheetUrl.match(/\/d\/([a-zA-Z0-9-_]+)/); if (!match) return alert("❌ Invalid Google Sheet URL.");
+                const csvExportUrl = `https://docs.google.com/spreadsheets/d/${match[1]}/export?format=csv`;
+                const response = await fetch(csvExportUrl); const csvText = await response.text();
                 const rows = csvText.split(/\r?\n/).map(row => row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(val => val.replace(/^"|"$/g, '').trim()));
                 if (rows.length < 2) return alert("The Google Sheet appears empty.");
-
-                const headers = rows[0];
-                const rollIdx = headers.findIndex(h => h.toLowerCase().includes('roll'));
-                const scoreIdx = headers.findIndex(h => h.toLowerCase().includes('score'));
-
+                const rollIdx = rows[0].findIndex(h => h.toLowerCase().includes('roll'));
+                const scoreIdx = rows[0].findIndex(h => h.toLowerCase().includes('score'));
                 if (rollIdx === -1) return alert("Could not find 'Roll Number' column in Sheet.");
-
                 let syncedCount = 0;
                 for (let i = 1; i < rows.length; i++) {
-                    const row = rows[i];
-                    if (!row || !row[rollIdx]) continue;
-                    const rollNo = row[rollIdx].toUpperCase().trim();
-                    const score = scoreIdx !== -1 && row[scoreIdx] !== "" ? row[scoreIdx] : "Submitted";
-                    const sessionKey = `${ACTIVE_EXAM_ID}_${rollNo}`;
-
-                    let syncRes = await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${encodeURIComponent(sessionKey)}`, {
-                        method: 'PATCH',
-                        headers: getHeaders(),
-                        body: JSON.stringify({ status: 'SUBMITTED', marks: score })
-                    });
+                    if (!rows[i] || !rows[i][rollIdx]) continue;
+                    let syncRes = await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${encodeURIComponent(`${ACTIVE_EXAM_ID}_${rows[i][rollIdx].toUpperCase().trim()}`)}`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify({ status: 'SUBMITTED', marks: scoreIdx !== -1 && rows[i][scoreIdx] !== "" ? rows[i][scoreIdx] : "Submitted" }) });
                     if (syncRes.ok) syncedCount++;
                 }
-                alert(`✅ Successfully synced ${syncedCount} submissions from Google Sheets!`);
-                fetchTelemetry();
-            } catch (e) { alert("❌ Sync Error. Make sure Sheet is 'Anyone with link can view'. Details: " + e.message); }
+                alert(`✅ Successfully synced ${syncedCount} submissions from Google Sheets!`); fetchTelemetry();
+            } catch (e) { alert("❌ Sync Error. Details: " + e.message); }
         }
 
         async function fetchTelemetry() {
-            if (!ACTIVE_EXAM_ID) {
-                currentSessions = [];
-                renderTelemetryGrid();
-                return;
-            }
+            if (!ACTIVE_EXAM_ID) { currentSessions = []; renderTelemetryGrid(); return; }
             try {
                 let res = await fetch(`${SUPABASE_URL}/exam_sessions?exam_id=eq.${ACTIVE_EXAM_ID}&order=last_seen.desc`, { headers: getHeaders() });
-                if (!res.ok && (res.status === 401 || res.status === 403)) { await handleApiError(res); } 
+                if (!res.ok && (res.status === 401 || res.status === 403)) await handleApiError(res); 
                 const data = await res.json();
-                
-                // Audio Chime Logic
                 const totalStrikesNow = data.reduce((acc, s) => acc + (s.violations || 0), 0);
                 if (totalStrikesNow > previousTotalStrikes && previousTotalStrikes !== 0) playAdminChime();
-                previousTotalStrikes = totalStrikesNow;
-
-                currentSessions = data;
-                renderTelemetryGrid();
+                previousTotalStrikes = totalStrikesNow; currentSessions = data; renderTelemetryGrid();
             } catch (e) {}
         }
 
         function renderTelemetryGrid() {
             let clean = 0, suspicious = 0, locked = 0, scoreSum = 0;
             const autoProctor = document.getElementById('auto-proctor-toggle').checked;
-            
+            const filterDropdown = document.getElementById('live-section-filter'); const currentFilter = filterDropdown.value;
             const uniqueSections = [...new Set(currentSessions.map(s => s.section || "N/A"))].sort();
-            const filterDropdown = document.getElementById('live-section-filter');
-            const currentFilter = filterDropdown.value;
             filterDropdown.innerHTML = `<option value="ALL">All Sections</option>` + uniqueSections.map(sec => `<option value="${sec}">${sec}</option>`).join('');
             if (uniqueSections.includes(currentFilter) || currentFilter === "ALL") filterDropdown.value = currentFilter;
 
             if (currentSessions.length === 0) {
-                document.getElementById('candidate-rows').innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-secondary); padding: 30px;">Waiting for student connections...</td></tr>`;
-                document.getElementById('stat-clean-count').innerText = "0";
-                document.getElementById('stat-suspicious-count').innerText = "0";
-                document.getElementById('stat-locked-count').innerText = "0";
-                document.getElementById('stat-avg-integrity').innerText = "100%";
-                return;
+                document.getElementById('candidate-rows').innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--text-secondary); padding: 30px;">Waiting for student connections...</td></tr>`;
+                document.getElementById('stat-clean-count').innerText = "0"; document.getElementById('stat-suspicious-count').innerText = "0"; document.getElementById('stat-locked-count').innerText = "0"; document.getElementById('stat-avg-integrity').innerText = "100%"; return;
             }
 
-            let displayedSessions = currentSessions;
-            if (filterDropdown.value !== "ALL") {
-                displayedSessions = currentSessions.filter(s => (s.section || "N/A") === filterDropdown.value);
-            }
+            let displayedSessions = currentFilter !== "ALL" ? currentSessions.filter(s => (s.section || "N/A") === currentFilter) : currentSessions;
 
             document.getElementById('candidate-rows').innerHTML = displayedSessions.map(s => {
-                if (autoProctor && s.violations >= 7 && s.status !== "TERMINATED") {
-                    sendAction(s.session_key, 'KICK');
-                }
-
-                const score = s.integrity_score ?? Math.max(0, 100 - (s.violations * 25));
-                scoreSum += score;
-                if (score >= 85) clean++;
-                else if (score >= 60) suspicious++;
-                else locked++;
-
-                const scoreClass = score >= 85 ? "score-high" : (score >= 60 ? "score-med" : "score-low");
+                if (autoProctor && s.violations >= 7 && s.status !== "TERMINATED") sendAction(s.session_key, 'KICK');
+                const score = s.integrity_score ?? Math.max(0, 100 - ((s.violations||0) * 25)); scoreSum += score;
+                if (score >= 85) clean++; else if (score >= 60) suspicious++; else locked++;
                 const secs = Math.floor((Date.now() - new Date(s.last_seen).getTime()) / 1000);
-                let netHealth = secs < 25 ? "🟢" : (secs < 50 ? "🟡" : "🔴");
 
-                const snapHtml = s.latest_snapshot 
-                    ? `<img src="${s.latest_snapshot}" class="snap-thumb" onclick="viewLogs('${s.session_key}')">` 
-                    : `<span style="font-size:11px; color:#aaa;">N/A</span>`;
+                // Server-Synced Remaining Time Calculation
+                let timeLeftHtml = `<span style="color:var(--text-secondary); font-size:11px;">Not Started</span>`;
+                if (s.exam_end_time) {
+                    const effectiveEnd = s.exam_end_time + ((s.time_added_seconds || 0) * 1000);
+                    const remainingMs = effectiveEnd - Date.now();
+                    if (remainingMs <= 0 || s.status === 'SUBMITTED' || s.status === 'TERMINATED') {
+                        timeLeftHtml = `<span style="color:var(--danger); font-weight:bold; font-size:12px;">Expired</span>`;
+                    } else {
+                        const m = Math.floor(remainingMs / 60000);
+                        timeLeftHtml = `<strong style="color:var(--primary);">${m}m left</strong>`;
+                    }
+                }
+                const addTimeBtn = s.exam_end_time && s.status !== 'SUBMITTED' && s.status !== 'TERMINATED' ? `<button class="btn-warning btn-small" title="Grant this student an extra 10 minutes" onclick="addExtraTime('${s.session_key}', ${s.time_added_seconds || 0})">⏳ +10m</button>` : '';
 
                 return `
                     <tr>
-                        <td style="font-family: monospace; font-weight: 600;">${s.roll_no}</td>
-                        <td style="font-weight: bold;">${s.name || ''}</td>
-                        <td><span class="tag tag-section">${s.section || "N/A"}</span></td>
-                        <td title="Last Seen: ${secs}s ago">${netHealth}</td>
+                        <td style="font-family: monospace; font-weight: 600;">${s.roll_no}</td><td style="font-weight: bold;">${s.name || ''}</td>
+                        <td><span class="tag tag-section">${s.section || "N/A"}</span></td><td title="Last Seen: ${secs}s ago">${secs < 25 ? "🟢" : (secs < 50 ? "🟡" : "🔴")}</td>
                         <td><span class="tag ${s.status === 'SUBMITTED' ? 'tag-active' : (s.status === 'LOCKED' ? 'tag-locked' : 'tag-active')}">${s.status}</span></td>
                         <td style="font-weight: bold; color: ${s.violations >= 3 ? 'var(--danger)' : 'inherit'};">${s.violations || 0}</td>
-                        <td><span class="score-pill ${scoreClass}">${score}%</span></td>
+                        <td><span class="score-pill ${score >= 85 ? "score-high" : (score >= 60 ? "score-med" : "score-low")}">${score}%</span></td>
+                        <td style="display:flex; align-items:center; gap:5px;">${timeLeftHtml} ${addTimeBtn}</td>
                         <td style="font-weight: bold;">${s.marks || '-'}</td>
-                        <td>${snapHtml}</td>
+                        <td>${s.latest_snapshot ? `<img src="${s.latest_snapshot}" class="snap-thumb" title="Click to view full snapshot in Audit Log" onclick="viewLogs('${s.session_key}')">` : `<span style="font-size:11px; color:var(--text-secondary);">N/A</span>`}</td>
                         <td style="display: flex; gap: 4px; flex-wrap: wrap;">
-                            <button class="btn-primary btn-small" onclick="sendDirectMessage('${s.session_key}', '${s.roll_no}')">💬 Msg</button>
-                            <button class="btn-secondary btn-small" onclick="viewLogs('${s.session_key}')">👁️ Audit</button>
-                            <button class="btn-success btn-small" onclick="sendAction('${s.session_key}', 'UNLOCK')">🔓 Un-Lock</button>
-                            <button class="btn-danger btn-small" onclick="sendAction('${s.session_key}', 'KICK')">Kick</button>
+                            <button class="btn-primary btn-small" title="Send a private pop-up message to this student" onclick="sendDirectMessage('${s.session_key}', '${s.roll_no}')">💬 Msg</button>
+                            <button class="btn-secondary btn-small" title="View the chronological violation log and snapshots" onclick="viewLogs('${s.session_key}')">👁️ Audit</button>
+                            <button class="btn-success btn-small" title="Unlock the student's screen and reset their strike count" onclick="sendAction('${s.session_key}', 'UNLOCK')">🔓 Un-Lock</button>
+                            <button class="btn-danger btn-small" title="Instantly terminate the student's exam" onclick="sendAction('${s.session_key}', 'KICK')">Kick</button>
                         </td>
                     </tr>
                 `;
             }).join("");
 
-            document.getElementById('stat-clean-count').innerText = clean;
-            document.getElementById('stat-suspicious-count').innerText = suspicious;
-            document.getElementById('stat-locked-count').innerText = locked;
-            document.getElementById('stat-avg-integrity').innerText = Math.round(scoreSum / currentSessions.length) + "%";
+            document.getElementById('stat-clean-count').innerText = clean; document.getElementById('stat-suspicious-count').innerText = suspicious; document.getElementById('stat-locked-count').innerText = locked; document.getElementById('stat-avg-integrity').innerText = Math.round(scoreSum / currentSessions.length) + "%";
+        }
+
+        // --- NEW: Add +10 Minutes Function ---
+        async function addExtraTime(sessionKey, currentTimeAdded) {
+            try {
+                let res = await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${encodeURIComponent(sessionKey)}`, {
+                    method: 'PATCH', headers: getHeaders(), body: JSON.stringify({ time_added_seconds: currentTimeAdded + 600 })
+                });
+                await handleApiError(res);
+                alert("✅ 10 minutes successfully added to this student's timer."); fetchTelemetry();
+            } catch(e) { alert("❌ Failed to add time: " + e.message); }
         }
 
         async function sendDirectMessage(sessionKey, rollNo) {
-            const msg = prompt(`Send a private direct message to Roll No ${rollNo}:`);
-            if (!msg) return;
+            const msg = prompt(`Send a private direct message to Roll No ${rollNo}:`); if (!msg) return;
             try {
-                let res = await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${encodeURIComponent(sessionKey)}`, {
-                    method: 'PATCH',
-                    headers: getHeaders(),
-                    body: JSON.stringify({ direct_message: msg })
-                });
-                await handleApiError(res);
-                alert(`Message queued for ${rollNo}.`);
+                let res = await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${encodeURIComponent(sessionKey)}`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify({ direct_message: msg }) });
+                await handleApiError(res); alert(`Message queued for ${rollNo}.`);
             } catch(e) { alert("❌ Message failed: " + e.message); }
         }
 
@@ -860,182 +690,80 @@
                 if (action === 'UNLOCK') {
                     const newHash = prompt("Enter new Hardware ID to authorize (leave blank to just unlock the session):");
                     const payload = { status: 'ACTIVE', active_device_token: null };
-                    if (newHash && newHash.trim()) payload.authorized_hash = newHash.trim().toUpperCase();
-                    else payload.hardware_hash = null;
-                    
-                    let res = await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${sessionKey}`, {
-                        method: 'PATCH',
-                        headers: getHeaders(),
-                        body: JSON.stringify(payload)
-                    });
-                    await handleApiError(res);
-                    alert("✅ Student unlocked.");
-                    fetchTelemetry();
-                    return;
+                    if (newHash && newHash.trim()) payload.authorized_hash = newHash.trim().toUpperCase(); else payload.hardware_hash = null;
+                    let res = await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${sessionKey}`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify(payload) });
+                    await handleApiError(res); alert("✅ Student unlocked."); fetchTelemetry(); return;
                 }
                 if (action === 'KICK') {
-                    let res = await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${sessionKey}`, {
-                        method: 'PATCH',
-                        headers: getHeaders(),
-                        body: JSON.stringify({ status: 'TERMINATED', active_device_token: null })
-                    });
-                    await handleApiError(res);
-                    alert("✅ Student has been kicked.");
-                    fetchTelemetry();
+                    let res = await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${sessionKey}`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify({ status: 'TERMINATED', active_device_token: null }) });
+                    await handleApiError(res); alert("✅ Student has been kicked."); fetchTelemetry();
                 }
             } catch(e) { alert("❌ Action failed: " + e.message); }
         }
 
         function viewLogs(sessionKey) {
-            const student = [...currentSessions, ...historicalSessions].find(s => s.session_key === sessionKey);
-            if (!student) return;
-            selectedAuditSession = student;
-            const logBox = document.getElementById('logs-content-body');
-            
+            const student = [...currentSessions, ...historicalSessions].find(s => s.session_key === sessionKey); if (!student) return;
+            selectedAuditSession = student; const logBox = document.getElementById('logs-content-body');
             const logsArray = Array.isArray(student.logs) ? student.logs : [];
-            const logsText = logsArray.length === 0 
-                ? "No infractions recorded. Full compliance."
-                : logsArray.map((l, i) => `[${l.time}] => ${l.reason}`).join("\n");
-            
+            const logsText = logsArray.length === 0 ? "No infractions recorded. Full compliance." : logsArray.map((l, i) => `[${l.time}] => ${l.reason}`).join("\n");
             const snapHtml = student.latest_snapshot ? `<br><br><strong>Latest Snapshot:</strong><br><img src="${student.latest_snapshot}" style="width:240px; border-radius:4px; margin-top:8px;">` : '';
-            
-            logBox.innerHTML = `<strong>Audit Output for ${student.name || ''} (${student.roll_no})</strong><br>
-            Integrity: ${student.integrity_score ?? (100 - ((student.violations || 0) * 25))}% | Hardware: ${student.hardware_hash || 'N/A'}<br><br>
-            ${logsText.replace(/\n/g, '<br>')}
-            ${snapHtml}`;
-            
+            logBox.innerHTML = `<strong>Audit Output for ${student.name || ''} (${student.roll_no})</strong><br>Integrity: ${student.integrity_score ?? (100 - ((student.violations || 0) * 25))}% | Hardware: ${student.hardware_hash || 'N/A'}<br><br>${logsText.replace(/\n/g, '<br>')}${snapHtml}`;
             document.getElementById('logs-overlay').classList.remove('hidden');
         }
 
         function printForensicDossier() {
             if (!selectedAuditSession) return;
-            const s = selectedAuditSession;
-            const integrity = s.integrity_score ?? Math.max(0, 100 - ((s.violations || 0) * 25));
-            const logs = Array.isArray(s.logs) ? s.logs : [];
-
+            const s = selectedAuditSession; const integrity = s.integrity_score ?? Math.max(0, 100 - ((s.violations || 0) * 25)); const logs = Array.isArray(s.logs) ? s.logs : [];
             const win = window.open('', '_blank');
-            win.document.write(`
-                <html><head><title>Forensic Dossier - ${s.roll_no}</title>
-                <style>
-                    body { font-family: Arial, sans-serif; padding: 30px; color: #111; }
-                    h1 { font-size: 20px; border-bottom: 2px solid #111; padding-bottom: 8px; }
-                    .meta { margin: 16px 0; line-height: 1.7; font-size: 14px; }
-                    table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 13px; }
-                    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-                    th { background: #f4f4f4; }
-                </style></head><body>
-                <h1>OFFICIAL EXAMINATION FORENSIC DOSSIER</h1>
-                <div class="meta">
-                    <strong>Candidate Name:</strong> ${s.name || ''} &nbsp;|&nbsp; <strong>Roll Number:</strong> ${s.roll_no}<br>
-                    <strong>Examination Code:</strong> ${s.exam_id} &nbsp;|&nbsp; <strong>Final Status:</strong> ${s.status}<br>
-                    <strong>Hardware Hash:</strong> ${s.hardware_hash || 'N/A'}<br>
-                    <strong>Integrity Score:</strong> ${integrity}% (${s.violations || 0} Strikes) &nbsp;|&nbsp; <strong>Marks:</strong> ${s.marks || 'N/A'}
-                </div>
-                ${s.latest_snapshot ? `<div><strong>Violation Snapshot:</strong><br><img src="${s.latest_snapshot}" style="width:240px; border:1px solid #333; margin-top:6px;"></div>` : ''}
-                <h3>Chronological Incident Log</h3>
-                <table>
-                    <thead><tr><th>#</th><th>Timestamp</th><th>Event Description</th></tr></thead>
-                    <tbody>
-                        ${logs.map((l, i) => `<tr><td>${i + 1}</td><td>${l.time}</td><td>${l.reason}</td></tr>`).join('') || '<tr><td colspan="3">No violations recorded.</td></tr>'}
-                    </tbody>
-                </table>
-                <p style="margin-top:40px; font-size:12px; color:#555;">Generated by Pradyumn's Command Center on ${new Date().toLocaleString()}</p>
-                </body></html>
-            `);
-            win.document.close();
-            setTimeout(() => win.print(), 300);
+            win.document.write(`<html><head><title>Forensic Dossier - ${s.roll_no}</title><style>body { font-family: Arial, sans-serif; padding: 30px; color: #111; } h1 { font-size: 20px; border-bottom: 2px solid #111; padding-bottom: 8px; } .meta { margin: 16px 0; line-height: 1.7; font-size: 14px; } table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 13px; } th, td { border: 1px solid #ccc; padding: 8px; text-align: left; } th { background: #f4f4f4; }</style></head><body><h1>OFFICIAL EXAMINATION FORENSIC DOSSIER</h1><div class="meta"><strong>Candidate Name:</strong> ${s.name || ''} &nbsp;|&nbsp; <strong>Roll Number:</strong> ${s.roll_no}<br><strong>Examination Code:</strong> ${s.exam_id} &nbsp;|&nbsp; <strong>Final Status:</strong> ${s.status}<br><strong>Hardware Hash:</strong> ${s.hardware_hash || 'N/A'}<br><strong>Integrity Score:</strong> ${integrity}% (${s.violations || 0} Strikes) &nbsp;|&nbsp; <strong>Marks:</strong> ${s.marks || 'N/A'}</div>${s.latest_snapshot ? `<div><strong>Violation Snapshot:</strong><br><img src="${s.latest_snapshot}" style="width:240px; border:1px solid #333; margin-top:6px;"></div>` : ''}<h3>Chronological Incident Log</h3><table><thead><tr><th>#</th><th>Timestamp</th><th>Event Description</th></tr></thead><tbody>${logs.map((l, i) => `<tr><td>${i + 1}</td><td>${l.time}</td><td>${l.reason}</td></tr>`).join('') || '<tr><td colspan="3">No violations recorded.</td></tr>'}</tbody></table><p style="margin-top:40px; font-size:12px; color:#555;">Generated by Pradyumn's Command Center on ${new Date().toLocaleString()}</p></body></html>`);
+            win.document.close(); setTimeout(() => win.print(), 300);
         }
 
         async function broadcastMessage() {
-            const msg = document.getElementById('announce-input').value.trim();
-            if (!msg) return;
+            const msg = document.getElementById('announce-input').value.trim(); if (!msg) return;
             try {
-                let res = await fetch(`${SUPABASE_URL}/exam_config?is_active=eq.true`, {
-                    method: 'PATCH',
-                    headers: getHeaders(),
-                    body: JSON.stringify({ broadcast_msg: msg })
-                });
-                await handleApiError(res);
-                alert("✅ Broadcast sent.");
-                document.getElementById('announce-input').value = "";
+                let res = await fetch(`${SUPABASE_URL}/exam_config?is_active=eq.true`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify({ broadcast_msg: msg }) });
+                await handleApiError(res); alert("✅ Broadcast sent."); document.getElementById('announce-input').value = "";
             } catch(e) { alert("❌ Broadcast Failed: " + e.message); }
         }
 
-        // --- TAB 3: EXAM ARCHIVE & HISTORY ---
         async function fetchExamHistory() {
             try {
-                let res = await fetch(`${SUPABASE_URL}/exam_config?is_active=eq.false&select=exam_id,title,updated_at&order=updated_at.desc`, { headers: getHeaders() });
-                await handleApiError(res);
-                const configHistory = await res.json();
-                
-                const selector = document.getElementById('history-exam-selector');
-                if (configHistory.length === 0) {
-                    selector.innerHTML = `<option value="">No archived exams found.</option>`;
-                    return;
-                }
-                selector.innerHTML = `<option value="">Select an archived exam...</option>` + 
-                    configHistory.map(c => `<option value="${c.exam_id}">${c.title || c.exam_id} (${new Date(c.updated_at).toLocaleDateString()})</option>`).join('');
+                let res = await fetch(`${SUPABASE_URL}/exam_config?is_active=eq.false&select=exam_id,title,updated_at&order=updated_at.desc`, { headers: getHeaders() }); await handleApiError(res);
+                const configHistory = await res.json(); const selector = document.getElementById('history-exam-selector');
+                if (configHistory.length === 0) { selector.innerHTML = `<option value="">No archived exams found.</option>`; return; }
+                selector.innerHTML = `<option value="">Select an archived exam...</option>` + configHistory.map(c => `<option value="${c.exam_id}">${c.title || c.exam_id} (${new Date(c.updated_at).toLocaleDateString()})</option>`).join('');
             } catch(e) {}
         }
 
         async function loadHistoricalSessionData() {
-            const examId = document.getElementById('history-exam-selector').value;
-            if (!examId) return;
+            const examId = document.getElementById('history-exam-selector').value; if (!examId) return;
             try {
-                let res = await fetch(`${SUPABASE_URL}/exam_sessions?exam_id=eq.${examId}&select=*`, { headers: getHeaders() });
-                await handleApiError(res);
-                historicalSessions = await res.json();
-                
+                let res = await fetch(`${SUPABASE_URL}/exam_sessions?exam_id=eq.${examId}&select=*`, { headers: getHeaders() }); await handleApiError(res); historicalSessions = await res.json();
                 document.getElementById('history-rows').innerHTML = historicalSessions.map(s => {
                     const score = s.integrity_score ?? Math.max(0, 100 - ((s.violations||0) * 25));
-                    return `
-                    <tr>
-                        <td style="font-family: monospace;">${s.roll_no}</td>
-                        <td style="font-weight: bold;">${s.name || ''}</td>
-                        <td>${s.section || "N/A"}</td>
-                        <td><span class="tag ${s.status === 'LOCKED' || s.status === 'TERMINATED' ? 'tag-locked' : 'tag-active'}">${s.status}</span></td>
-                        <td>${s.violations || 0}</td>
-                        <td><strong>${score}%</strong></td>
-                        <td><strong>${s.marks || '-'}</strong></td>
-                        <td><button class="btn-secondary btn-small" onclick="viewLogs('${s.session_key}')">👁️ Audit Log</button></td>
-                    </tr>
-                `}).join('');
+                    return `<tr><td style="font-family: monospace;">${s.roll_no}</td><td style="font-weight: bold;">${s.name || ''}</td><td>${s.section || "N/A"}</td><td><span class="tag ${s.status === 'LOCKED' || s.status === 'TERMINATED' ? 'tag-locked' : 'tag-active'}">${s.status}</span></td><td>${s.violations || 0}</td><td><strong>${score}%</strong></td><td><strong>${s.marks || '-'}</strong></td><td><button class="btn-secondary btn-small" onclick="viewLogs('${s.session_key}')" title="View the formal audit logs for this candidate">👁️ Audit Log</button></td></tr>`}).join('');
             } catch(e) {}
         }
 
         async function deleteHistoricalExam() {
-            const examId = document.getElementById('history-exam-selector').value;
-            if (!examId) return alert("Select an exam to delete first.");
+            const examId = document.getElementById('history-exam-selector').value; if (!examId) return alert("Select an exam to delete first.");
             if (!confirm("Are you SURE you want to permanently delete all records and telemetry for this archived exam? This cannot be undone.")) return;
             try {
-                let res1 = await fetch(`${SUPABASE_URL}/exam_sessions?exam_id=eq.${examId}`, { method: 'DELETE', headers: getHeaders() });
-                await handleApiError(res1);
-                let res2 = await fetch(`${SUPABASE_URL}/exam_config?exam_id=eq.${examId}`, { method: 'DELETE', headers: getHeaders() });
-                await handleApiError(res2);
-                alert("✅ Archived exam deleted successfully.");
-                document.getElementById('history-rows').innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 30px; color: var(--text-secondary);">Select an exam above to view archived forensic data.</td></tr>';
-                fetchExamHistory(); 
+                let res1 = await fetch(`${SUPABASE_URL}/exam_sessions?exam_id=eq.${examId}`, { method: 'DELETE', headers: getHeaders() }); await handleApiError(res1);
+                let res2 = await fetch(`${SUPABASE_URL}/exam_config?exam_id=eq.${examId}`, { method: 'DELETE', headers: getHeaders() }); await handleApiError(res2);
+                alert("✅ Archived exam deleted successfully."); document.getElementById('history-rows').innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 30px; color: var(--text-secondary);">Select an exam above to view archived forensic data.</td></tr>'; fetchExamHistory(); 
             } catch(e) { alert("❌ Error deleting exam: " + e.message); }
         }
 
         function downloadCSV(dataArray, filenamePrefix) {
             if (!dataArray || dataArray.length === 0) return alert("No telemetry to export.");
-            const rows = [
-                ["Roll Number", "Name", "Section", "Status", "Violations", "Marks", "HW Hash", "Last Seen"],
-                ...dataArray.map(s => [
-                    s.roll_no, `"${s.name || ''}"`, s.section || "N/A", s.status, s.violations || 0, `"${s.marks || ''}"`, s.hardware_hash, s.last_seen
-                ])
-            ];
-            const link = document.createElement("a");
-            link.href = encodeURI("data:text/csv;charset=utf-8," + rows.map(r => r.join(",")).join("\n"));
-            link.download = `${filenamePrefix}_${new Date().toISOString().split('T')[0]}.csv`;
-            link.click();
+            const rows = [ ["Roll Number", "Name", "Section", "Status", "Violations", "Marks", "HW Hash", "Last Seen"], ...dataArray.map(s => [ s.roll_no, `"${s.name || ''}"`, s.section || "N/A", s.status, s.violations || 0, `"${s.marks || ''}"`, s.hardware_hash, s.last_seen ]) ];
+            const link = document.createElement("a"); link.href = encodeURI("data:text/csv;charset=utf-8," + rows.map(r => r.join(",")).join("\n")); link.download = `${filenamePrefix}_${new Date().toISOString().split('T')[0]}.csv`; link.click();
         }
 
         function exportHistoricalCSV() {
-            const examId = document.getElementById('history-exam-selector').value;
-            if (!examId) return alert("Select an exam first.");
-            downloadCSV(historicalSessions, examId);
+            const examId = document.getElementById('history-exam-selector').value; if (!examId) return alert("Select an exam first."); downloadCSV(historicalSessions, examId);
         }
     </script>
 </body>
