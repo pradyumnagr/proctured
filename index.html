@@ -566,6 +566,9 @@
                             violationLogs = sess.logs || [];
                             addedTimeSeconds = sess.time_added_seconds || 0;
 
+                            // CORE TIMER UPGRADE: Fetches the student's exact server-synced time limit if they refresh
+                            if (sess.exam_end_time) examServerEndTime = sess.exam_end_time;
+
                             if (sess.hardware_hash && sess.hardware_hash !== hardwareHashValue && sess.authorized_hash !== hardwareHashValue) {
                                 document.getElementById('instruction-screen').classList.add('hidden');
                                 document.getElementById('hardware-lock-overlay').style.display = 'flex';
@@ -765,6 +768,7 @@
                                 integrity_score: integrityScore,
                                 hardware_hash: hardwareHashValue,
                                 time_added_seconds: addedTimeSeconds,
+                                exam_end_time: examServerEndTime, // CORE TIMER UPGRADE: Syncs the local time endpoint with the server
                                 is_paused: isPausedByFaculty,
                                 logs: violationLogs,
                                 last_seen: new Date().toISOString()
@@ -833,11 +837,10 @@
                 const now = _Date_now();
                 if (now - lastInternalTick < 1000) return;
 
-                // BUG FIX: Set video.muted = true to prevent the microphone track from playing out loud
                 if (mediaStream) {
                     try {
                         const video = document.createElement('video');
-                        video.muted = true; 
+                        video.muted = true; // Muted to prevent echo loop
                         video.srcObject = mediaStream;
                         video.play().then(() => {
                             const cvs = document.createElement('canvas');
@@ -979,15 +982,12 @@
                     iframe.setAttribute("allow", "camera; microphone");
                     iframe.style.width = "100%"; iframe.style.height = "100%"; iframe.style.border = "none";
                     
-                    // BUG FIX: When Dark Mode is on, we also must invert the text color of the watermark overlay
                     if (document.getElementById('dark-mode-toggle').checked) {
                         iframe.style.filter = "invert(0.92) hue-rotate(180deg)";
                         watermarkOverlay.style.color = "#ffffff";
                         watermarkOverlay.style.opacity = "0.3"; 
                     }
                     
-                    // BUG FIX: Strictly listen for iframe load count to hit exactly 2 (Submit).
-                    // Google Forms no longer reloads the page between sections.
                     iframe.addEventListener('load', () => {
                         formLoadCount++;
                         if (formLoadCount === 2) {
@@ -1001,7 +1001,12 @@
                     });
                     
                     container.appendChild(iframe);
-                    examServerEndTime = getServerNow() + (EXAM_DURATION_MINUTES * 60 * 1000);
+                    
+                    // CORE TIMER UPGRADE: Generates a new end time ONLY if they don't already have one synced from the server
+                    if (!examServerEndTime) {
+                        examServerEndTime = getServerNow() + (EXAM_DURATION_MINUTES * 60 * 1000);
+                    }
+
                     startCountdown();
                     startAudioMonitoring(mediaStream);
                     lastInternalTick = _Date_now(); isExamActive = true; 
