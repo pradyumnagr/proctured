@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pradyumn's Command Center | Enterprise Invigilation</title>
-    <!-- 872-Byte Zero-Bandwidth Inline SVG Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2s8 2.5 8 7v6c0 5-5 9.5-8 11.5-3-2-8-6.5-8-11.5V9c0-4.5 8-7 8-7z' fill='%231a73e8'/%3E%3Cpath d='M16 3.8s6.5 2 6.5 5.7v5c0 4.2-4.1 7.9-6.5 9.5-2.4-1.6-6.5-5.3-6.5-9.5V9.5c0-3.7 6.5-5.7 6.5-5.7z' fill='%23000' opacity='.2'/%3E%3Cpath d='M23 11l-7-3-7 3v3.5c0 3.3 4 6.8 7 8.3 3-1.5 7-5 7-8.3V11z' fill='%230d47a1'/%3E%3Cpath d='M16 10l-4.5 2 4.5 2 4.5-2-4.5-2z' fill='%23ffd700'/%3E%3Cpath d='M11.5 12V14M20.5 12V14.5M20.5 14.5h-.7' stroke='%23ffd700' stroke-width='.5' fill='none'/%3E%3Ccircle cx='20.5' cy='15' r='.6' fill='%23ffd700'/%3E%3Cpath d='M13.5 15.5h5v4h-5zM14.5 15.5v-1.5a1.5 1.5 0 013 0v1.5' stroke='%23ffd700' stroke-width='.8' fill='none'/%3E%3Ccircle cx='16' cy='17.5' r='.6' fill='%23ffd700'/%3E%3Cpath d='M16 18.1v.9' stroke='%23ffd700' stroke-width='.6' fill='none'/%3E%3C/svg%3E">
-    <!-- Google reCAPTCHA Library -->
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
         :root {
@@ -131,7 +129,6 @@
             <input type="email" id="auth-email" placeholder="Admin Email" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; margin-bottom: 10px; text-align: center; box-sizing: border-box;">
             <input type="password" id="auth-password" placeholder="Password" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; margin-bottom: 15px; text-align: center; box-sizing: border-box;">
             
-            <!-- Enterprise Security: Google reCAPTCHA v2 -->
             <div style="margin-bottom: 15px; display: flex; justify-content: center;">
                 <div class="g-recaptcha" data-sitekey="6Leofe4tAAAAAID1p1Me1NtLrEjhMQJ9QUKYq1Bg"></div>
             </div>
@@ -233,7 +230,6 @@
                         <label>Target Google Form URL (Must include embedded=true):</label>
                         <input type="text" id="target-url" placeholder="https://docs.google.com/forms/d/e/.../viewform?embedded=true">
                     </div>
-                    <!-- NEW: Google Sheet Response Sync -->
                     <div class="form-group" style="grid-column: 1 / -1;">
                         <label>Google Sheet Response URL (For Zero-Script Marks Sync):</label>
                         <input type="text" id="target-sheet" placeholder="https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit">
@@ -407,6 +403,21 @@
             };
         }
 
+        // Centralized API Error Interceptor
+        async function handleApiError(response) {
+            if (!response.ok) {
+                if (response.status === 401 || response.status === 403) {
+                    alert("⚠️ Session expired or permission denied by Row-Level Security (RLS). Please log in again.");
+                    sessionStorage.removeItem('pradyumn_admin_token');
+                    location.reload();
+                    throw new Error("Unauthorized");
+                }
+                const err = await response.json().catch(() => ({}));
+                throw new Error(err.message || err.details || `Database operation failed (Code: ${response.status})`);
+            }
+            return response;
+        }
+
         function toggleAudioAlerts() {
             audioAlertsEnabled = !audioAlertsEnabled;
             document.getElementById('audio-toggle-btn').innerText = audioAlertsEnabled ? "🔔 Chimes: ON" : "🔕 Chimes: OFF";
@@ -494,10 +505,13 @@
         // --- TAB 1: MASTER REGISTRY & CSV SANITIZER ---
         async function fetchMasterDatabase() {
             try {
-                const res = await fetch(`${SUPABASE_URL}/student_registry?select=*`, { headers: getHeaders() });
+                let res = await fetch(`${SUPABASE_URL}/student_registry?select=*`, { headers: getHeaders() });
+                await handleApiError(res);
                 globalDatabase = await res.json();
                 refreshDBUI();
-            } catch (e) {}
+            } catch (e) {
+                console.error("Registry fetch error:", e);
+            }
         }
 
         async function saveMasterDatabase() {
@@ -511,7 +525,8 @@
             
             for (let line of lines) {
                 if (!line.trim()) continue;
-                const p = line.split(',').map(s => s.trim());
+                // Advanced regex to parse CSV while ignoring commas inside quotation marks
+                const p = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(s => s.replace(/^"|"$/g, '').trim());
                 if (p.length < 2) continue;
                 const roll_no = p[0].toUpperCase();
                 if (roll_no.includes('ROLL')) continue; // Skip header
@@ -532,22 +547,32 @@
             const cleanRecords = Array.from(dedupMap.values());
 
             try {
-                await fetch(`${SUPABASE_URL}/student_registry`, {
+                // FIXED: Added ?on_conflict parameter to explicitly satisfy Postgres merge-duplicates constraints
+                let res = await fetch(`${SUPABASE_URL}/student_registry?on_conflict=roll_no`, {
                     method: 'POST',
                     headers: { ...getHeaders(), "Prefer": "resolution=merge-duplicates" },
                     body: JSON.stringify(cleanRecords)
                 });
+                await handleApiError(res);
+                
                 document.getElementById('db-import-area').value = "";
                 alert(`✅ Successfully sanitized and uploaded ${cleanRecords.length} unique records to master registry.`);
                 fetchMasterDatabase();
-            } catch(e) { alert("Failed to save registry."); }
+            } catch(e) { 
+                alert("❌ Failed to save registry: " + e.message); 
+            }
             btn.innerText = "💾 Sanitize & Save to Registry"; btn.disabled = false;
         }
 
         async function clearDatabase() {
             if(!confirm("Wipe entire student registry?")) return;
-            await fetch(`${SUPABASE_URL}/student_registry?roll_no=not.is.null`, { method: 'DELETE', headers: getHeaders() });
-            fetchMasterDatabase();
+            try {
+                let res = await fetch(`${SUPABASE_URL}/student_registry?roll_no=not.is.null`, { method: 'DELETE', headers: getHeaders() });
+                await handleApiError(res);
+                fetchMasterDatabase();
+            } catch(e) {
+                alert("❌ Wipe Failed: " + e.message);
+            }
         }
 
         function refreshDBUI() {
@@ -593,9 +618,10 @@
                 const newExamId = "EXAM_" + Date.now();
                 const examTitle = document.getElementById('target-title').value.trim() || "B.Tech Examination";
 
-                await fetch(`${SUPABASE_URL}/exam_config`, {
+                // FIXED: Direct payload creation with error interceptor to surface specific database/RLS issues
+                let res = await fetch(`${SUPABASE_URL}/exam_config`, {
                     method: 'POST',
-                    headers: { ...getHeaders(), "Prefer": "resolution=merge-duplicates" },
+                    headers: { ...getHeaders(), "Prefer": "return=representation" },
                     body: JSON.stringify({
                         exam_id: newExamId,
                         title: examTitle,
@@ -608,10 +634,13 @@
                         updated_at: new Date().toISOString()
                     })
                 });
+                await handleApiError(res);
 
                 alert(`✅ Exam Deployed Successfully!\nSession ID: ${newExamId}`);
-                fetchServerState();
-            } catch (e) { alert("Deploy Error: " + e.message); }
+                await fetchServerState();
+            } catch (e) { 
+                alert("❌ Deploy Error: " + e.message); 
+            }
             btn.innerText = "🚀 Deploy New Exam Session"; btn.disabled = false;
         });
 
@@ -623,28 +652,33 @@
             btn.innerText = "Terminating..."; btn.disabled = true;
 
             try {
-                await fetch(`${SUPABASE_URL}/exam_sessions?exam_id=eq.${ACTIVE_EXAM_ID}`, {
+                let res1 = await fetch(`${SUPABASE_URL}/exam_sessions?exam_id=eq.${ACTIVE_EXAM_ID}`, {
                     method: 'PATCH',
                     headers: getHeaders(),
                     body: JSON.stringify({ status: 'TERMINATED' })
                 });
+                await handleApiError(res1);
 
-                await fetch(`${SUPABASE_URL}/exam_config?is_active=eq.true`, {
+                let res2 = await fetch(`${SUPABASE_URL}/exam_config?is_active=eq.true`, {
                     method: 'PATCH',
                     headers: getHeaders(),
                     body: JSON.stringify({ is_active: false })
                 });
+                await handleApiError(res2);
 
                 alert("✅ Exam terminated and successfully moved to Archive.");
                 await fetchServerState(); 
                 switchTab('tab-history'); 
-            } catch (e) { alert("Error terminating exam: " + e.message); }
+            } catch (e) { 
+                alert("❌ Error terminating exam: " + e.message); 
+            }
             btn.innerText = "🛑 Terminate & Archive Session"; btn.disabled = false;
         });
 
         async function fetchServerState() {
             try {
-                const res = await fetch(`${SUPABASE_URL}/exam_config?is_active=eq.true&select=*`, { headers: getHeaders() });
+                let res = await fetch(`${SUPABASE_URL}/exam_config?is_active=eq.true&select=*`, { headers: getHeaders() });
+                await handleApiError(res);
                 const data = await res.json();
                 
                 if (data && data.length > 0) {
@@ -668,7 +702,9 @@
                     document.getElementById('status-text').innerText = "No Exam Active";
                     document.getElementById('active-exam-id-badge').innerText = "Session: Inactive";
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.error("Config fetch error:", e);
+            }
         }
 
         // --- UNIVERSAL GOOGLE SHEET SYNC ---
@@ -683,6 +719,7 @@
 
                 const response = await fetch(csvExportUrl);
                 const csvText = await response.text();
+                // Enhanced robust CSV parsing
                 const rows = csvText.split(/\r?\n/).map(row => row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(val => val.replace(/^"|"$/g, '').trim()));
                 if (rows.length < 2) return alert("The Google Sheet appears empty.");
 
@@ -700,12 +737,12 @@
                     const score = scoreIdx !== -1 && row[scoreIdx] !== "" ? row[scoreIdx] : "Submitted";
                     const sessionKey = `${ACTIVE_EXAM_ID}_${rollNo}`;
 
-                    await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${encodeURIComponent(sessionKey)}`, {
+                    let syncRes = await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${encodeURIComponent(sessionKey)}`, {
                         method: 'PATCH',
                         headers: getHeaders(),
                         body: JSON.stringify({ status: 'SUBMITTED', marks: score })
                     });
-                    syncedCount++;
+                    if (syncRes.ok) syncedCount++;
                 }
                 alert(`✅ Successfully synced ${syncedCount} submissions from Google Sheets!`);
                 fetchTelemetry();
@@ -719,7 +756,8 @@
                 return;
             }
             try {
-                const res = await fetch(`${SUPABASE_URL}/exam_sessions?exam_id=eq.${ACTIVE_EXAM_ID}&order=last_seen.desc`, { headers: getHeaders() });
+                let res = await fetch(`${SUPABASE_URL}/exam_sessions?exam_id=eq.${ACTIVE_EXAM_ID}&order=last_seen.desc`, { headers: getHeaders() });
+                if (!res.ok && (res.status === 401 || res.status === 403)) { await handleApiError(res); } 
                 const data = await res.json();
                 
                 // Audio Chime Logic
@@ -805,40 +843,47 @@
         async function sendDirectMessage(sessionKey, rollNo) {
             const msg = prompt(`Send a private direct message to Roll No ${rollNo}:`);
             if (!msg) return;
-            await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${encodeURIComponent(sessionKey)}`, {
-                method: 'PATCH',
-                headers: getHeaders(),
-                body: JSON.stringify({ direct_message: msg })
-            });
-            alert(`Message queued for ${rollNo}.`);
+            try {
+                let res = await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${encodeURIComponent(sessionKey)}`, {
+                    method: 'PATCH',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ direct_message: msg })
+                });
+                await handleApiError(res);
+                alert(`Message queued for ${rollNo}.`);
+            } catch(e) { alert("❌ Message failed: " + e.message); }
         }
 
         async function sendAction(sessionKey, action) {
             if (action === 'KICK' && !confirm("Are you sure you want to forcibly KICK this student out of the exam?")) return;
-            if (action === 'UNLOCK') {
-                const newHash = prompt("Enter new Hardware ID to authorize (leave blank to just unlock the session):");
-                const payload = { status: 'ACTIVE', active_device_token: null };
-                if (newHash && newHash.trim()) payload.authorized_hash = newHash.trim().toUpperCase();
-                else payload.hardware_hash = null;
-                
-                await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${sessionKey}`, {
-                    method: 'PATCH',
-                    headers: getHeaders(),
-                    body: JSON.stringify(payload)
-                });
-                alert("✅ Student unlocked.");
-                fetchTelemetry();
-                return;
-            }
-            if (action === 'KICK') {
-                await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${sessionKey}`, {
-                    method: 'PATCH',
-                    headers: getHeaders(),
-                    body: JSON.stringify({ status: 'TERMINATED', active_device_token: null })
-                });
-                alert("✅ Student has been kicked.");
-                fetchTelemetry();
-            }
+            try {
+                if (action === 'UNLOCK') {
+                    const newHash = prompt("Enter new Hardware ID to authorize (leave blank to just unlock the session):");
+                    const payload = { status: 'ACTIVE', active_device_token: null };
+                    if (newHash && newHash.trim()) payload.authorized_hash = newHash.trim().toUpperCase();
+                    else payload.hardware_hash = null;
+                    
+                    let res = await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${sessionKey}`, {
+                        method: 'PATCH',
+                        headers: getHeaders(),
+                        body: JSON.stringify(payload)
+                    });
+                    await handleApiError(res);
+                    alert("✅ Student unlocked.");
+                    fetchTelemetry();
+                    return;
+                }
+                if (action === 'KICK') {
+                    let res = await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${sessionKey}`, {
+                        method: 'PATCH',
+                        headers: getHeaders(),
+                        body: JSON.stringify({ status: 'TERMINATED', active_device_token: null })
+                    });
+                    await handleApiError(res);
+                    alert("✅ Student has been kicked.");
+                    fetchTelemetry();
+                }
+            } catch(e) { alert("❌ Action failed: " + e.message); }
         }
 
         function viewLogs(sessionKey) {
@@ -904,19 +949,23 @@
         async function broadcastMessage() {
             const msg = document.getElementById('announce-input').value.trim();
             if (!msg) return;
-            await fetch(`${SUPABASE_URL}/exam_config?is_active=eq.true`, {
-                method: 'PATCH',
-                headers: getHeaders(),
-                body: JSON.stringify({ broadcast_msg: msg })
-            });
-            alert("Broadcast sent.");
-            document.getElementById('announce-input').value = "";
+            try {
+                let res = await fetch(`${SUPABASE_URL}/exam_config?is_active=eq.true`, {
+                    method: 'PATCH',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ broadcast_msg: msg })
+                });
+                await handleApiError(res);
+                alert("✅ Broadcast sent.");
+                document.getElementById('announce-input').value = "";
+            } catch(e) { alert("❌ Broadcast Failed: " + e.message); }
         }
 
         // --- TAB 3: EXAM ARCHIVE & HISTORY ---
         async function fetchExamHistory() {
             try {
-                const res = await fetch(`${SUPABASE_URL}/exam_config?is_active=eq.false&select=exam_id,title,updated_at&order=updated_at.desc`, { headers: getHeaders() });
+                let res = await fetch(`${SUPABASE_URL}/exam_config?is_active=eq.false&select=exam_id,title,updated_at&order=updated_at.desc`, { headers: getHeaders() });
+                await handleApiError(res);
                 const configHistory = await res.json();
                 
                 const selector = document.getElementById('history-exam-selector');
@@ -933,7 +982,8 @@
             const examId = document.getElementById('history-exam-selector').value;
             if (!examId) return;
             try {
-                const res = await fetch(`${SUPABASE_URL}/exam_sessions?exam_id=eq.${examId}&select=*`, { headers: getHeaders() });
+                let res = await fetch(`${SUPABASE_URL}/exam_sessions?exam_id=eq.${examId}&select=*`, { headers: getHeaders() });
+                await handleApiError(res);
                 historicalSessions = await res.json();
                 
                 document.getElementById('history-rows').innerHTML = historicalSessions.map(s => {
@@ -958,12 +1008,14 @@
             if (!examId) return alert("Select an exam to delete first.");
             if (!confirm("Are you SURE you want to permanently delete all records and telemetry for this archived exam? This cannot be undone.")) return;
             try {
-                await fetch(`${SUPABASE_URL}/exam_sessions?exam_id=eq.${examId}`, { method: 'DELETE', headers: getHeaders() });
-                await fetch(`${SUPABASE_URL}/exam_config?exam_id=eq.${examId}`, { method: 'DELETE', headers: getHeaders() });
+                let res1 = await fetch(`${SUPABASE_URL}/exam_sessions?exam_id=eq.${examId}`, { method: 'DELETE', headers: getHeaders() });
+                await handleApiError(res1);
+                let res2 = await fetch(`${SUPABASE_URL}/exam_config?exam_id=eq.${examId}`, { method: 'DELETE', headers: getHeaders() });
+                await handleApiError(res2);
                 alert("✅ Archived exam deleted successfully.");
                 document.getElementById('history-rows').innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 30px; color: var(--text-secondary);">Select an exam above to view archived forensic data.</td></tr>';
                 fetchExamHistory(); 
-            } catch(e) { alert("Error deleting exam: " + e.message); }
+            } catch(e) { alert("❌ Error deleting exam: " + e.message); }
         }
 
         function downloadCSV(dataArray, filenamePrefix) {
