@@ -60,6 +60,7 @@
             display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(4, 1fr);
             color: #000000; font-family: monospace; font-size: 14px; font-weight: bold;
             padding: 20px; box-sizing: border-box; overflow: hidden;
+            transition: color 0.3s, opacity 0.3s;
         }
         .wm-item { transform: rotate(-25deg); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
     </style>
@@ -335,7 +336,6 @@
                 } catch(e) {}
             }
 
-            // Cross-platform robust fullscreen request handler
             function requestRobustFullscreen() {
                 const el = document.documentElement;
                 try {
@@ -389,12 +389,10 @@
                 return false;
             }
 
-            // Zero-Tolerance Clipboard Lockdown (Silent implementation)
             document.addEventListener('copy', (e) => { e.preventDefault(); triggerExactWarning("Copying text is prohibited."); });
             document.addEventListener('cut', (e) => { e.preventDefault(); triggerExactWarning("Cutting text is prohibited."); });
             document.addEventListener('paste', (e) => { e.preventDefault(); triggerExactWarning("Pasting text is prohibited."); });
 
-            // Watermark Generator
             function renderWatermark() {
                 if (!watermarkOverlay) return;
                 const ts = new Date(getServerNow()).toLocaleTimeString();
@@ -408,13 +406,11 @@
             }
             _setInterval(() => { if (isExamActive) renderWatermark(); }, 1000);
 
-            // Secondary Monitor Interceptor
             function detectSecondaryMonitor() {
                 if (window.screen && window.screen.isExtended) return true;
                 return false;
             }
 
-            // Virtual Webcam & Bot Automation Detector
             async function verifyCleanHardwareEnvironment() {
                 if (navigator.webdriver) {
                     alert("SECURITY TERMINATION: Automated bot browsers are prohibited.");
@@ -434,7 +430,6 @@
                 return true;
             }
 
-            // Connection with CAPTCHA Gate
             document.getElementById('join-exam-btn').addEventListener('click', async () => {
                 const errorMsg = document.getElementById('lobby-error');
                 const recaptchaResponse = grecaptcha.getResponse();
@@ -516,7 +511,6 @@
                 this.value = this.value.replace(/\D/g, ''); 
             });
 
-            // Identity Verification + Server-Authoritative Strike & Hardware Sync
             verifyBtn.addEventListener('click', async () => {
                 const roll = rollInput.value.trim();
                 const dob = dobInput.value.trim();
@@ -546,7 +540,6 @@
                             return;
                         }
 
-                        // Check Backend Authoritative Session
                         const sessionKey = `${CURRENT_EXAM_ID}_${roll}`;
                         const sessRes = await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${sessionKey}&select=*`, { headers: supabaseHeaders });
                         const existingSession = await sessRes.json();
@@ -573,14 +566,12 @@
                             violationLogs = sess.logs || [];
                             addedTimeSeconds = sess.time_added_seconds || 0;
 
-                            // Anti-Impersonation Check
                             if (sess.hardware_hash && sess.hardware_hash !== hardwareHashValue && sess.authorized_hash !== hardwareHashValue) {
                                 document.getElementById('instruction-screen').classList.add('hidden');
                                 document.getElementById('hardware-lock-overlay').style.display = 'flex';
                                 return;
                             }
 
-                            // Strike Lockout Enforcement
                             if (sess.status === "LOCKED" || sess.status === "TERMINATED") {
                                 lockOutStudent("Exam Terminated", "Session marked as Locked in server registry.", false);
                                 return;
@@ -636,7 +627,6 @@
             openNameInput.addEventListener('input', checkStartConditions);
             examAgreementCheckbox.addEventListener('change', checkStartConditions);
 
-            // Fake Disconnect & Offline Violation Spooling
             window.addEventListener('offline', () => { 
                 if (isExamActive) {
                     document.getElementById('offline-overlay').style.display = 'flex';
@@ -684,17 +674,14 @@
                 }
             });
 
-            // True Lockdown Execution
             async function activateLockdownProtocols() {
                 try {
                     if (navigator.keyboard && navigator.keyboard.lock) {
                         await navigator.keyboard.lock(["Escape", "AltLeft", "AltRight", "Tab", "MetaLeft", "MetaRight"]);
                     }
-                    // requestPointerLock() removed to ensure mouse cursor remains visible on desktop
                 } catch(e) {}
             }
 
-            // Audio Monitoring Engine
             function startAudioMonitoring(stream) {
                 if (AUDIO_THRESHOLD > 500) return; 
                 try {
@@ -718,7 +705,6 @@
                 } catch(e) {}
             }
 
-            // Master Security Watchdog
             masterSecurityInterval = _setInterval(() => {
                 if (!isExamActive || isPausedByFaculty) return;
 
@@ -738,28 +724,22 @@
                 }
             }, 2500);
 
-            // -------------------------------------------------------------
-            // THE ACTIVE FAILSAFE POLLER (Defeats OS Overlays & Search Popups)
-            // -------------------------------------------------------------
             focusPollerInterval = _setInterval(() => {
                 if (!isExamActive || isPausedByFaculty || isTransitioning) return;
                 
-                // 1. Check for stolen OS focus (Web Search Popups)
                 if (!document.hasFocus()) {
                     triggerExactWarning("System focus lost: OS overlay, Web Search, or external popup intercepted the screen.");
                 }
 
-                // 2. Aggressively verify Fullscreen state (Defeats the silent Android Back Button exit)
                 if (!isAppleDevice) {
                     const isFS = document.fullscreenElement || document.webkitFullscreenElement || document.webkitIsFullScreen || document.mozFullScreenElement || document.msFullscreenElement;
                     if (!isFS) {
                         triggerExactWarning("Fullscreen mode forcibly exited.");
-                        requestRobustFullscreen(); // Instantly try to shove them back in
+                        requestRobustFullscreen(); 
                     }
                 }
-            }, 500); // Evaluates twice every second
+            }, 500); 
 
-            // Telemetry & Remote Faculty Command Poller
             function startTelemetryPing() {
                 _setInterval(async () => {
                     const rNo = STUDENT_ROLL;
@@ -792,7 +772,6 @@
                         });
                         await syncServerTime(pingRes);
 
-                        // Read Faculty Overrides
                         const res = await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${sessionKey}&select=*`, { headers: supabaseHeaders });
                         const [sessionData] = await res.json();
                         
@@ -821,7 +800,6 @@
                                     isPausedByFaculty = false;
                                     document.getElementById('pause-overlay').style.display = 'none';
                                 } else if (act === "UNLOCK") {
-                                    // "Sudden Death" mode: Drop them to exactly 1 strike below the maximum
                                     tabSwitchCount = MAX_STRIKES - 1; 
                                     document.getElementById('violations-pill').innerText = tabSwitchCount;
                                     
@@ -840,7 +818,6 @@
                             }
                         }
 
-                        // Broadcast Messages
                         const confRes = await fetch(`${SUPABASE_URL}/exam_config?is_active=eq.true&select=announcement`, { headers: supabaseHeaders });
                         const [confData] = await confRes.json();
                         if (confData && confData.announcement && confData.announcement !== lastAnnouncement) {
@@ -856,10 +833,11 @@
                 const now = _Date_now();
                 if (now - lastInternalTick < 1000) return;
 
-                // Capture 8KB WebP Snapshot silently
+                // BUG FIX: Set video.muted = true to prevent the microphone track from playing out loud
                 if (mediaStream) {
                     try {
                         const video = document.createElement('video');
+                        video.muted = true; 
                         video.srcObject = mediaStream;
                         video.play().then(() => {
                             const cvs = document.createElement('canvas');
@@ -964,19 +942,13 @@
                 } catch (e) {}
             });
 
-            // Start Exam with Synchronous Mobile-Safe Fullscreen
             startBtn.addEventListener('click', async () => {
                 if (!examAgreementCheckbox.checked || STUDENT_NAME === '' || !permissionsGranted) return;
                 
-                // Fire fullscreen request synchronously BEFORE any awaits
                 requestRobustFullscreen();
-
                 document.getElementById('active-student-name').innerText = "👤 " + STUDENT_NAME;
                 watermarkOverlay.classList.remove('hidden');
 
-                // -------------------------------------------------------------
-                // HARDWARE BACK BUTTON HIJACK (Locks student in the portal page)
-                // -------------------------------------------------------------
                 history.pushState(null, null, location.href); 
                 window.addEventListener('popstate', () => {
                     if (isExamActive && !isTransitioning) {
@@ -1007,13 +979,18 @@
                     iframe.setAttribute("allow", "camera; microphone");
                     iframe.style.width = "100%"; iframe.style.height = "100%"; iframe.style.border = "none";
                     
+                    // BUG FIX: When Dark Mode is on, we also must invert the text color of the watermark overlay
                     if (document.getElementById('dark-mode-toggle').checked) {
                         iframe.style.filter = "invert(0.92) hue-rotate(180deg)";
+                        watermarkOverlay.style.color = "#ffffff";
+                        watermarkOverlay.style.opacity = "0.3"; 
                     }
                     
+                    // BUG FIX: Strictly listen for iframe load count to hit exactly 2 (Submit).
+                    // Google Forms no longer reloads the page between sections.
                     iframe.addEventListener('load', () => {
                         formLoadCount++;
-                        if (formLoadCount === (TOTAL_FORM_SECTIONS + 1)) {
+                        if (formLoadCount === 2) {
                             fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${CURRENT_EXAM_ID}_${STUDENT_ROLL}`, {
                                 method: 'PATCH',
                                 headers: supabaseHeaders,
@@ -1032,7 +1009,6 @@
                 } catch (err) { alert("Error launching exam."); }
             });
 
-            // Authoritative Server-Synced Countdown Engine
             function startCountdown() {
                 function tick() {
                     if (isPausedByFaculty) return;
@@ -1100,7 +1076,6 @@
                 if (!isKeyCorrect) { unlockError.style.display = 'block'; return; }
                 unlockError.style.display = 'none';
 
-                // Local Unlock Logic applies "Sudden Death" state as well
                 tabSwitchCount = MAX_STRIKES - 1;
                 document.getElementById('violations-pill').innerText = tabSwitchCount;
                 document.getElementById('result-screen').classList.add('hidden');
@@ -1113,13 +1088,7 @@
             });
 
             confessionCheckbox.addEventListener('change', () => { unlockBtn.disabled = !confessionCheckbox.checked; });
-
-
-            // ---------------------------------------------------------
-            // FORTIFIED ANTI-CHEAT EVENT LISTENERS
-            // ---------------------------------------------------------
             
-            // Standard Visibility Backgrounding
             document.addEventListener('visibilitychange', () => { 
                 if (document.visibilityState === 'hidden' && !isTransitioning) triggerExactWarning("Switched browser tabs or minimized window."); 
             });
@@ -1128,18 +1097,16 @@
                 if (isExamActive && !isTransitioning) triggerExactWarning("Exam moved to background."); 
             });
 
-            // Mobile System Gesture Interception (e.g. Swiping home)
             document.addEventListener('touchcancel', () => {
                 if (isExamActive && !isTransitioning) triggerExactWarning("System gesture intercepted touch.");
             });
 
-            // Desktop Fullscreen Exit (Vendor Prefixed Event Listener)
             ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(evt => {
                 document.addEventListener(evt, () => {
                     const isFS = document.fullscreenElement || document.webkitFullscreenElement || document.webkitIsFullScreen || document.mozFullScreenElement || document.msFullscreenElement;
                     if (!isFS && !isTransitioning && isExamActive) {
                         triggerExactWarning("Fullscreen mode exited (Hardware button or OS gesture).");
-                        _setTimeout(requestRobustFullscreen, 500); // Try to force them back in
+                        _setTimeout(requestRobustFullscreen, 500); 
                     }
                 });
             });
