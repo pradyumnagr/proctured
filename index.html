@@ -277,7 +277,11 @@
 
             let isExamActive = false;
             let isTransitioning = false;
+            
+            // STRICT STATE LOCK VARIABLES
             let isPausedByFaculty = false;
+            let hasSubmitted = false;
+            let isTerminatedByFaculty = false;
             
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
             const isAppleDevice = /Mac|iPhone|iPod|iPad/i.test(navigator.userAgent) && !window.MSStream;
@@ -565,8 +569,6 @@
                             tabSwitchCount = sess.violations || 0;
                             violationLogs = sess.logs || [];
                             addedTimeSeconds = sess.time_added_seconds || 0;
-
-                            // CORE TIMER UPGRADE: Fetches the student's exact server-synced time limit if they refresh
                             if (sess.exam_end_time) examServerEndTime = sess.exam_end_time;
 
                             if (sess.hardware_hash && sess.hardware_hash !== hardwareHashValue && sess.authorized_hash !== hardwareHashValue) {
@@ -751,6 +753,14 @@
                     const sessionKey = `${CURRENT_EXAM_ID}_${rNo}`;
                     const integrityScore = Math.max(0, 100 - (tabSwitchCount * 8) - (screenShareDrops * 20));
 
+                    // STATUS LOCK ENFORCEMENT: Never revert a locked, submitted, or terminated exam back to active.
+                    let derivedStatus = "ACTIVE";
+                    if (hasSubmitted) derivedStatus = "SUBMITTED";
+                    else if (isTerminatedByFaculty) derivedStatus = "TERMINATED";
+                    else if (isPausedByFaculty) derivedStatus = "PAUSED";
+                    else if (tabSwitchCount >= MAX_STRIKES) derivedStatus = "LOCKED";
+                    else if (tabSwitchCount >= Math.floor(MAX_STRIKES/2)) derivedStatus = "WARNING";
+
                     try {
                         const pingRes = await fetch(`${SUPABASE_URL}/exam_sessions`, {
                             method: 'POST',
@@ -763,12 +773,12 @@
                                 section: STUDENT_SECTION,
                                 course: STUDENT_COURSE,
                                 branch: STUDENT_BRANCH,
-                                status: isPausedByFaculty ? "PAUSED" : (tabSwitchCount >= MAX_STRIKES ? "LOCKED" : (tabSwitchCount >= Math.floor(MAX_STRIKES/2) ? "WARNING" : "ACTIVE")),
+                                status: derivedStatus,
                                 violations: tabSwitchCount,
                                 integrity_score: integrityScore,
                                 hardware_hash: hardwareHashValue,
                                 time_added_seconds: addedTimeSeconds,
-                                exam_end_time: examServerEndTime, // CORE TIMER UPGRADE: Syncs the local time endpoint with the server
+                                exam_end_time: examServerEndTime,
                                 is_paused: isPausedByFaculty,
                                 logs: violationLogs,
                                 last_seen: new Date().toISOString()
@@ -780,6 +790,11 @@
                         const [sessionData] = await res.json();
                         
                         if (sessionData) {
+                            if (sessionData.status === "TERMINATED" && !isTerminatedByFaculty) {
+                                isTerminatedByFaculty = true;
+                                lockOutStudent("Exam Terminated by Faculty", "Session terminated by admin.", false);
+                            }
+
                             if (sessionData.time_added_seconds !== undefined && sessionData.time_added_seconds !== addedTimeSeconds) {
                                 addedTimeSeconds = sessionData.time_added_seconds;
                             }
@@ -796,6 +811,7 @@
                             if (sessionData.pending_action) {
                                 const act = sessionData.pending_action;
                                 if (act === "KICK") {
+                                    isTerminatedByFaculty = true;
                                     lockOutStudent("Exam Terminated by Faculty", "You have been forcibly removed by the proctor.", false);
                                 } else if (act === "PAUSE") {
                                     isPausedByFaculty = true;
@@ -840,7 +856,7 @@
                 if (mediaStream) {
                     try {
                         const video = document.createElement('video');
-                        video.muted = true; // Muted to prevent echo loop
+                        video.muted = true; 
                         video.srcObject = mediaStream;
                         video.play().then(() => {
                             const cvs = document.createElement('canvas');
@@ -991,6 +1007,7 @@
                     iframe.addEventListener('load', () => {
                         formLoadCount++;
                         if (formLoadCount === 2) {
+                            hasSubmitted = true;
                             fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${CURRENT_EXAM_ID}_${STUDENT_ROLL}`, {
                                 method: 'PATCH',
                                 headers: supabaseHeaders,
@@ -1002,7 +1019,6 @@
                     
                     container.appendChild(iframe);
                     
-                    // CORE TIMER UPGRADE: Generates a new end time ONLY if they don't already have one synced from the server
                     if (!examServerEndTime) {
                         examServerEndTime = getServerNow() + (EXAM_DURATION_MINUTES * 60 * 1000);
                     }
@@ -1021,6 +1037,7 @@
                     const remaining = effectiveEnd - getServerNow();
                     if (remaining <= 0) { 
                         clearInterval(timerInterval);
+                        isTerminatedByFaculty = true;
                         lockOutStudent("Exam Terminated", "Allotted time expired.", false);
                     } else {
                         const secRemaining = Math.floor(remaining / 1000);
