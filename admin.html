@@ -91,10 +91,8 @@
         .score-low { background: rgba(217,48,37,0.1); color: #d93025; border: 1px solid rgba(217,48,37,0.3); }
         
         .snap-thumb { width: 42px; height: 32px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); cursor: pointer; }
-
         .hidden { display: none !important; }
         
-        /* Modern Login Redesign */
         #auth-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); display: flex; justify-content: center; align-items: center; z-index: 9999; padding: 20px; }
         .auth-box { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); padding: 40px; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); max-width: 400px; width: 100%; text-align: center; box-sizing: border-box; }
 
@@ -327,7 +325,6 @@
                         </select>
                     </div>
                     
-                    <!-- MASTER PRINT BUTTONS ADDED HERE -->
                     <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
                         <button class="btn-success" onclick="printFullExamReport('public')" title="Print a clean, public-facing table of all results for this exam">🖨️ Full Public Result (PDF)</button>
                         <button class="btn-primary" onclick="printFullExamReport('admin')" title="Print a highly detailed forensic table of all students for this exam">🖨️ Full Admin Report (PDF)</button>
@@ -339,10 +336,10 @@
                 <div class="table-responsive">
                     <table>
                         <thead>
-                            <tr><th>Roll Number</th><th>Candidate</th><th>Section</th><th>Final Status</th><th>Violations</th><th>Integrity Score</th><th>Marks</th><th>Action</th></tr>
+                            <tr><th>Roll Number</th><th>Candidate</th><th>Section</th><th>Final Status</th><th>Time Taken</th><th>Violations</th><th>Integrity Score</th><th>Marks</th><th>Action</th></tr>
                         </thead>
                         <tbody id="history-rows">
-                            <tr><td colspan="8" style="text-align: center; padding: 30px; color: var(--text-secondary);">Select an exam above to view archived forensic data.</td></tr>
+                            <tr><td colspan="9" style="text-align: center; padding: 30px; color: var(--text-secondary);">Select an exam above to view archived forensic data.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -362,6 +359,7 @@
         let currentSessions = [];
         let historicalSessions = [];
         let globalDatabase = [];
+        let examArchiveMap = new Map(); // Stores start/end timestamps for PDFs
         let telemetryInterval = null;
         let selectedAuditSession = null;
         let audioAlertsEnabled = true;
@@ -389,6 +387,7 @@
             return response;
         }
 
+        // --- DARK MODE LOGIC ---
         function toggleTheme() {
             const body = document.body;
             if (body.getAttribute('data-theme') === 'dark') {
@@ -541,22 +540,27 @@
                 const newExamId = "EXAM_" + Date.now();
                 let res = await fetch(`${SUPABASE_URL}/exam_config`, {
                     method: 'POST', headers: { ...getHeaders(), "Prefer": "return=representation" },
-                    body: JSON.stringify({ exam_id: newExamId, title: document.getElementById('target-title').value.trim() || "B.Tech Examination", form_url: url, sheet_response_url: document.getElementById('target-sheet').value.trim(), duration_minutes: parseInt(document.getElementById('target-duration').value) || 120, max_strikes: parseInt(document.getElementById('target-strikes').value) || 7, verify_mode: document.getElementById('target-audience').value === "OPEN" ? "open" : "dob", is_active: true, updated_at: new Date().toISOString() })
+                    body: JSON.stringify({ exam_id: newExamId, title: document.getElementById('target-title').value.trim() || "B.Tech Examination", form_url: url, sheet_response_url: document.getElementById('target-sheet').value.trim(), duration_minutes: parseInt(document.getElementById('target-duration').value) || 120, max_strikes: parseInt(document.getElementById('target-strikes').value) || 7, verify_mode: document.getElementById('target-audience').value === "OPEN" ? "open" : "dob", is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() })
                 });
                 await handleApiError(res); alert(`✅ Exam Deployed Successfully!\nSession ID: ${newExamId}`); await fetchServerState();
             } catch (e) { alert("❌ Deploy Error: " + e.message); }
             btn.innerText = "🚀 Deploy New Exam Session"; btn.disabled = false;
         });
 
+        // BUG FIX: Prevent overwriting successful submissions during termination
         document.getElementById('btn-terminate').addEventListener('click', async () => {
             if (!ACTIVE_EXAM_ID) return alert("No active exam to terminate.");
             if (!confirm("Terminate the current exam session globally? All active students will be locked out and the session will be archived.")) return;
             const btn = document.getElementById('btn-terminate'); btn.innerText = "Terminating..."; btn.disabled = true;
             try {
-                let res1 = await fetch(`${SUPABASE_URL}/exam_sessions?exam_id=eq.${ACTIVE_EXAM_ID}`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify({ status: 'TERMINATED' }) });
+                // Update 1: Only change status to TERMINATED if they haven't SUBMITTED
+                let res1 = await fetch(`${SUPABASE_URL}/exam_sessions?exam_id=eq.${ACTIVE_EXAM_ID}&status=neq.SUBMITTED`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify({ status: 'TERMINATED' }) });
                 await handleApiError(res1);
-                let res2 = await fetch(`${SUPABASE_URL}/exam_config?is_active=eq.true`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify({ is_active: false }) });
+                
+                // Update 2: Record the exact time the exam was terminated globally
+                let res2 = await fetch(`${SUPABASE_URL}/exam_config?is_active=eq.true`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify({ is_active: false, terminated_at: new Date().toISOString() }) });
                 await handleApiError(res2);
+                
                 alert("✅ Exam terminated and successfully moved to Archive."); await fetchServerState(); switchTab('tab-history'); 
             } catch (e) { alert("❌ Error terminating exam: " + e.message); }
             btn.innerText = "🛑 Terminate & Archive Session"; btn.disabled = false;
@@ -591,7 +595,7 @@
                 let syncedCount = 0;
                 for (let i = 1; i < rows.length; i++) {
                     if (!rows[i] || !rows[i][rollIdx]) continue;
-                    let syncRes = await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${encodeURIComponent(`${ACTIVE_EXAM_ID}_${rows[i][rollIdx].toUpperCase().trim()}`)}`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify({ status: 'SUBMITTED', marks: scoreIdx !== -1 && rows[i][scoreIdx] !== "" ? rows[i][scoreIdx] : "Submitted" }) });
+                    let syncRes = await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${encodeURIComponent(`${ACTIVE_EXAM_ID}_${rows[i][rollIdx].toUpperCase().trim()}`)}`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify({ status: 'SUBMITTED', submitted_at: new Date().toISOString(), marks: scoreIdx !== -1 && rows[i][scoreIdx] !== "" ? rows[i][scoreIdx] : "Submitted" }) });
                     if (syncRes.ok) syncedCount++;
                 }
                 alert(`✅ Successfully synced ${syncedCount} submissions from Google Sheets!`); fetchTelemetry();
@@ -716,7 +720,16 @@
             const logsArray = Array.isArray(student.logs) ? student.logs : [];
             const logsText = logsArray.length === 0 ? "No infractions recorded. Full compliance." : logsArray.map((l, i) => `[${l.time}] => ${l.reason}`).join("\n");
             const snapHtml = student.latest_snapshot ? `<br><br><strong>Latest Snapshot:</strong><br><img src="${student.latest_snapshot}" style="width:240px; border-radius:4px; margin-top:8px;">` : '';
-            logBox.innerHTML = `<strong>Audit Output for ${student.name || ''} (${student.roll_no})</strong><br>Integrity: ${student.integrity_score ?? (100 - ((student.violations || 0) * 25))}% | Hardware: ${student.hardware_hash || 'N/A'}<br><br>${logsText.replace(/\n/g, '<br>')}${snapHtml}`;
+            
+            // Calculate individual student duration for Audit View
+            let durationStr = "N/A";
+            if (student.started_at) {
+                const end = student.submitted_at ? new Date(student.submitted_at) : new Date(student.last_seen);
+                durationStr = Math.round((end - new Date(student.started_at)) / 60000) + " mins";
+            }
+            
+            logBox.innerHTML = `<strong>Audit Output for ${student.name || ''} (${student.roll_no})</strong><br>
+            Time Taken: ${durationStr} | Integrity: ${student.integrity_score ?? (100 - ((student.violations || 0) * 25))}% | Hardware: ${student.hardware_hash || 'N/A'}<br><br>${logsText.replace(/\n/g, '<br>')}${snapHtml}`;
             document.getElementById('logs-overlay').classList.remove('hidden');
         }
 
@@ -734,6 +747,12 @@
             const logs = Array.isArray(s.logs) ? s.logs : [];
             const win = window.open('', '_blank');
 
+            let durationStr = "N/A";
+            if (s.started_at) {
+                const end = s.submitted_at ? new Date(s.submitted_at) : new Date(s.last_seen);
+                durationStr = Math.round((end - new Date(s.started_at)) / 60000) + " Minutes";
+            }
+
             if (reportType === 'student') {
                 win.document.write(`
                     <html><head><title>Student Result Card - ${s.roll_no}</title><style>body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #333; line-height: 1.6; } h1 { color: #1a73e8; border-bottom: 2px solid #1a73e8; padding-bottom: 10px; margin-bottom: 25px; } .summary { background: #f8f9fa; padding: 25px; border-radius: 8px; margin: 20px 0; border: 1px solid #e0e0e0; font-size: 15px; } .summary strong { display: inline-block; width: 150px; color: #555; }</style></head><body>
@@ -743,6 +762,7 @@
                         <div style="margin-bottom: 8px;"><strong>Roll Number:</strong> ${s.roll_no}</div>
                         <div style="margin-bottom: 8px;"><strong>Section:</strong> ${s.section || 'N/A'}</div>
                         <hr style="border:0; border-top:1px solid #ddd; margin: 20px 0;">
+                        <div style="margin-bottom: 8px;"><strong>Time Taken:</strong> ${durationStr}</div>
                         <div style="margin-bottom: 8px;"><strong>Final Status:</strong> ${s.status}</div>
                         <div style="margin-bottom: 8px;"><strong>Integrity Score:</strong> ${integrity}%</div>
                         <div style="margin-top: 15px;"><strong>Marks Obtained:</strong> <span style="font-size: 20px; font-weight: 800; color: #1e8e3e;">${s.marks || 'Pending Assessment'}</span></div>
@@ -757,7 +777,7 @@
                     <div class="meta">
                         <strong>Candidate Name:</strong> ${s.name || ''} &nbsp;|&nbsp; <strong>Roll Number:</strong> ${s.roll_no}<br>
                         <strong>Examination Code:</strong> ${s.exam_id} &nbsp;|&nbsp; <strong>Final Status:</strong> ${s.status}<br>
-                        <strong>Hardware Hash:</strong> ${s.hardware_hash || 'N/A'}<br>
+                        <strong>Time Taken:</strong> ${durationStr} &nbsp;|&nbsp; <strong>Hardware Hash:</strong> ${s.hardware_hash || 'N/A'}<br>
                         <strong>Integrity Score:</strong> ${integrity}% (${s.violations || 0} Strikes) &nbsp;|&nbsp; <strong>Marks:</strong> ${s.marks || 'N/A'}
                     </div>
                     ${s.latest_snapshot ? `<div><strong>Violation Snapshot:</strong><br><img src="${s.latest_snapshot}" style="width:240px; border:1px solid #333; margin-top:6px;"></div>` : ''}
@@ -773,7 +793,7 @@
             win.document.close(); setTimeout(() => win.print(), 400);
         }
 
-        // --- NEW FULL EXAM REPORT PRINT ENGINE ---
+        // --- NEW: FULL MASTER EXAM REPORT GENERATOR ---
         function printFullExamReport(reportType) {
             if (!historicalSessions || historicalSessions.length === 0) {
                 return alert("No historical data to print. Please select an archived exam first.");
@@ -782,24 +802,43 @@
             const examSelector = document.getElementById('history-exam-selector');
             const examTitle = examSelector.options[examSelector.selectedIndex].text;
             const examId = examSelector.value;
-            const win = window.open('', '_blank');
             
+            // Fetch global exam times from our map
+            const examMeta = examArchiveMap.get(examId) || {};
+            const globalStart = examMeta.created_at ? new Date(examMeta.created_at).toLocaleString() : 'N/A';
+            const globalEnd = examMeta.terminated_at ? new Date(examMeta.terminated_at).toLocaleString() : 'N/A';
+            let globalDuration = "N/A";
+            if (examMeta.created_at && examMeta.terminated_at) {
+                globalDuration = Math.round((new Date(examMeta.terminated_at) - new Date(examMeta.created_at)) / 60000) + " Minutes";
+            }
+
+            const win = window.open('', '_blank');
             let tableHeaders = ""; let tableRows = "";
             
             if (reportType === 'admin') {
-                tableHeaders = `<tr><th>Roll No</th><th>Name</th><th>Section</th><th>Status</th><th>Strikes</th><th>Integrity</th><th>Marks</th><th>HW Hash</th></tr>`;
+                tableHeaders = `<tr><th>Roll No</th><th>Name</th><th>Section</th><th>Status</th><th>Time Taken</th><th>Strikes</th><th>Integrity</th><th>Marks</th><th>HW Hash</th></tr>`;
                 tableRows = historicalSessions.map(s => {
                     const score = s.integrity_score ?? Math.max(0, 100 - ((s.violations||0) * 25));
-                    return `<tr><td>${s.roll_no}</td><td>${s.name || ''}</td><td>${s.section || '-'}</td><td>${s.status}</td><td>${s.violations || 0}</td><td>${score}%</td><td><strong>${s.marks || '-'}</strong></td><td style="font-size:10px; font-family:monospace;">${s.hardware_hash || 'N/A'}</td></tr>`;
+                    let studentDur = "-";
+                    if (s.started_at) {
+                        const end = s.submitted_at ? new Date(s.submitted_at) : new Date(s.last_seen);
+                        studentDur = Math.round((end - new Date(s.started_at)) / 60000) + "m";
+                    }
+                    return `<tr><td>${s.roll_no}</td><td>${s.name || ''}</td><td>${s.section || '-'}</td><td>${s.status}</td><td>${studentDur}</td><td>${s.violations || 0}</td><td>${score}%</td><td><strong>${s.marks || '-'}</strong></td><td style="font-size:10px; font-family:monospace;">${s.hardware_hash || 'N/A'}</td></tr>`;
                 }).join('');
             } else {
-                tableHeaders = `<tr><th>Roll No</th><th>Name</th><th>Section</th><th>Status</th><th>Marks</th></tr>`;
+                tableHeaders = `<tr><th>Roll No</th><th>Name</th><th>Section</th><th>Status</th><th>Time Taken</th><th>Marks</th></tr>`;
                 tableRows = historicalSessions.map(s => {
-                    return `<tr><td>${s.roll_no}</td><td>${s.name || ''}</td><td>${s.section || '-'}</td><td>${s.status}</td><td><strong>${s.marks || '-'}</strong></td></tr>`;
+                    let studentDur = "-";
+                    if (s.started_at) {
+                        const end = s.submitted_at ? new Date(s.submitted_at) : new Date(s.last_seen);
+                        studentDur = Math.round((end - new Date(s.started_at)) / 60000) + "m";
+                    }
+                    return `<tr><td>${s.roll_no}</td><td>${s.name || ''}</td><td>${s.section || '-'}</td><td>${s.status}</td><td>${studentDur}</td><td><strong>${s.marks || '-'}</strong></td></tr>`;
                 }).join('');
             }
 
-            const reportTitle = reportType === 'admin' ? "OFFICIAL FORENSIC EXAM REPORT" : "PUBLIC EXAMINATION RESULTS";
+            const reportTitle = reportType === 'admin' ? "OFFICIAL MASTER FORENSIC REPORT" : "PUBLIC EXAMINATION RESULTS";
             const metaColor = reportType === 'admin' ? "#d93025" : "#1a73e8";
 
             win.document.write(`
@@ -807,28 +846,29 @@
                 <style>
                     body { font-family: 'Segoe UI', Arial, sans-serif; padding: 30px; color: #333; line-height: 1.5; }
                     h1 { color: ${metaColor}; border-bottom: 2px solid ${metaColor}; padding-bottom: 10px; margin-bottom: 15px; font-size: 24px; text-transform: uppercase; }
-                    .meta { margin-bottom: 20px; font-size: 14px; background: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px solid #ddd; display: flex; justify-content: space-between;}
+                    .meta { margin-bottom: 20px; font-size: 13px; background: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px solid #ddd; display: flex; flex-wrap: wrap; gap: 15px; justify-content: space-between;}
                     table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
-                    th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+                    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
                     th { background: #f4f4f4; color: #111; font-weight: bold; }
                     tr:nth-child(even) { background-color: #fafafa; }
                     .footer { margin-top: 40px; font-size: 11px; color: #777; text-align: center; border-top: 1px solid #ddd; padding-top: 10px; }
                 </style></head><body>
                 <h1>${reportTitle}</h1>
                 <div class="meta">
-                    <div><strong>Assessment:</strong> ${examTitle}</div>
+                    <div><strong>Assessment Title:</strong> ${examTitle.split(' (')[0]}</div>
                     <div><strong>Total Candidates:</strong> ${historicalSessions.length}</div>
-                    <div><strong>Generated On:</strong> ${new Date().toLocaleString()}</div>
+                    <div><strong>Global Start:</strong> ${globalStart}</div>
+                    <div><strong>Global End:</strong> ${globalEnd}</div>
+                    <div><strong>Total Duration:</strong> ${globalDuration}</div>
                 </div>
                 <table>
                     <thead>${tableHeaders}</thead>
                     <tbody>${tableRows}</tbody>
                 </table>
-                <div class="footer">Generated securely by Pradyumn's Command Center</div>
+                <div class="footer">Generated securely by Pradyumn's Command Center on ${new Date().toLocaleString()}</div>
                 </body></html>
             `);
-            win.document.close();
-            setTimeout(() => win.print(), 500);
+            win.document.close(); setTimeout(() => win.print(), 500);
         }
 
         async function broadcastMessage() {
@@ -841,8 +881,14 @@
 
         async function fetchExamHistory() {
             try {
-                let res = await fetch(`${SUPABASE_URL}/exam_config?is_active=eq.false&select=exam_id,title,updated_at&order=updated_at.desc`, { headers: getHeaders() }); await handleApiError(res);
-                const configHistory = await res.json(); const selector = document.getElementById('history-exam-selector');
+                let res = await fetch(`${SUPABASE_URL}/exam_config?is_active=eq.false&select=exam_id,title,created_at,terminated_at,updated_at&order=updated_at.desc`, { headers: getHeaders() }); await handleApiError(res);
+                const configHistory = await res.json(); 
+                const selector = document.getElementById('history-exam-selector');
+                
+                // Store global times for PDF generation
+                examArchiveMap.clear();
+                configHistory.forEach(c => examArchiveMap.set(c.exam_id, c));
+
                 if (configHistory.length === 0) { selector.innerHTML = `<option value="">No archived exams found.</option>`; return; }
                 selector.innerHTML = `<option value="">Select an archived exam...</option>` + configHistory.map(c => `<option value="${c.exam_id}">${c.title || c.exam_id} (${new Date(c.updated_at).toLocaleDateString()})</option>`).join('');
             } catch(e) {}
@@ -857,11 +903,19 @@
 
                 document.getElementById('history-rows').innerHTML = historicalSessions.map(s => {
                     const score = s.integrity_score ?? Math.max(0, 100 - ((s.violations||0) * 25));
+                    
+                    let studentDur = "-";
+                    if (s.started_at) {
+                        const end = s.submitted_at ? new Date(s.submitted_at) : new Date(s.last_seen);
+                        studentDur = Math.round((end - new Date(s.started_at)) / 60000) + "m";
+                    }
+
                     return `<tr>
                         <td style="font-family: monospace;">${s.roll_no}</td>
                         <td style="font-weight: bold;">${s.name || ''}</td>
                         <td>${s.section || "N/A"}</td>
                         <td><span class="tag ${s.status === 'LOCKED' || s.status === 'TERMINATED' ? 'tag-locked' : 'tag-active'}">${s.status}</span></td>
+                        <td>${studentDur}</td>
                         <td>${s.violations || 0}</td>
                         <td><strong>${score}%</strong></td>
                         <td><strong>${s.marks || '-'}</strong></td>
@@ -880,7 +934,7 @@
             try {
                 let res1 = await fetch(`${SUPABASE_URL}/exam_sessions?exam_id=eq.${examId}`, { method: 'DELETE', headers: getHeaders() }); await handleApiError(res1);
                 let res2 = await fetch(`${SUPABASE_URL}/exam_config?exam_id=eq.${examId}`, { method: 'DELETE', headers: getHeaders() }); await handleApiError(res2);
-                alert("✅ Archived exam deleted successfully."); document.getElementById('history-rows').innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 30px; color: var(--text-secondary);">Select an exam above to view archived forensic data.</td></tr>'; fetchExamHistory(); 
+                alert("✅ Archived exam deleted successfully."); document.getElementById('history-rows').innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 30px; color: var(--text-secondary);">Select an exam above to view archived forensic data.</td></tr>'; fetchExamHistory(); 
             } catch(e) { alert("❌ Error deleting exam: " + e.message); }
         }
 
