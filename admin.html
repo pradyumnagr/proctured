@@ -123,7 +123,7 @@
         </div>
     </div>
 
-    <!-- Forensic Audit Modal -->
+    <!-- Forensic Audit Modal (Single Student) -->
     <div id="logs-overlay" class="hidden">
         <div class="logs-box">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
@@ -326,7 +326,11 @@
                             <option value="">Select an archived exam...</option>
                         </select>
                     </div>
-                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    
+                    <!-- MASTER PRINT BUTTONS ADDED HERE -->
+                    <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+                        <button class="btn-success" onclick="printFullExamReport('public')" title="Print a clean, public-facing table of all results for this exam">🖨️ Full Public Result (PDF)</button>
+                        <button class="btn-primary" onclick="printFullExamReport('admin')" title="Print a highly detailed forensic table of all students for this exam">🖨️ Full Admin Report (PDF)</button>
                         <button class="btn-secondary" onclick="exportHistoricalCSV()">📥 Export Historical CSV</button>
                         <button class="btn-danger" onclick="deleteHistoricalExam()">🗑️ Delete Exam Record</button>
                     </div>
@@ -385,7 +389,6 @@
             return response;
         }
 
-        // --- DARK MODE LOGIC ---
         function toggleTheme() {
             const body = document.body;
             if (body.getAttribute('data-theme') === 'dark') {
@@ -717,7 +720,6 @@
             document.getElementById('logs-overlay').classList.remove('hidden');
         }
 
-        // --- NEW DIRECT PRINTING FEATURE ---
         function directPrint(sessionKey, reportType) {
             const student = [...currentSessions, ...historicalSessions].find(s => s.session_key === sessionKey);
             if (!student) return;
@@ -771,6 +773,64 @@
             win.document.close(); setTimeout(() => win.print(), 400);
         }
 
+        // --- NEW FULL EXAM REPORT PRINT ENGINE ---
+        function printFullExamReport(reportType) {
+            if (!historicalSessions || historicalSessions.length === 0) {
+                return alert("No historical data to print. Please select an archived exam first.");
+            }
+            
+            const examSelector = document.getElementById('history-exam-selector');
+            const examTitle = examSelector.options[examSelector.selectedIndex].text;
+            const examId = examSelector.value;
+            const win = window.open('', '_blank');
+            
+            let tableHeaders = ""; let tableRows = "";
+            
+            if (reportType === 'admin') {
+                tableHeaders = `<tr><th>Roll No</th><th>Name</th><th>Section</th><th>Status</th><th>Strikes</th><th>Integrity</th><th>Marks</th><th>HW Hash</th></tr>`;
+                tableRows = historicalSessions.map(s => {
+                    const score = s.integrity_score ?? Math.max(0, 100 - ((s.violations||0) * 25));
+                    return `<tr><td>${s.roll_no}</td><td>${s.name || ''}</td><td>${s.section || '-'}</td><td>${s.status}</td><td>${s.violations || 0}</td><td>${score}%</td><td><strong>${s.marks || '-'}</strong></td><td style="font-size:10px; font-family:monospace;">${s.hardware_hash || 'N/A'}</td></tr>`;
+                }).join('');
+            } else {
+                tableHeaders = `<tr><th>Roll No</th><th>Name</th><th>Section</th><th>Status</th><th>Marks</th></tr>`;
+                tableRows = historicalSessions.map(s => {
+                    return `<tr><td>${s.roll_no}</td><td>${s.name || ''}</td><td>${s.section || '-'}</td><td>${s.status}</td><td><strong>${s.marks || '-'}</strong></td></tr>`;
+                }).join('');
+            }
+
+            const reportTitle = reportType === 'admin' ? "OFFICIAL FORENSIC EXAM REPORT" : "PUBLIC EXAMINATION RESULTS";
+            const metaColor = reportType === 'admin' ? "#d93025" : "#1a73e8";
+
+            win.document.write(`
+                <html><head><title>${reportTitle} - ${examId}</title>
+                <style>
+                    body { font-family: 'Segoe UI', Arial, sans-serif; padding: 30px; color: #333; line-height: 1.5; }
+                    h1 { color: ${metaColor}; border-bottom: 2px solid ${metaColor}; padding-bottom: 10px; margin-bottom: 15px; font-size: 24px; text-transform: uppercase; }
+                    .meta { margin-bottom: 20px; font-size: 14px; background: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px solid #ddd; display: flex; justify-content: space-between;}
+                    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+                    th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+                    th { background: #f4f4f4; color: #111; font-weight: bold; }
+                    tr:nth-child(even) { background-color: #fafafa; }
+                    .footer { margin-top: 40px; font-size: 11px; color: #777; text-align: center; border-top: 1px solid #ddd; padding-top: 10px; }
+                </style></head><body>
+                <h1>${reportTitle}</h1>
+                <div class="meta">
+                    <div><strong>Assessment:</strong> ${examTitle}</div>
+                    <div><strong>Total Candidates:</strong> ${historicalSessions.length}</div>
+                    <div><strong>Generated On:</strong> ${new Date().toLocaleString()}</div>
+                </div>
+                <table>
+                    <thead>${tableHeaders}</thead>
+                    <tbody>${tableRows}</tbody>
+                </table>
+                <div class="footer">Generated securely by Pradyumn's Command Center</div>
+                </body></html>
+            `);
+            win.document.close();
+            setTimeout(() => win.print(), 500);
+        }
+
         async function broadcastMessage() {
             const msg = document.getElementById('announce-input').value.trim(); if (!msg) return;
             try {
@@ -797,7 +857,6 @@
 
                 document.getElementById('history-rows').innerHTML = historicalSessions.map(s => {
                     const score = s.integrity_score ?? Math.max(0, 100 - ((s.violations||0) * 25));
-                    // DIRECT PRINT BUTTONS ADDED HERE
                     return `<tr>
                         <td style="font-family: monospace;">${s.roll_no}</td>
                         <td style="font-weight: bold;">${s.name || ''}</td>
