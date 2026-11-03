@@ -13,7 +13,6 @@
             --text-main: #202124; --text-secondary: #5f6368; --border: #e0e0e0;
             --focus-ring: rgba(26, 115, 232, 0.2); --table-head: #f8f9fa; --input-bg: #fafafa;
         }
-        /* Dark Mode Variables */
         [data-theme="dark"] {
             --bg-color: #121212; --surface-color: #1e1e1e; --text-main: #e8eaed; --text-secondary: #9aa0a6; --border: #3c4043;
             --table-head: #2d2d2d; --input-bg: #2a2a2a;
@@ -75,9 +74,9 @@
         .tools-row input { flex: 1; min-width: 200px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; background: var(--input-bg); color: var(--text-main); }
         .auto-proctor-box { background: rgba(249,171,0,0.15); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(249,171,0,0.3); display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: bold; color: #d97706; cursor: pointer; white-space: nowrap; }
 
-        .table-responsive { width: 100%; overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); -webkit-overflow-scrolling: touch; }
+        .table-responsive { width: 100%; overflow-y: auto; border-radius: 8px; border: 1px solid var(--border); max-height: 500px; -webkit-overflow-scrolling: touch; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1200px; }
-        table th { background: var(--table-head); text-align: left; padding: 12px 14px; border-bottom: 2px solid var(--border); color: var(--text-secondary); white-space: nowrap; }
+        table th { background: var(--table-head); text-align: left; padding: 12px 14px; border-bottom: 2px solid var(--border); color: var(--text-secondary); white-space: nowrap; position: sticky; top: 0; z-index: 5; }
         table td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
         
         .tag { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; white-space: nowrap; display: inline-block; }
@@ -94,8 +93,10 @@
         .snap-thumb { width: 42px; height: 32px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); cursor: pointer; }
 
         .hidden { display: none !important; }
-        #auth-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(32, 33, 36, 0.95); display: flex; justify-content: center; align-items: center; z-index: 9999; padding: 20px; }
-        .auth-box { background: var(--surface-color); padding: 40px; border-radius: 12px; max-width: 400px; width: 100%; text-align: center; box-sizing: border-box; }
+        
+        /* Modern Login Redesign */
+        #auth-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); display: flex; justify-content: center; align-items: center; z-index: 9999; padding: 20px; }
+        .auth-box { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); padding: 40px; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); max-width: 400px; width: 100%; text-align: center; box-sizing: border-box; }
 
         #logs-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 99999; padding: 15px; }
         .logs-box { background: var(--surface-color); width: 100%; max-width: 650px; border-radius: 12px; padding: 25px; box-sizing: border-box; max-height: 85vh; display: flex; flex-direction: column; }
@@ -106,18 +107,19 @@
 
     <div id="auth-overlay">
         <div class="auth-box">
-            <h2 style="margin-top: 0; color: var(--primary);">Command Center</h2>
-            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;">Supabase Enterprise Authentication</p>
+            <div style="font-size: 45px; margin-bottom: 5px;">🛡️</div>
+            <h2 style="margin-top: 0; color: #0f2027; font-size: 26px; font-weight: 800; letter-spacing: -0.5px;">Command Center</h2>
+            <p style="font-size: 14px; color: #555; margin-bottom: 30px; font-weight: 600;">Secure Assessment Node</p>
             
-            <input type="email" id="auth-email" placeholder="Admin Email" style="width: 100%; padding: 12px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); border-radius: 6px; font-size: 14px; margin-bottom: 10px; text-align: center; box-sizing: border-box;">
-            <input type="password" id="auth-password" placeholder="Password" style="width: 100%; padding: 12px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); border-radius: 6px; font-size: 14px; margin-bottom: 15px; text-align: center; box-sizing: border-box;">
+            <input type="email" id="auth-email" placeholder="Admin Email" style="width: 100%; padding: 14px; border: 1px solid #ccc; background: #fafafa; color: #111; border-radius: 8px; font-size: 14px; margin-bottom: 12px; text-align: center; box-sizing: border-box;">
+            <input type="password" id="auth-password" placeholder="Password" style="width: 100%; padding: 14px; border: 1px solid #ccc; background: #fafafa; color: #111; border-radius: 8px; font-size: 14px; margin-bottom: 20px; text-align: center; box-sizing: border-box;">
             
-            <div style="margin-bottom: 15px; display: flex; justify-content: center;">
+            <div style="margin-bottom: 20px; display: flex; justify-content: center;">
                 <div class="g-recaptcha" data-sitekey="6Leofe4tAAAAAID1p1Me1NtLrEjhMQJ9QUKYq1Bg"></div>
             </div>
 
-            <button id="auth-btn" class="btn-primary" style="width: 100%;">Secure Login</button>
-            <p id="auth-error" class="hidden" style="color: var(--danger); font-size: 12px; margin-top: 10px; font-weight: bold;">❌ Authentication failed.</p>
+            <button id="auth-btn" style="background: linear-gradient(to right, #1a73e8, #1557b0); color: white; border: none; padding: 14px; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer; font-size: 15px;">Secure Login</button>
+            <p id="auth-error" class="hidden" style="color: #d93025; font-size: 13px; margin-top: 15px; font-weight: bold;">❌ Authentication failed.</p>
         </div>
     </div>
 
@@ -125,10 +127,12 @@
     <div id="logs-overlay" class="hidden">
         <div class="logs-box">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                <h2 style="margin: 0; font-size: 18px;">Candidate Forensic Log</h2>
-                <div>
-                    <button class="btn-secondary" style="padding: 6px 12px;" onclick="printForensicDossier()" title="Print this audit as a formal PDF document">🖨️ Print PDF</button>
-                    <button class="btn-danger" style="padding: 6px 12px;" onclick="document.getElementById('logs-overlay').classList.add('hidden')" title="Close the audit viewer">Close</button>
+                <h2 style="margin: 0; font-size: 18px;">Candidate Log & Print Options</h2>
+                <div style="display: flex; gap: 5px;">
+                    <!-- Dual Print Options -->
+                    <button class="btn-secondary btn-small" onclick="printForensicDossier('student')" title="Print clean, simplified mark sheet for the student">🖨️ Student Report</button>
+                    <button class="btn-primary btn-small" onclick="printForensicDossier('admin')" title="Print detailed hardware & violation dossier for internal use">🖨️ Admin Dossier</button>
+                    <button class="btn-danger btn-small" onclick="document.getElementById('logs-overlay').classList.add('hidden')">Close</button>
                 </div>
             </div>
             <div class="logs-content" id="logs-content-body">Loading forensic telemetry...</div>
@@ -142,16 +146,16 @@
                 <div class="brand-subtitle">Enterprise B.Tech Exam Invigilation Engine</div>
             </div>
             <div style="display: flex; gap: 10px;">
-                <button id="theme-toggle-btn" class="btn-secondary" onclick="toggleTheme()" title="Toggle Dark or Light Mode for the Command Center">🌙 Dark Mode</button>
-                <button id="audio-toggle-btn" class="btn-secondary" onclick="toggleAudioAlerts()" title="Toggle audible chime alerts for new infractions">🔔 Chimes: ON</button>
-                <button id="logout-btn" class="btn-secondary" title="Securely end your admin session">🔒 Logout</button>
+                <button id="theme-toggle-btn" class="btn-secondary" onclick="toggleTheme()" title="Toggle Dark or Light Mode">🌙 Dark Mode</button>
+                <button id="audio-toggle-btn" class="btn-secondary" onclick="toggleAudioAlerts()" title="Toggle audible alerts for violations">🔔 Chimes: ON</button>
+                <button id="logout-btn" class="btn-secondary" title="Securely end session">🔒 Logout</button>
             </div>
         </div>
 
         <div class="tab-nav">
-            <button class="tab-btn" onclick="switchTab('tab-db')" id="btn-tab-db" title="Manage the database of allowed students">👥 1. Global Registry</button>
-            <button class="tab-btn active" onclick="switchTab('tab-live')" id="btn-tab-live" title="Configure, deploy, and monitor live exams">🚀 2. Live Invigilation Grid</button>
-            <button class="tab-btn" onclick="switchTab('tab-history')" id="btn-tab-history" title="View forensic data for past, completed exams">📚 3. Exam Archive & History</button>
+            <button class="tab-btn" onclick="switchTab('tab-db')" id="btn-tab-db">👥 1. Global Registry</button>
+            <button class="tab-btn active" onclick="switchTab('tab-live')" id="btn-tab-live">🚀 2. Live Invigilation Grid</button>
+            <button class="tab-btn" onclick="switchTab('tab-history')" id="btn-tab-history">📚 3. Exam Archive & History</button>
         </div>
 
         <!-- TAB 1: MASTER REGISTRY -->
@@ -164,19 +168,23 @@
                 
                 <div style="background: rgba(30,142,62,0.1); padding: 15px; border-radius: 8px; border: 1px solid rgba(30,142,62,0.3); margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
                     <div><strong style="font-size: 18px; color: #1e8e3e;" id="db-total-count">0</strong> Students Enrolled</div>
-                    <button class="btn-danger btn-small" onclick="clearDatabase()" title="Permanently delete all students from the database">🗑️ Wipe Registry</button>
+                    <button class="btn-danger btn-small" onclick="clearDatabase()" title="Wipe entire table from Supabase">🗑️ Wipe Registry</button>
                 </div>
 
                 <div class="form-group" style="margin-bottom: 15px;">
                     <label>Bulk CSV Import (Roll Number, Name, DOB, Year, Section, Course, Branch):</label>
-                    <textarea id="db-import-area" rows="6" placeholder="Paste CSV rows here. The smart sanitizer will automatically format dates and remove duplicates." title="Paste data directly from Excel or Sheets. Commas inside quotes are handled safely."></textarea>
+                    <textarea id="db-import-area" rows="6" placeholder="Paste CSV rows here. The smart sanitizer will automatically format dates and remove duplicates."></textarea>
                 </div>
-                <button id="btn-save-db" class="btn-primary" onclick="saveMasterDatabase()" title="Clean, parse, and upload the pasted text into the Supabase database">💾 Sanitize & Save to Registry</button>
+                <button id="btn-save-db" class="btn-primary" style="margin-bottom: 20px;" onclick="saveMasterDatabase()">💾 Sanitize & Save to Registry</button>
 
-                <h3 style="margin-top: 30px; font-size: 16px;">Enrolled Student Directory</h3>
-                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px;">
+                    <h3 style="margin: 0; font-size: 16px;">Enrolled Student Directory</h3>
+                    <input type="text" id="registry-search-input" placeholder="🔍 Search student by name or roll..." style="padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); font-size: 13px; width: 250px;" oninput="refreshDBUI()">
+                </div>
+
+                <div class="table-responsive">
                     <table>
-                        <thead style="position: sticky; top: 0;">
+                        <thead>
                             <tr><th>Roll Number</th><th>Name</th><th>DOB</th><th>Year</th><th>Section</th><th>Branch</th></tr>
                         </thead>
                         <tbody id="db-preview-rows"><tr><td colspan="6" style="text-align: center;">Loading registry...</td></tr></tbody>
@@ -190,7 +198,7 @@
             <div class="card">
                 <div class="header">
                     <h1>🚀 Exam Configurator</h1>
-                    <div id="status-badge" class="status-badge status-inactive" title="Shows if an exam is currently accepting connections">
+                    <div id="status-badge" class="status-badge status-inactive">
                         <div class="status-dot"></div><span id="status-text">Inactive</span>
                     </div>
                 </div>
@@ -198,32 +206,32 @@
                 <div class="form-grid">
                     <div class="form-group" style="grid-column: 1 / -1;">
                         <label>Assessment Title / Subject:</label>
-                        <input type="text" id="target-title" placeholder="e.g. Web Technology Mid-Term 2026" title="This title will be saved in the archive for future reference">
+                        <input type="text" id="target-title" placeholder="e.g. Web Technology Mid-Term 2026">
                     </div>
                     <div class="form-group" style="grid-column: 1 / -1;">
                         <label>Target Google Form URL (Must include embedded=true):</label>
-                        <input type="text" id="target-url" placeholder="https://docs.google.com/forms/d/e/.../viewform?embedded=true" title="The exact URL of the Google Form to embed in the student portal">
+                        <input type="text" id="target-url" placeholder="https://docs.google.com/forms/d/e/.../viewform?embedded=true">
                     </div>
                     <div class="form-group" style="grid-column: 1 / -1;">
                         <label>Google Sheet Response URL (For Zero-Script Marks Sync):</label>
-                        <input type="text" id="target-sheet" placeholder="https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit" title="Link to the Google Sheet where Form responses are saved. Used to automatically pull marks.">
+                        <input type="text" id="target-sheet" placeholder="https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit">
                     </div>
                     
                     <div class="form-group">
                         <label>Exam Duration (Minutes):</label>
-                        <input type="number" id="target-duration" value="120" min="5" title="Base time limit for the exam. Can be extended for specific students later.">
+                        <input type="number" id="target-duration" value="120" min="5">
                     </div>
                     <div class="form-group">
                         <label>Form Page Sections:</label>
-                        <input type="number" id="target-sections" value="2" min="1" title="The number of 'Next' button pages in the Google Form">
+                        <input type="number" id="target-sections" value="2" min="1">
                     </div>
                     <div class="form-group">
                         <label>Strike Limit:</label>
-                        <input type="number" id="target-strikes" value="7" title="Number of infractions before the student is permanently locked out">
+                        <input type="number" id="target-strikes" value="7">
                     </div>
                     <div class="form-group">
                         <label>Audio Limit:</label>
-                        <select id="target-audio" title="Sensitivity for ambient noise monitoring">
+                        <select id="target-audio">
                             <option value="120">Strict (120)</option>
                             <option value="150" selected>Standard (150)</option>
                             <option value="9999">Disabled</option>
@@ -231,14 +239,14 @@
                     </div>
                     <div class="form-group">
                         <label>Screen Share:</label>
-                        <select id="target-screenshare" title="Force students on desktop to share their 'Entire Screen'">
+                        <select id="target-screenshare">
                             <option value="true" selected>Mandatory (Desktop)</option>
                             <option value="false">Optional</option>
                         </select>
                     </div>
                     <div class="form-group" style="grid-column: 1 / -1;">
                         <label style="color: var(--primary);">Target Audience Restriction:</label>
-                        <select id="target-audience" style="border: 2px solid var(--primary); font-weight: bold; background: rgba(26,115,232,0.1); padding: 10px;" title="Restrict access to specific class sections, or open the exam to anyone">
+                        <select id="target-audience" style="border: 2px solid var(--primary); font-weight: bold; background: rgba(26,115,232,0.1); padding: 10px;">
                             <option value="ALL" selected>Allow All Students in Master Registry</option>
                             <option value="OPEN">Open Assessment Mode (No Registry Enforced)</option>
                         </select>
@@ -246,8 +254,8 @@
                 </div>
 
                 <div class="btn-row">
-                    <button class="btn-primary" id="btn-deploy" title="Make this configuration LIVE. Students will immediately be able to join.">🚀 Deploy New Exam Session</button>
-                    <button class="btn-danger" id="btn-terminate" title="Forcefully end the current exam, lock out all active students, and move data to the Archive tab">🛑 Terminate & Archive Session</button>
+                    <button class="btn-primary" id="btn-deploy">🚀 Deploy New Exam Session</button>
+                    <button class="btn-danger" id="btn-terminate">🛑 Terminate & Archive Session</button>
                 </div>
             </div>
 
@@ -264,21 +272,26 @@
                     <div class="stat-card stat-avg"><h3 id="stat-avg-integrity">100%</h3><p>Avg Integrity</p></div>
                 </div>
 
-                <div class="tools-row">
-                    <div style="display: flex; flex: 1; gap: 10px;">
-                        <input type="text" id="announce-input" placeholder="Broadcast live announcement to all candidate screens...">
-                        <button class="btn-primary" onclick="broadcastMessage()" title="Send a pop-up alert to every connected student's screen instantly">📢 Broadcast</button>
+                <div class="tools-row" style="align-items: flex-end;">
+                    <div style="display: flex; flex: 1; gap: 10px; flex-direction: column;">
+                        <div style="display: flex; gap: 10px; width: 100%;">
+                            <input type="text" id="announce-input" placeholder="Broadcast live announcement to all candidate screens...">
+                            <button class="btn-primary" onclick="broadcastMessage()">📢 Broadcast</button>
+                        </div>
+                        <div style="display: flex; gap: 10px; width: 100%; max-width: 400px;">
+                            <input type="text" id="live-search-input" placeholder="🔍 Find active student..." oninput="renderTelemetryGrid()">
+                        </div>
                     </div>
                     
                     <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                        <select id="live-section-filter" style="padding: 10px; border-radius: 6px; border: 1px solid var(--border); font-weight: 600;" onchange="renderTelemetryGrid()" title="Filter the telemetry grid to show only a specific section">
+                        <select id="live-section-filter" style="padding: 10px; border-radius: 6px; border: 1px solid var(--border); font-weight: 600;" onchange="renderTelemetryGrid()">
                             <option value="ALL">All Sections</option>
                         </select>
-                        <label class="auto-proctor-box" title="When checked, the server will automatically terminate a student's session if they hit 7 strikes">
+                        <label class="auto-proctor-box">
                             <input type="checkbox" id="auto-proctor-toggle"> 🤖 Auto-Kick at 7 Strikes
                         </label>
-                        <button class="btn-success" onclick="syncMarksForActiveExam()" title="Fetch marks from the linked Google Sheet to update the telemetry grid">📊 Sync Marks</button>
-                        <button class="btn-secondary" onclick="downloadCSV(currentSessions, 'Active_Exam')" title="Download the current telemetry grid as an Excel-compatible CSV">📥 Export CSV</button>
+                        <button class="btn-success" onclick="syncMarksForActiveExam()">📊 Sync Marks</button>
+                        <button class="btn-secondary" onclick="downloadCSV(currentSessions, 'Active_Exam')">📥 Export CSV</button>
                     </div>
                 </div>
 
@@ -288,8 +301,7 @@
                             <tr>
                                 <th>Roll Number</th><th>Candidate</th><th>Sec</th><th>Net</th>
                                 <th>Status</th><th>Strikes</th><th>Integrity</th>
-                                <th>Time Left</th> <!-- NEW SERVER SYNCED TIMER -->
-                                <th>Marks</th><th>Snap</th><th>Invigilation Controls</th>
+                                <th>Time Left</th><th>Marks</th><th>Snap</th><th>Invigilation Controls</th>
                             </tr>
                         </thead>
                         <tbody id="candidate-rows">
@@ -305,7 +317,7 @@
             <div class="card">
                 <div class="header">
                     <h1>📚 Historical Assessment Archive</h1>
-                    <button class="btn-secondary btn-small" onclick="fetchExamHistory()" title="Fetch the latest list of terminated exams">🔄 Refresh Archives</button>
+                    <button class="btn-secondary btn-small" onclick="fetchExamHistory()">🔄 Refresh Archives</button>
                 </div>
                 
                 <div style="display: flex; gap: 15px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; background: var(--table-head); padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
@@ -316,8 +328,8 @@
                         </select>
                     </div>
                     <div style="display: flex; gap: 10px; margin-top: 20px;">
-                        <button class="btn-secondary" onclick="exportHistoricalCSV()" title="Export the forensic data for the selected archived exam to CSV">📥 Export Historical CSV</button>
-                        <button class="btn-danger" onclick="deleteHistoricalExam()" title="Permanently delete this exam and all its logs from Supabase">🗑️ Delete Exam Record</button>
+                        <button class="btn-secondary" onclick="exportHistoricalCSV()">📥 Export Historical CSV</button>
+                        <button class="btn-danger" onclick="deleteHistoricalExam()">🗑️ Delete Exam Record</button>
                     </div>
                 </div>
 
@@ -334,7 +346,7 @@
             </div>
         </div>
 
-        <div class="footer-brand">Architected and Designed by Pradyumn</div>
+        <div class="footer-brand" style="text-align: center; margin: 30px 0; font-family: 'Brush Script MT', cursive; font-size: 16px; color: var(--text-secondary); opacity: 0.6;">Architected and Designed by Pradyumn</div>
     </div>
 
     <script>
@@ -364,13 +376,12 @@
         async function handleApiError(response) {
             if (!response.ok) {
                 if (response.status === 401 || response.status === 403) {
-                    alert("⚠️ Session expired or permission denied by Row-Level Security (RLS). Please log in again.");
-                    sessionStorage.removeItem('pradyumn_admin_token');
-                    location.reload();
+                    alert("⚠️ Session expired or permission denied. Please log in again.");
+                    sessionStorage.removeItem('pradyumn_admin_token'); location.reload();
                     throw new Error("Unauthorized");
                 }
                 const err = await response.json().catch(() => ({}));
-                throw new Error(err.message || err.details || `Database operation failed (Code: ${response.status})`);
+                throw new Error(err.message || err.details || `Database error (${response.status})`);
             }
             return response;
         }
@@ -378,14 +389,11 @@
         // --- DARK MODE LOGIC ---
         function toggleTheme() {
             const body = document.body;
-            const isDark = body.getAttribute('data-theme') === 'dark';
-            if (isDark) {
-                body.removeAttribute('data-theme');
-                localStorage.setItem('admin_theme', 'light');
+            if (body.getAttribute('data-theme') === 'dark') {
+                body.removeAttribute('data-theme'); localStorage.setItem('admin_theme', 'light');
                 document.getElementById('theme-toggle-btn').innerText = "🌙 Dark Mode";
             } else {
-                body.setAttribute('data-theme', 'dark');
-                localStorage.setItem('admin_theme', 'dark');
+                body.setAttribute('data-theme', 'dark'); localStorage.setItem('admin_theme', 'dark');
                 document.getElementById('theme-toggle-btn').innerText = "☀️ Light Mode";
             }
         }
@@ -407,8 +415,7 @@
                 const gain = ctx.createGain();
                 osc.frequency.value = 620;
                 osc.connect(gain); gain.connect(ctx.destination);
-                osc.start();
-                setTimeout(() => { osc.stop(); ctx.close(); }, 220);
+                osc.start(); setTimeout(() => { osc.stop(); ctx.close(); }, 220);
             } catch (e) {}
         }
 
@@ -427,39 +434,28 @@
             const emailInput = document.getElementById('auth-email').value.trim();
             const passwordInput = document.getElementById('auth-password').value.trim();
             const recaptchaResponse = typeof grecaptcha !== 'undefined' ? grecaptcha.getResponse() : '';
-            if (recaptchaResponse.length === 0) {
-                errorMsg.innerText = "❌ Please complete the CAPTCHA to verify you are human.";
-                errorMsg.classList.remove('hidden'); return;
-            }
+            if (recaptchaResponse.length === 0) { errorMsg.innerText = "❌ Complete the CAPTCHA."; errorMsg.classList.remove('hidden'); return; }
 
-            const btn = document.getElementById('auth-btn');
-            btn.innerText = "Authenticating with Supabase..."; btn.disabled = true;
+            const btn = document.getElementById('auth-btn'); btn.innerText = "Authenticating..."; btn.disabled = true;
 
             try {
                 const res = await fetch(`${SUPABASE_URL.replace('/rest/v1', '/auth/v1')}/token?grant_type=password`, {
-                    method: 'POST',
-                    headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email: emailInput, password: passwordInput, gotrue_meta_security: { captcha_token: recaptchaResponse } })
                 });
                 const data = await res.json();
                 if (data.access_token) {
-                    ADMIN_TOKEN = data.access_token;
-                    sessionStorage.setItem('pradyumn_admin_token', ADMIN_TOKEN);
+                    ADMIN_TOKEN = data.access_token; sessionStorage.setItem('pradyumn_admin_token', ADMIN_TOKEN);
                     unlockDashboard();
                 } else {
                     errorMsg.innerText = "❌ Login Failed: " + (data.error_description || "Invalid Email/Password");
                     errorMsg.classList.remove('hidden'); grecaptcha.reset();
                 }
-            } catch (err) {
-                errorMsg.innerText = "❌ Network Error connecting to Supabase Auth.";
-                errorMsg.classList.remove('hidden'); grecaptcha.reset();
-            }
+            } catch (err) { errorMsg.innerText = "❌ Network Error."; errorMsg.classList.remove('hidden'); grecaptcha.reset(); }
             btn.innerText = "Secure Login"; btn.disabled = false;
         });
 
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            sessionStorage.removeItem('pradyumn_admin_token'); location.reload();
-        });
+        document.getElementById('logout-btn').addEventListener('click', () => { sessionStorage.removeItem('pradyumn_admin_token'); location.reload(); });
 
         function unlockDashboard() {
             document.getElementById('auth-overlay').classList.add('hidden');
@@ -472,16 +468,14 @@
         async function fetchMasterDatabase() {
             try {
                 let res = await fetch(`${SUPABASE_URL}/student_registry?select=*`, { headers: getHeaders() });
-                await handleApiError(res);
-                globalDatabase = await res.json(); refreshDBUI();
+                await handleApiError(res); globalDatabase = await res.json(); refreshDBUI();
             } catch (e) {}
         }
 
         async function saveMasterDatabase() {
             const rawText = document.getElementById('db-import-area').value.trim();
             if (!rawText) return alert("Paste CSV data first.");
-            const btn = document.getElementById('btn-save-db');
-            btn.innerText = "Saving to Supabase..."; btn.disabled = true;
+            const btn = document.getElementById('btn-save-db'); btn.innerText = "Saving to Supabase..."; btn.disabled = true;
 
             const dedupMap = new Map();
             const lines = rawText.split(/\r?\n/);
@@ -489,15 +483,13 @@
                 if (!line.trim()) continue;
                 const p = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(s => s.replace(/^"|"$/g, '').trim());
                 if (p.length < 2) continue;
-                const roll_no = p[0].toUpperCase();
-                if (roll_no.includes('ROLL')) continue; 
+                const roll_no = p[0].toUpperCase(); if (roll_no.includes('ROLL')) continue; 
                 dedupMap.set(roll_no, { roll_no: roll_no, name: p[1], dob: (p[2] || '').replace(/[-.]/g, '/'), year: p[3] || '', section: (p[4] || 'A').toUpperCase(), course: p[5] || 'B.Tech', branch: p.slice(6).join(',').toUpperCase() || 'CSE' });
             }
             const cleanRecords = Array.from(dedupMap.values());
             try {
                 let res = await fetch(`${SUPABASE_URL}/student_registry?on_conflict=roll_no`, { method: 'POST', headers: { ...getHeaders(), "Prefer": "resolution=merge-duplicates" }, body: JSON.stringify(cleanRecords) });
-                await handleApiError(res);
-                document.getElementById('db-import-area').value = "";
+                await handleApiError(res); document.getElementById('db-import-area').value = "";
                 alert(`✅ Successfully sanitized and uploaded ${cleanRecords.length} unique records to master registry.`);
                 fetchMasterDatabase();
             } catch(e) { alert("❌ Failed to save registry: " + e.message); }
@@ -515,8 +507,24 @@
         function refreshDBUI() {
             document.getElementById('db-total-count').innerText = globalDatabase.length;
             const tbody = document.getElementById('db-preview-rows');
-            if (globalDatabase.length === 0) tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 20px;">No students enrolled.</td></tr>`;
-            else tbody.innerHTML = globalDatabase.slice(0, 100).map(s => `<tr><td style="font-family: monospace;">${s.roll_no}</td><td style="font-weight: bold;">${s.name}</td><td>${s.dob}</td><td>${s.year || '-'}</td><td><span class="tag tag-section">${s.section}</span></td><td style="font-size: 11px;">${s.branch}</td></tr>`).join('');
+            
+            // Search & Filtering Logic for Registry
+            const searchQ = (document.getElementById('registry-search-input').value || "").toLowerCase();
+            let filteredDb = globalDatabase;
+            if (searchQ) {
+                filteredDb = globalDatabase.filter(s => 
+                    (s.name && s.name.toLowerCase().includes(searchQ)) || 
+                    (s.roll_no && s.roll_no.toLowerCase().includes(searchQ)) ||
+                    (s.branch && s.branch.toLowerCase().includes(searchQ))
+                );
+            }
+
+            if (filteredDb.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 20px;">No students match criteria.</td></tr>`;
+            } else {
+                // Slicing to 1000 ensures smooth DOM performance while still rendering virtually all relevant B.Tech sections
+                tbody.innerHTML = filteredDb.slice(0, 1000).map(s => `<tr><td style="font-family: monospace;">${s.roll_no}</td><td style="font-weight: bold;">${s.name}</td><td>${s.dob}</td><td>${s.year || '-'}</td><td><span class="tag tag-section">${s.section}</span></td><td style="font-size: 11px;">${s.branch}</td></tr>`).join('');
+            }
             
             let sections = new Set(); globalDatabase.forEach(r => sections.add(r.section));
             let targetSelect = document.getElementById('target-audience');
@@ -560,12 +568,8 @@
                 await handleApiError(res); const data = await res.json();
                 if (data && data.length > 0) {
                     const c = data[0]; ACTIVE_EXAM_ID = c.exam_id; GLOBAL_EXAM_DURATION = c.duration_minutes || 120;
-                    document.getElementById('target-title').value = c.title || "";
-                    document.getElementById('target-url').value = c.form_url;
-                    document.getElementById('target-sheet').value = c.sheet_response_url || "";
-                    document.getElementById('target-duration').value = GLOBAL_EXAM_DURATION;
-                    document.getElementById('target-strikes').value = c.max_strikes || 7;
-                    document.getElementById('target-audience').value = c.verify_mode === "open" ? "OPEN" : "ALL";
+                    document.getElementById('target-title').value = c.title || ""; document.getElementById('target-url').value = c.form_url; document.getElementById('target-sheet').value = c.sheet_response_url || "";
+                    document.getElementById('target-duration').value = GLOBAL_EXAM_DURATION; document.getElementById('target-strikes').value = c.max_strikes || 7; document.getElementById('target-audience').value = c.verify_mode === "open" ? "OPEN" : "ALL";
                     document.getElementById('status-badge').className = "status-badge status-active"; document.getElementById('status-text').innerText = "LIVE: " + (c.title || "Exam"); document.getElementById('active-exam-id-badge').innerText = "Session: " + ACTIVE_EXAM_ID;
                 } else {
                     ACTIVE_EXAM_ID = null; document.getElementById('status-badge').className = "status-badge status-inactive"; document.getElementById('status-text').innerText = "No Exam Active"; document.getElementById('active-exam-id-badge').innerText = "Session: Inactive";
@@ -582,8 +586,7 @@
                 const response = await fetch(csvExportUrl); const csvText = await response.text();
                 const rows = csvText.split(/\r?\n/).map(row => row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(val => val.replace(/^"|"$/g, '').trim()));
                 if (rows.length < 2) return alert("The Google Sheet appears empty.");
-                const rollIdx = rows[0].findIndex(h => h.toLowerCase().includes('roll'));
-                const scoreIdx = rows[0].findIndex(h => h.toLowerCase().includes('score'));
+                const rollIdx = rows[0].findIndex(h => h.toLowerCase().includes('roll')); const scoreIdx = rows[0].findIndex(h => h.toLowerCase().includes('score'));
                 if (rollIdx === -1) return alert("Could not find 'Roll Number' column in Sheet.");
                 let syncedCount = 0;
                 for (let i = 1; i < rows.length; i++) {
@@ -598,7 +601,7 @@
         async function fetchTelemetry() {
             if (!ACTIVE_EXAM_ID) { currentSessions = []; renderTelemetryGrid(); return; }
             try {
-                let res = await fetch(`${SUPABASE_URL}/exam_sessions?exam_id=eq.${ACTIVE_EXAM_ID}&order=last_seen.desc`, { headers: getHeaders() });
+                let res = await fetch(`${SUPABASE_URL}/exam_sessions?exam_id=eq.${ACTIVE_EXAM_ID}`, { headers: getHeaders() });
                 if (!res.ok && (res.status === 401 || res.status === 403)) await handleApiError(res); 
                 const data = await res.json();
                 const totalStrikesNow = data.reduce((acc, s) => acc + (s.violations || 0), 0);
@@ -621,6 +624,18 @@
             }
 
             let displayedSessions = currentFilter !== "ALL" ? currentSessions.filter(s => (s.section || "N/A") === currentFilter) : currentSessions;
+            
+            // Search Filtering
+            const searchQ = (document.getElementById('live-search-input').value || "").toLowerCase();
+            if (searchQ) {
+                displayedSessions = displayedSessions.filter(s => 
+                    (s.name && s.name.toLowerCase().includes(searchQ)) || 
+                    (s.roll_no && s.roll_no.toLowerCase().includes(searchQ))
+                );
+            }
+
+            // STABLE SORTING LOGIC: Fixes the bouncing grid by enforcing alphabetical Roll No order
+            displayedSessions.sort((a, b) => a.roll_no.localeCompare(b.roll_no));
 
             document.getElementById('candidate-rows').innerHTML = displayedSessions.map(s => {
                 if (autoProctor && s.violations >= 7 && s.status !== "TERMINATED") sendAction(s.session_key, 'KICK');
@@ -628,7 +643,6 @@
                 if (score >= 85) clean++; else if (score >= 60) suspicious++; else locked++;
                 const secs = Math.floor((Date.now() - new Date(s.last_seen).getTime()) / 1000);
 
-                // Server-Synced Remaining Time Calculation
                 let timeLeftHtml = `<span style="color:var(--text-secondary); font-size:11px;">Not Started</span>`;
                 if (s.exam_end_time) {
                     const effectiveEnd = s.exam_end_time + ((s.time_added_seconds || 0) * 1000);
@@ -653,26 +667,23 @@
                         <td style="font-weight: bold;">${s.marks || '-'}</td>
                         <td>${s.latest_snapshot ? `<img src="${s.latest_snapshot}" class="snap-thumb" title="Click to view full snapshot in Audit Log" onclick="viewLogs('${s.session_key}')">` : `<span style="font-size:11px; color:var(--text-secondary);">N/A</span>`}</td>
                         <td style="display: flex; gap: 4px; flex-wrap: wrap;">
-                            <button class="btn-primary btn-small" title="Send a private pop-up message to this student" onclick="sendDirectMessage('${s.session_key}', '${s.roll_no}')">💬 Msg</button>
-                            <button class="btn-secondary btn-small" title="View the chronological violation log and snapshots" onclick="viewLogs('${s.session_key}')">👁️ Audit</button>
-                            <button class="btn-success btn-small" title="Unlock the student's screen and reset their strike count" onclick="sendAction('${s.session_key}', 'UNLOCK')">🔓 Un-Lock</button>
-                            <button class="btn-danger btn-small" title="Instantly terminate the student's exam" onclick="sendAction('${s.session_key}', 'KICK')">Kick</button>
+                            <button class="btn-primary btn-small" onclick="sendDirectMessage('${s.session_key}', '${s.roll_no}')">💬 Msg</button>
+                            <button class="btn-secondary btn-small" onclick="viewLogs('${s.session_key}')">👁️ Audit</button>
+                            <button class="btn-success btn-small" onclick="sendAction('${s.session_key}', 'UNLOCK')">🔓 Un-Lock</button>
+                            <button class="btn-danger btn-small" onclick="sendAction('${s.session_key}', 'KICK')">Kick</button>
                         </td>
                     </tr>
                 `;
             }).join("");
 
-            document.getElementById('stat-clean-count').innerText = clean; document.getElementById('stat-suspicious-count').innerText = suspicious; document.getElementById('stat-locked-count').innerText = locked; document.getElementById('stat-avg-integrity').innerText = Math.round(scoreSum / currentSessions.length) + "%";
+            document.getElementById('stat-clean-count').innerText = clean; document.getElementById('stat-suspicious-count').innerText = suspicious; document.getElementById('stat-locked-count').innerText = locked; 
+            document.getElementById('stat-avg-integrity').innerText = displayedSessions.length ? Math.round(scoreSum / displayedSessions.length) + "%" : "100%";
         }
 
-        // --- NEW: Add +10 Minutes Function ---
         async function addExtraTime(sessionKey, currentTimeAdded) {
             try {
-                let res = await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${encodeURIComponent(sessionKey)}`, {
-                    method: 'PATCH', headers: getHeaders(), body: JSON.stringify({ time_added_seconds: currentTimeAdded + 600 })
-                });
-                await handleApiError(res);
-                alert("✅ 10 minutes successfully added to this student's timer."); fetchTelemetry();
+                let res = await fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${encodeURIComponent(sessionKey)}`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify({ time_added_seconds: currentTimeAdded + 600 }) });
+                await handleApiError(res); alert("✅ 10 minutes successfully added."); fetchTelemetry();
             } catch(e) { alert("❌ Failed to add time: " + e.message); }
         }
 
@@ -711,12 +722,51 @@
             document.getElementById('logs-overlay').classList.remove('hidden');
         }
 
-        function printForensicDossier() {
+        // DUAL PRINT LOGIC
+        function printForensicDossier(reportType) {
             if (!selectedAuditSession) return;
-            const s = selectedAuditSession; const integrity = s.integrity_score ?? Math.max(0, 100 - ((s.violations || 0) * 25)); const logs = Array.isArray(s.logs) ? s.logs : [];
+            const s = selectedAuditSession; 
+            const integrity = s.integrity_score ?? Math.max(0, 100 - ((s.violations || 0) * 25)); 
+            const logs = Array.isArray(s.logs) ? s.logs : [];
             const win = window.open('', '_blank');
-            win.document.write(`<html><head><title>Forensic Dossier - ${s.roll_no}</title><style>body { font-family: Arial, sans-serif; padding: 30px; color: #111; } h1 { font-size: 20px; border-bottom: 2px solid #111; padding-bottom: 8px; } .meta { margin: 16px 0; line-height: 1.7; font-size: 14px; } table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 13px; } th, td { border: 1px solid #ccc; padding: 8px; text-align: left; } th { background: #f4f4f4; }</style></head><body><h1>OFFICIAL EXAMINATION FORENSIC DOSSIER</h1><div class="meta"><strong>Candidate Name:</strong> ${s.name || ''} &nbsp;|&nbsp; <strong>Roll Number:</strong> ${s.roll_no}<br><strong>Examination Code:</strong> ${s.exam_id} &nbsp;|&nbsp; <strong>Final Status:</strong> ${s.status}<br><strong>Hardware Hash:</strong> ${s.hardware_hash || 'N/A'}<br><strong>Integrity Score:</strong> ${integrity}% (${s.violations || 0} Strikes) &nbsp;|&nbsp; <strong>Marks:</strong> ${s.marks || 'N/A'}</div>${s.latest_snapshot ? `<div><strong>Violation Snapshot:</strong><br><img src="${s.latest_snapshot}" style="width:240px; border:1px solid #333; margin-top:6px;"></div>` : ''}<h3>Chronological Incident Log</h3><table><thead><tr><th>#</th><th>Timestamp</th><th>Event Description</th></tr></thead><tbody>${logs.map((l, i) => `<tr><td>${i + 1}</td><td>${l.time}</td><td>${l.reason}</td></tr>`).join('') || '<tr><td colspan="3">No violations recorded.</td></tr>'}</tbody></table><p style="margin-top:40px; font-size:12px; color:#555;">Generated by Pradyumn's Command Center on ${new Date().toLocaleString()}</p></body></html>`);
-            win.document.close(); setTimeout(() => win.print(), 300);
+
+            if (reportType === 'student') {
+                win.document.write(`
+                    <html><head><title>Student Result Card - ${s.roll_no}</title><style>body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #333; line-height: 1.6; } h1 { color: #1a73e8; border-bottom: 2px solid #1a73e8; padding-bottom: 10px; margin-bottom: 25px; } .summary { background: #f8f9fa; padding: 25px; border-radius: 8px; margin: 20px 0; border: 1px solid #e0e0e0; font-size: 15px; } .summary strong { display: inline-block; width: 150px; color: #555; }</style></head><body>
+                    <h1>EXAMINATION RESULT NOTIFICATION</h1>
+                    <div class="summary">
+                        <div style="margin-bottom: 8px;"><strong>Candidate Name:</strong> <span style="font-weight: bold; color: #000;">${s.name || 'N/A'}</span></div>
+                        <div style="margin-bottom: 8px;"><strong>Roll Number:</strong> ${s.roll_no}</div>
+                        <div style="margin-bottom: 8px;"><strong>Section:</strong> ${s.section || 'N/A'}</div>
+                        <hr style="border:0; border-top:1px solid #ddd; margin: 20px 0;">
+                        <div style="margin-bottom: 8px;"><strong>Final Status:</strong> ${s.status}</div>
+                        <div style="margin-bottom: 8px;"><strong>Integrity Score:</strong> ${integrity}%</div>
+                        <div style="margin-top: 15px;"><strong>Marks Obtained:</strong> <span style="font-size: 20px; font-weight: 800; color: #1e8e3e;">${s.marks || 'Pending Assessment'}</span></div>
+                    </div>
+                    <p style="color: #666; font-size: 13px; margin-top: 40px;"><em>This is an automated performance report for the examination session: ${s.exam_id}.</em></p>
+                    </body></html>
+                `);
+            } else {
+                win.document.write(`
+                    <html><head><title>Forensic Dossier - ${s.roll_no}</title><style>body { font-family: Arial, sans-serif; padding: 30px; color: #111; } h1 { font-size: 20px; border-bottom: 2px solid #111; padding-bottom: 8px; } .meta { margin: 16px 0; line-height: 1.7; font-size: 14px; } table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 13px; } th, td { border: 1px solid #ccc; padding: 8px; text-align: left; } th { background: #f4f4f4; }</style></head><body>
+                    <h1>OFFICIAL EXAMINATION FORENSIC DOSSIER</h1>
+                    <div class="meta">
+                        <strong>Candidate Name:</strong> ${s.name || ''} &nbsp;|&nbsp; <strong>Roll Number:</strong> ${s.roll_no}<br>
+                        <strong>Examination Code:</strong> ${s.exam_id} &nbsp;|&nbsp; <strong>Final Status:</strong> ${s.status}<br>
+                        <strong>Hardware Hash:</strong> ${s.hardware_hash || 'N/A'}<br>
+                        <strong>Integrity Score:</strong> ${integrity}% (${s.violations || 0} Strikes) &nbsp;|&nbsp; <strong>Marks:</strong> ${s.marks || 'N/A'}
+                    </div>
+                    ${s.latest_snapshot ? `<div><strong>Violation Snapshot:</strong><br><img src="${s.latest_snapshot}" style="width:240px; border:1px solid #333; margin-top:6px;"></div>` : ''}
+                    <h3>Chronological Incident Log</h3>
+                    <table>
+                        <thead><tr><th>#</th><th>Timestamp</th><th>Event Description</th></tr></thead>
+                        <tbody>${logs.map((l, i) => `<tr><td>${i + 1}</td><td>${l.time}</td><td>${l.reason}</td></tr>`).join('') || '<tr><td colspan="3">No violations recorded.</td></tr>'}</tbody>
+                    </table>
+                    <p style="margin-top:40px; font-size:12px; color:#555;">Generated by Pradyumn's Command Center on ${new Date().toLocaleString()}</p>
+                    </body></html>
+                `);
+            }
+            win.document.close(); setTimeout(() => win.print(), 400);
         }
 
         async function broadcastMessage() {
@@ -740,6 +790,9 @@
             const examId = document.getElementById('history-exam-selector').value; if (!examId) return;
             try {
                 let res = await fetch(`${SUPABASE_URL}/exam_sessions?exam_id=eq.${examId}&select=*`, { headers: getHeaders() }); await handleApiError(res); historicalSessions = await res.json();
+                
+                historicalSessions.sort((a, b) => a.roll_no.localeCompare(b.roll_no));
+
                 document.getElementById('history-rows').innerHTML = historicalSessions.map(s => {
                     const score = s.integrity_score ?? Math.max(0, 100 - ((s.violations||0) * 25));
                     return `<tr><td style="font-family: monospace;">${s.roll_no}</td><td style="font-weight: bold;">${s.name || ''}</td><td>${s.section || "N/A"}</td><td><span class="tag ${s.status === 'LOCKED' || s.status === 'TERMINATED' ? 'tag-locked' : 'tag-active'}">${s.status}</span></td><td>${s.violations || 0}</td><td><strong>${score}%</strong></td><td><strong>${s.marks || '-'}</strong></td><td><button class="btn-secondary btn-small" onclick="viewLogs('${s.session_key}')" title="View the formal audit logs for this candidate">👁️ Audit Log</button></td></tr>`}).join('');
