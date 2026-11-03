@@ -129,8 +129,7 @@
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                 <h2 style="margin: 0; font-size: 18px;">Candidate Log & Print Options</h2>
                 <div style="display: flex; gap: 5px;">
-                    <!-- Dual Print Options -->
-                    <button class="btn-secondary btn-small" onclick="printForensicDossier('student')" title="Print clean, simplified mark sheet for the student">🖨️ Student Report</button>
+                    <button class="btn-success btn-small" onclick="printForensicDossier('student')" title="Print clean, simplified mark sheet for the student">🖨️ Student Report</button>
                     <button class="btn-primary btn-small" onclick="printForensicDossier('admin')" title="Print detailed hardware & violation dossier for internal use">🖨️ Admin Dossier</button>
                     <button class="btn-danger btn-small" onclick="document.getElementById('logs-overlay').classList.add('hidden')">Close</button>
                 </div>
@@ -508,7 +507,6 @@
             document.getElementById('db-total-count').innerText = globalDatabase.length;
             const tbody = document.getElementById('db-preview-rows');
             
-            // Search & Filtering Logic for Registry
             const searchQ = (document.getElementById('registry-search-input').value || "").toLowerCase();
             let filteredDb = globalDatabase;
             if (searchQ) {
@@ -522,7 +520,6 @@
             if (filteredDb.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 20px;">No students match criteria.</td></tr>`;
             } else {
-                // Slicing to 1000 ensures smooth DOM performance while still rendering virtually all relevant B.Tech sections
                 tbody.innerHTML = filteredDb.slice(0, 1000).map(s => `<tr><td style="font-family: monospace;">${s.roll_no}</td><td style="font-weight: bold;">${s.name}</td><td>${s.dob}</td><td>${s.year || '-'}</td><td><span class="tag tag-section">${s.section}</span></td><td style="font-size: 11px;">${s.branch}</td></tr>`).join('');
             }
             
@@ -625,7 +622,6 @@
 
             let displayedSessions = currentFilter !== "ALL" ? currentSessions.filter(s => (s.section || "N/A") === currentFilter) : currentSessions;
             
-            // Search Filtering
             const searchQ = (document.getElementById('live-search-input').value || "").toLowerCase();
             if (searchQ) {
                 displayedSessions = displayedSessions.filter(s => 
@@ -634,7 +630,6 @@
                 );
             }
 
-            // STABLE SORTING LOGIC: Fixes the bouncing grid by enforcing alphabetical Roll No order
             displayedSessions.sort((a, b) => a.roll_no.localeCompare(b.roll_no));
 
             document.getElementById('candidate-rows').innerHTML = displayedSessions.map(s => {
@@ -722,7 +717,14 @@
             document.getElementById('logs-overlay').classList.remove('hidden');
         }
 
-        // DUAL PRINT LOGIC
+        // --- NEW DIRECT PRINTING FEATURE ---
+        function directPrint(sessionKey, reportType) {
+            const student = [...currentSessions, ...historicalSessions].find(s => s.session_key === sessionKey);
+            if (!student) return;
+            selectedAuditSession = student;
+            printForensicDossier(reportType);
+        }
+
         function printForensicDossier(reportType) {
             if (!selectedAuditSession) return;
             const s = selectedAuditSession; 
@@ -795,7 +797,21 @@
 
                 document.getElementById('history-rows').innerHTML = historicalSessions.map(s => {
                     const score = s.integrity_score ?? Math.max(0, 100 - ((s.violations||0) * 25));
-                    return `<tr><td style="font-family: monospace;">${s.roll_no}</td><td style="font-weight: bold;">${s.name || ''}</td><td>${s.section || "N/A"}</td><td><span class="tag ${s.status === 'LOCKED' || s.status === 'TERMINATED' ? 'tag-locked' : 'tag-active'}">${s.status}</span></td><td>${s.violations || 0}</td><td><strong>${score}%</strong></td><td><strong>${s.marks || '-'}</strong></td><td><button class="btn-secondary btn-small" onclick="viewLogs('${s.session_key}')" title="View the formal audit logs for this candidate">👁️ Audit Log</button></td></tr>`}).join('');
+                    // DIRECT PRINT BUTTONS ADDED HERE
+                    return `<tr>
+                        <td style="font-family: monospace;">${s.roll_no}</td>
+                        <td style="font-weight: bold;">${s.name || ''}</td>
+                        <td>${s.section || "N/A"}</td>
+                        <td><span class="tag ${s.status === 'LOCKED' || s.status === 'TERMINATED' ? 'tag-locked' : 'tag-active'}">${s.status}</span></td>
+                        <td>${s.violations || 0}</td>
+                        <td><strong>${score}%</strong></td>
+                        <td><strong>${s.marks || '-'}</strong></td>
+                        <td style="display: flex; gap: 4px; flex-wrap: wrap;">
+                            <button class="btn-secondary btn-small" onclick="viewLogs('${s.session_key}')" title="View the formal audit logs for this candidate">👁️ Audit</button>
+                            <button class="btn-success btn-small" onclick="directPrint('${s.session_key}', 'student')" title="Print clean, simplified mark sheet for the student">🖨️ Student PDF</button>
+                            <button class="btn-primary btn-small" onclick="directPrint('${s.session_key}', 'admin')" title="Print detailed hardware & violation dossier for internal use">🖨️ Admin PDF</button>
+                        </td>
+                    </tr>`}).join('');
             } catch(e) {}
         }
 
