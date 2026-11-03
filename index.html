@@ -7,8 +7,8 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f6f9; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; user-select: none; -webkit-user-select: none; overflow-x: hidden; }
-        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 90%; max-width: 650px; text-align: center; max-height: 90vh; overflow-y: auto; box-sizing: border-box; position: relative; z-index: 10; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f6f9; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; user-select: none; -webkit-user-select: none; overflow-x: hidden; transition: background 0.3s, color 0.3s; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 90%; max-width: 650px; text-align: center; max-height: 90vh; overflow-y: auto; box-sizing: border-box; position: relative; z-index: 10; transition: background 0.3s, color 0.3s, box-shadow 0.3s; }
         
         #status-bar-container { display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 1000; justify-content: space-between; align-items: center; background: #202124; color: white; padding: 10px 20px; font-weight: bold; font-size: 15px; }
         #timer-pill { background: #d93025; padding: 4px 12px; border-radius: 4px; }
@@ -31,16 +31,16 @@
         .btn-ack:disabled { background: #cccccc; cursor: not-allowed; opacity: 0.7; color: #666; }
         .btn-ack:not(:disabled):hover { background: #b3261e; cursor: pointer; }
 
-        .instruction-box { background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; text-align: left; max-height: 200px; overflow-y: auto; margin-bottom: 20px; font-size: 14px; color: #333; line-height: 1.6; }
+        .instruction-box { background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; text-align: left; max-height: 200px; overflow-y: auto; margin-bottom: 20px; font-size: 14px; color: #333; line-height: 1.6; transition: 0.3s; }
         .instruction-box h4 { margin-top: 0; color: #1a73e8; font-size: 16px; margin-bottom: 10px; }
         .instruction-box ul { padding-left: 20px; margin-top: 5px; }
         .instruction-box li { margin-bottom: 8px; }
         
         .input-group { text-align: left; margin-bottom: 15px; }
-        .input-group label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #333; }
-        .input-group input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+        .input-group label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #333; transition: 0.3s; }
+        .input-group input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 14px; transition: 0.3s; }
         
-        .system-check-box { background: #e8f0fe; padding: 15px; border-radius: 6px; border: 1px solid #d2e3fc; margin-bottom: 20px; text-align: left; }
+        .system-check-box { background: #e8f0fe; padding: 15px; border-radius: 6px; border: 1px solid #d2e3fc; margin-bottom: 20px; text-align: left; transition: 0.3s; }
         
         button.btn-primary { background: #1a73e8; color: white; border: none; padding: 14px; border-radius: 6px; width: 100%; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.2s; }
         button.btn-primary:disabled { background: #cccccc; cursor: not-allowed; color: #666; }
@@ -49,11 +49,10 @@
         #penalty-timer { font-size: 48px; font-weight: bold; color: #d93025; font-family: monospace; display: block; margin: 20px 0; }
         .screenshot-flash { background-color: red !important; display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 99998; }
         
-        #exam-container { display: none; width: 100vw; height: 100vh; padding-top: 40px; box-sizing: border-box; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        #exam-container { display: none; width: 100vw; height: 100vh; padding-top: 40px; box-sizing: border-box; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
         .hidden { display: none !important; }
-        .designer-credit { margin-top: 25px; font-family: 'Brush Script MT', cursive; font-size: 15px; color: #888; font-style: italic; }
+        .designer-credit { margin-top: 25px; font-family: 'Brush Script MT', cursive; font-size: 15px; color: #888; font-style: italic; transition: 0.3s; }
 
-        /* Dynamic Visual Watermark Overlay */
         #watermark-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             pointer-events: none; z-index: 99990; opacity: 0.14;
@@ -63,9 +62,32 @@
             transition: color 0.3s, opacity 0.3s;
         }
         .wm-item { transform: rotate(-25deg); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+
+        /* Floating Dark Mode Button */
+        #global-dark-toggle { position: fixed; top: 15px; right: 20px; z-index: 999999; background: #202124; color: white; border: none; padding: 8px 14px; border-radius: 20px; font-size: 13px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: 0.3s; display: flex; align-items: center; gap: 5px; }
+        #global-dark-toggle:hover { transform: scale(1.05); }
+
+        /* Zoom Controls in Header */
+        .zoom-controls { display: flex; gap: 5px; margin-left: 15px; align-items: center; }
+        .zoom-btn { background: #3c4043; color: white; border: 1px solid #5f6368; border-radius: 4px; padding: 2px 10px; font-size: 15px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .zoom-btn:hover { background: #5f6368; }
+
+        /* Dark Mode Dynamic Classes */
+        body.dark-mode { background: #121212; color: #e8eaed; }
+        body.dark-mode .card { background: #1e1e1e; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        body.dark-mode .card h2, body.dark-mode .card h4 { color: #8ab4f8 !important; }
+        body.dark-mode .instruction-box, body.dark-mode .input-group, body.dark-mode .system-check-box, body.dark-mode .ack-container { background: #2a2a2a !important; border-color: #444 !important; }
+        body.dark-mode .instruction-box, body.dark-mode .ack-label, body.dark-mode .input-group label { color: #e8eaed !important; }
+        body.dark-mode input { background: #333; color: white; border-color: #555; }
+        body.dark-mode .designer-credit { color: #666; }
+        body.dark-mode p { color: #aaa !important; }
+        body.dark-mode #google-form-iframe { filter: invert(0.92) hue-rotate(180deg); }
     </style>
 </head>
 <body>
+
+    <!-- Global Floating Dark Mode Toggle -->
+    <button id="global-dark-toggle">🌙 Dark</button>
 
     <noscript>
         <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #202124; color: white; display: flex; justify-content: center; align-items: center; z-index: 999999; text-align: center; font-family: sans-serif;">
@@ -96,6 +118,13 @@
             <div class="pulse-dot"></div>
             <span style="color: #ff4444; font-weight: 900; letter-spacing: 1px; font-size: 13px;">LIVE REC</span>
             <span id="active-student-name" style="margin-left: 10px; font-size: 14px; color: #e8eaed; font-weight: bold; background: #3c4043; padding: 4px 10px; border-radius: 4px; border: 1px solid #5f6368;"></span>
+            
+            <!-- NEW: Zoom Controls for Desktop -->
+            <div class="zoom-controls" id="desktop-zoom-panel">
+                <button class="zoom-btn" id="btn-zoom-out" title="Decrease Size">-</button>
+                <span id="zoom-level-text" style="font-size: 13px; min-width: 35px; text-align: center;">100%</span>
+                <button class="zoom-btn" id="btn-zoom-in" title="Increase Size">+</button>
+            </div>
         </div>
         <div>Time: <span id="timer-pill">02:00:00</span></div>
         <div>Strikes: <span id="violations-pill">0</span></div>
@@ -152,13 +181,6 @@
                     <li><strong>Clipboard Locked:</strong> Copy and Paste are strictly disabled.</li>
                     <li><strong>Screen Share Required:</strong> You must select "Entire Screen".</li>
                 </ul>
-            </div>
-
-            <div style="text-align: left; margin-bottom: 20px;">
-                <label class="ack-label">
-                    <input type="checkbox" id="dark-mode-toggle" class="ack-checkbox">
-                    <strong>🌙 Enable Dark Mode (Inverts Exam Colors)</strong>
-                </label>
             </div>
 
             <div class="system-check-box">
@@ -286,6 +308,9 @@
             // WAKE LOCK API ENGINE
             let screenWakeLock = null;
             
+            // ZOOM ENGINE
+            let currentIframeZoom = 1.0;
+            
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
             const isAppleDevice = /Mac|iPhone|iPod|iPad/i.test(navigator.userAgent) && !window.MSStream;
 
@@ -325,8 +350,76 @@
             const unlockBtn = document.getElementById('unlock-btn');
             const unlockError = document.getElementById('unlock-error');
             const watermarkOverlay = document.getElementById('watermark-overlay');
+            const darkToggleBtn = document.getElementById('global-dark-toggle');
 
-            if (isMobile) grantPermBtn.innerText = "📸 Grant Camera & Mic Access";
+            // --- IMMEDIATE EARLY SECURITY LOCKDOWN ---
+            // Blocks shortcuts and right-click unconditionally from the moment the site loads.
+            document.addEventListener('contextmenu', (e) => { 
+                e.preventDefault(); 
+                if (isExamActive) triggerExactWarning("Right click blocked."); 
+            });
+            
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) || (e.ctrlKey && ['u', 'p', 's'].includes(e.key.toLowerCase()))) {
+                    e.preventDefault(); 
+                    if (isExamActive) triggerExactWarning("Prohibited shortcut intercepted.");
+                }
+                if (e.key === 'PrintScreen') {
+                    e.preventDefault();
+                    document.getElementById('flash-overlay').style.display = 'block';
+                    _setTimeout(() => document.getElementById('flash-overlay').style.display = 'none', 400);
+                    if (isExamActive) triggerExactWarning("Screenshot intercepted.");
+                }
+            });
+            
+            // Clipboard Block unconditionally
+            document.addEventListener('copy', (e) => { e.preventDefault(); if (isExamActive) triggerExactWarning("Copying text is prohibited."); });
+            document.addEventListener('cut', (e) => { e.preventDefault(); if (isExamActive) triggerExactWarning("Cutting text is prohibited."); });
+            document.addEventListener('paste', (e) => { e.preventDefault(); if (isExamActive) triggerExactWarning("Pasting text is prohibited."); });
+
+            // --- GLOBAL DARK MODE TOGGLE LOGIC ---
+            darkToggleBtn.addEventListener('click', () => {
+                document.body.classList.toggle('dark-mode');
+                const isDark = document.body.classList.contains('dark-mode');
+                
+                darkToggleBtn.innerText = isDark ? "☀️ Light" : "🌙 Dark";
+                darkToggleBtn.style.background = isDark ? "#f8f9fa" : "#202124";
+                darkToggleBtn.style.color = isDark ? "#202124" : "white";
+                
+                if (watermarkOverlay) {
+                    watermarkOverlay.style.color = isDark ? "#ffffff" : "#000000";
+                    watermarkOverlay.style.opacity = isDark ? "0.3" : "0.14";
+                }
+            });
+
+            // Hide zoom on mobile
+            if (isMobile) {
+                document.getElementById('desktop-zoom-panel').style.display = 'none';
+                grantPermBtn.innerText = "📸 Grant Camera & Mic Access";
+            } else {
+                // Initialize Zoom Handlers
+                document.getElementById('btn-zoom-in').addEventListener('click', () => {
+                    if (currentIframeZoom < 1.6) currentIframeZoom += 0.1;
+                    applyIframeZoom();
+                });
+                document.getElementById('btn-zoom-out').addEventListener('click', () => {
+                    if (currentIframeZoom > 0.8) currentIframeZoom -= 0.1;
+                    applyIframeZoom();
+                });
+            }
+
+            function applyIframeZoom() {
+                const iframe = document.getElementById('google-form-iframe');
+                if (iframe) {
+                    // Scale the iframe but compensate the width/height to avoid horizontal scrolling overlap
+                    iframe.style.transform = `scale(${currentIframeZoom})`;
+                    iframe.style.transformOrigin = 'top center';
+                    iframe.style.width = `${100 / currentIframeZoom}%`;
+                    iframe.style.height = `${100 / currentIframeZoom}%`;
+                }
+                document.getElementById('zoom-level-text').innerText = Math.round(currentIframeZoom * 100) + '%';
+            }
+
             document.getElementById('lobby-screen').classList.remove('hidden');
 
             function getServerNow() {
@@ -353,15 +446,12 @@
                 } catch (e) {}
             }
 
-            // --- NEW: SCREEN WAKE LOCK REQUESTER ---
             async function enforceWakeLock() {
                 try {
                     if ('wakeLock' in navigator) {
                         screenWakeLock = await navigator.wakeLock.request('screen');
                     }
-                } catch (err) {
-                    console.log(`Wake Lock error: ${err.name}, ${err.message}`);
-                }
+                } catch (err) {}
             }
 
             function generateHardwareFingerprint() {
@@ -406,10 +496,6 @@
                 } catch (e) {}
                 return false;
             }
-
-            document.addEventListener('copy', (e) => { e.preventDefault(); triggerExactWarning("Copying text is prohibited."); });
-            document.addEventListener('cut', (e) => { e.preventDefault(); triggerExactWarning("Cutting text is prohibited."); });
-            document.addEventListener('paste', (e) => { e.preventDefault(); triggerExactWarning("Pasting text is prohibited."); });
 
             function renderWatermark() {
                 if (!watermarkOverlay) return;
@@ -978,12 +1064,11 @@
                 if (!examAgreementCheckbox.checked || STUDENT_NAME === '' || !permissionsGranted) return;
                 
                 requestRobustFullscreen();
-                
-                // REQUEST SCREEN WAKE LOCK
                 await enforceWakeLock();
 
                 document.getElementById('active-student-name').innerText = "👤 " + STUDENT_NAME;
                 watermarkOverlay.classList.remove('hidden');
+                darkToggleBtn.style.display = 'none'; // Hide the dark mode button during the exam to prevent distraction
 
                 history.pushState(null, null, location.href); 
                 window.addEventListener('popstate', () => {
@@ -1015,10 +1100,8 @@
                     iframe.setAttribute("allow", "camera; microphone");
                     iframe.style.width = "100%"; iframe.style.height = "100%"; iframe.style.border = "none";
                     
-                    if (document.getElementById('dark-mode-toggle').checked) {
+                    if (document.body.classList.contains('dark-mode')) {
                         iframe.style.filter = "invert(0.92) hue-rotate(180deg)";
-                        watermarkOverlay.style.color = "#ffffff";
-                        watermarkOverlay.style.opacity = "0.3"; 
                     }
                     
                     iframe.addEventListener('load', () => {
@@ -1028,7 +1111,10 @@
                             fetch(`${SUPABASE_URL}/exam_sessions?session_key=eq.${CURRENT_EXAM_ID}_${STUDENT_ROLL}`, {
                                 method: 'PATCH',
                                 headers: supabaseHeaders,
-                                body: JSON.stringify({ status: "SUBMITTED" })
+                                body: JSON.stringify({ 
+                                    status: "SUBMITTED", 
+                                    submitted_at: new Date().toISOString() 
+                                })
                             }).catch(()=>{});
                             lockOutStudent("Exam Submitted Successfully", "Responses and forensic logs recorded.", true); 
                         }
@@ -1039,6 +1125,9 @@
                     if (!examServerEndTime) {
                         examServerEndTime = getServerNow() + (EXAM_DURATION_MINUTES * 60 * 1000);
                     }
+
+                    // Apply any pre-set zoom immediately
+                    applyIframeZoom();
 
                     startCountdown();
                     startAudioMonitoring(mediaStream);
@@ -1086,8 +1175,9 @@
                 if (screenStream) screenStream.getTracks().forEach(t => t.stop());
                 if (focusPollerInterval) clearInterval(focusPollerInterval);
                 if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+                
+                darkToggleBtn.style.display = 'flex'; // Bring back dark mode toggle
 
-                // Release Wake Lock
                 if (screenWakeLock !== null) {
                     screenWakeLock.release().then(() => screenWakeLock = null).catch(()=>{});
                 }
@@ -1126,11 +1216,11 @@
                 document.getElementById('exam-container').style.display = 'block';
                 document.getElementById('status-bar-container').style.display = 'flex';
                 watermarkOverlay.classList.remove('hidden');
+                darkToggleBtn.style.display = 'none';
                 requestRobustFullscreen();
                 activateLockdownProtocols();
                 lastInternalTick = _Date_now(); isExamActive = true; 
                 
-                // Re-acquire Wake Lock on unlock
                 await enforceWakeLock();
             });
 
@@ -1140,7 +1230,6 @@
                 if (document.visibilityState === 'hidden' && !isTransitioning) {
                     triggerExactWarning("Switched browser tabs or minimized window."); 
                 }
-                // RE-ACQUIRE WAKE LOCK IF THEY COME BACK TO THE TAB
                 if (document.visibilityState === 'visible' && isExamActive) {
                     await enforceWakeLock();
                 }
@@ -1164,21 +1253,6 @@
                 });
             });
 
-            document.addEventListener('contextmenu', (e) => { 
-                e.preventDefault(); if (isExamActive) triggerExactWarning("Right click blocked."); 
-            });
-            
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) || (e.ctrlKey && ['u', 'p', 's'].includes(e.key.toLowerCase()))) {
-                    e.preventDefault(); triggerExactWarning("Prohibited shortcut intercepted.");
-                }
-                if (e.key === 'PrintScreen') {
-                    e.preventDefault();
-                    document.getElementById('flash-overlay').style.display = 'block';
-                    _setTimeout(() => document.getElementById('flash-overlay').style.display = 'none', 400);
-                    triggerExactWarning("Screenshot intercepted.");
-                }
-            });
         })();
     </script>
 </body>
