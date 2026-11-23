@@ -6,38 +6,119 @@
     <title>ExamBit | Student Result</title>
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
+        :root {
+            --bg: #f5f7fa;
+            --surface: #ffffff;
+            --surface-soft: #f8fafc;
+            --primary: #1a73e8;
+            --primary-hover: #1557b0;
+            --text: #202124;
+            --text-strong: #0f172a;
+            --muted: #5f6368;
+            --border: #e2e8f0;
+            --input-border: #cbd5e1;
+            --remark-bg: #f0f6ff;
+            --pass-bg: #e6f4ea;
+            --pass-text: #1e8e3e;
+            --fail-bg: #fce8e6;
+            --fail-text: #d93025;
+            --absent-bg: #fef7e0;
+            --absent-text: #b07d00;
+        }
+        [data-theme="dark"] {
+            --bg: #111317;
+            --surface: #1b1f27;
+            --surface-soft: #232833;
+            --primary: #5b9bff;
+            --primary-hover: #3b82f6;
+            --text: #e8eaed;
+            --text-strong: #f8fafc;
+            --muted: #9aa0a6;
+            --border: #323846;
+            --input-border: #3f4756;
+            --remark-bg: rgba(91, 155, 255, 0.12);
+            --pass-bg: rgba(30, 142, 62, 0.2);
+            --pass-text: #6ee7b7;
+            --fail-bg: rgba(217, 48, 37, 0.2);
+            --fail-text: #fca5a5;
+            --absent-bg: rgba(249, 171, 0, 0.2);
+            --absent-text: #fcd34d;
+        }
+
         * { box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: #f5f7fa;
-            color: #202124;
+            background: var(--bg);
+            color: var(--text);
             margin: 0;
-            padding: 24px 14px;
+            padding: 0;
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        /* Minimal Header */
+        .page-header {
+            width: 100%;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header-brand {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: 0.2px;
+        }
+        .theme-toggle {
+            width: auto;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 20px;
+            background: var(--surface-soft);
+            color: var(--text);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .theme-toggle:hover {
+            background: var(--surface-soft);
+            border-color: var(--primary);
+        }
+
+        .main-wrap {
+            flex: 1;
             display: flex;
             justify-content: center;
             align-items: center;
+            padding: 24px 14px;
         }
+
         .card {
-            background: #ffffff;
+            background: var(--surface);
             width: 100%;
             max-width: 460px;
             padding: 28px;
             border-radius: 12px;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
         }
         .card.wide { max-width: 680px; }
         h1 {
             margin: 0 0 6px;
             font-size: 20px;
-            color: #1a73e8;
+            color: var(--primary);
             text-align: center;
         }
         .subtitle {
             margin: 0 0 22px;
             font-size: 13px;
-            color: #5f6368;
+            color: var(--muted);
             text-align: center;
         }
         label {
@@ -45,63 +126,76 @@
             font-size: 13px;
             font-weight: 600;
             margin-bottom: 5px;
-            color: #3c4043;
+            color: var(--muted);
         }
         input {
             width: 100%;
             padding: 11px 12px;
             margin-bottom: 14px;
-            border: 1px solid #cbd5e1;
+            border: 1px solid var(--input-border);
             border-radius: 8px;
             font-size: 15px;
+            background: var(--surface-soft);
+            color: var(--text);
             outline: none;
         }
-        input:focus { border-color: #1a73e8; }
+        input:focus { border-color: var(--primary); }
         .captcha-box {
             display: flex;
             justify-content: center;
             margin: 12px 0 18px;
+            overflow-x: auto;
         }
         button {
             width: 100%;
             padding: 12px;
             border: none;
             border-radius: 8px;
-            background: #1a73e8;
+            background: var(--primary);
             color: #ffffff;
             font-size: 15px;
             font-weight: 600;
             cursor: pointer;
         }
-        button:hover:not(:disabled) { background: #1557b0; }
+        button:hover:not(:disabled) { background: var(--primary-hover); }
         button:disabled { opacity: 0.6; cursor: not-allowed; }
         .btn-outline {
-            background: #ffffff;
-            color: #3c4043;
-            border: 1px solid #cbd5e1;
+            background: var(--surface-soft);
+            color: var(--text);
+            border: 1px solid var(--border);
         }
-        .btn-outline:hover { background: #f1f5f9; }
+        .btn-outline:hover { background: var(--border); }
         .error {
             display: none;
             margin-top: 12px;
-            color: #d93025;
+            color: var(--fail-text);
             font-size: 13px;
             font-weight: 600;
             text-align: center;
+        }
+        .designer-credit {
+            margin-top: 22px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            font-family: 'Brush Script MT', cursive;
+            font-size: 15px;
+            color: var(--muted);
+            font-style: italic;
         }
         .meta {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 10px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
+            background: var(--surface-soft);
+            border: 1px solid var(--border);
             border-radius: 8px;
             padding: 14px;
             margin-bottom: 18px;
             font-size: 13px;
         }
-        .meta span { display: block; color: #64748b; font-size: 11px; text-transform: uppercase; }
-        .meta strong { font-size: 14px; color: #0f172a; }
+        .meta span { display: block; color: var(--muted); font-size: 11px; text-transform: uppercase; }
+        .meta strong { font-size: 14px; color: var(--text-strong); }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -110,10 +204,10 @@
         }
         th, td {
             padding: 10px 12px;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid var(--border);
             text-align: left;
         }
-        th { background: #f8fafc; color: #475569; font-size: 12px; text-transform: uppercase; }
+        th { background: var(--surface-soft); color: var(--muted); font-size: 12px; text-transform: uppercase; }
         .badge {
             display: inline-block;
             padding: 3px 8px;
@@ -121,19 +215,19 @@
             font-size: 11px;
             font-weight: 700;
         }
-        .pass { background: #e6f4ea; color: #1e8e3e; }
-        .fail { background: #fce8e6; color: #d93025; }
-        .absent { background: #fef7e0; color: #b07d00; }
+        .pass { background: var(--pass-bg); color: var(--pass-text); }
+        .fail { background: var(--fail-bg); color: var(--fail-text); }
+        .absent { background: var(--absent-bg); color: var(--absent-text); }
         .remark {
-            background: #f0f6ff;
-            border-left: 4px solid #1a73e8;
+            background: var(--remark-bg);
+            border-left: 4px solid var(--primary);
             border-radius: 6px;
             padding: 12px 14px;
             margin-bottom: 14px;
             font-size: 13.5px;
             line-height: 1.5;
         }
-        .remark strong { display: block; color: #1a73e8; margin-bottom: 4px; font-size: 12px; }
+        .remark strong { display: block; color: var(--primary); margin-bottom: 4px; font-size: 12px; }
         .actions { display: flex; gap: 10px; margin-top: 18px; }
         .hidden { display: none; }
 
@@ -141,66 +235,87 @@
             .meta { grid-template-columns: 1fr; }
         }
         @media print {
-            body { background: #fff; padding: 0; align-items: flex-start; }
+            :root, [data-theme="dark"] {
+                --bg: #ffffff;
+                --surface: #ffffff;
+                --surface-soft: #f8fafc;
+                --primary: #1a73e8;
+                --text: #000000;
+                --text-strong: #000000;
+                --muted: #475569;
+                --border: #cbd5e1;
+                --remark-bg: #f0f6ff;
+            }
+            body { background: #fff; }
+            .page-header, .actions { display: none !important; }
+            .main-wrap { padding: 0; align-items: flex-start; }
             .card { box-shadow: none; border: none; max-width: 100%; }
-            .actions { display: none; }
         }
     </style>
 </head>
 <body>
 
-    <!-- Lookup Screen -->
-    <div id="lookup-view" class="card">
-        <h1>ExamBit Results</h1>
-        <p class="subtitle">Kashi Institute of Technology, Varanasi</p>
+    <header class="page-header">
+        <div class="header-brand">🎓 ExamBit</div>
+        <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Toggle dark mode">🌙 Dark</button>
+    </header>
 
-        <form id="result-form" novalidate>
-            <label for="roll">Roll Number</label>
-            <input type="text" id="roll" placeholder="Enter 13-digit Roll Number" maxlength="15" autocomplete="off" required>
+    <main class="main-wrap">
+        <!-- Lookup Screen -->
+        <div id="lookup-view" class="card">
+            <h1>ExamBit Results</h1>
+            <p class="subtitle">Kashi Institute of Technology, Varanasi</p>
 
-            <label for="dob">Date of Birth</label>
-            <input type="text" id="dob" placeholder="DD/MM/YYYY" maxlength="10" autocomplete="off" required>
+            <form id="result-form" novalidate>
+                <label for="roll">Roll Number</label>
+                <input type="text" id="roll" placeholder="Enter 13-digit Roll Number" maxlength="15" autocomplete="off" required>
 
-            <div class="captcha-box">
-                <div class="g-recaptcha" data-sitekey="6Leofe4tAAAAAID1p1Me1NtLrEjhMQJ9QUKYq1Bg"></div>
+                <label for="dob">Date of Birth</label>
+                <input type="text" id="dob" placeholder="DD/MM/YYYY" maxlength="10" autocomplete="off" required>
+
+                <div class="captcha-box">
+                    <div class="g-recaptcha" data-sitekey="6Leofe4tAAAAAID1p1Me1NtLrEjhMQJ9QUKYq1Bg"></div>
+                </div>
+
+                <button type="submit" id="submit-btn">View Result</button>
+                <div id="error-msg" class="error"></div>
+            </form>
+
+            <div class="designer-credit">Designed by Pradyumn</div>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="result-view" class="card wide hidden">
+            <h1>Statement of Marks</h1>
+            <p class="subtitle" id="exam-heading">ExamBit Official Result</p>
+
+            <div class="meta">
+                <div><span>Student Name</span><strong id="st-name">-</strong></div>
+                <div><span>Roll Number</span><strong id="st-roll">-</strong></div>
+                <div><span>Course / Branch</span><strong id="st-branch">-</strong></div>
+                <div><span>Year / Section</span><strong id="st-sec">-</strong></div>
             </div>
 
-            <button type="submit" id="submit-btn">View Result</button>
-            <div id="error-msg" class="error"></div>
-        </form>
-    </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Marks</th>
+                        <th>%</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="marks-body"></tbody>
+            </table>
 
-    <!-- Result Screen -->
-    <div id="result-view" class="card wide hidden">
-        <h1>Statement of Marks</h1>
-        <p class="subtitle" id="exam-heading">ExamBit Official Result</p>
+            <div id="remarks-box"></div>
 
-        <div class="meta">
-            <div><span>Student Name</span><strong id="st-name">-</strong></div>
-            <div><span>Roll Number</span><strong id="st-roll">-</strong></div>
-            <div><span>Course / Branch</span><strong id="st-branch">-</strong></div>
-            <div><span>Year / Section</span><strong id="st-sec">-</strong></div>
+            <div class="actions">
+                <button type="button" class="btn-outline" id="back-btn">Check Another</button>
+                <button type="button" onclick="window.print()">Print / Save PDF</button>
+            </div>
         </div>
-
-        <table>
-            <thead>
-                <tr>
-                    <th>Subject</th>
-                    <th>Marks</th>
-                    <th>%</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody id="marks-body"></tbody>
-        </table>
-
-        <div id="remarks-box"></div>
-
-        <div class="actions">
-            <button type="button" class="btn-outline" id="back-btn">Check Another</button>
-            <button type="button" onclick="window.print()">Print / Save PDF</button>
-        </div>
-    </div>
+    </main>
 
     <script>
         (function () {
@@ -214,6 +329,24 @@
             const errorMsg = document.getElementById("error-msg");
             const lookupView = document.getElementById("lookup-view");
             const resultView = document.getElementById("result-view");
+            const themeToggle = document.getElementById("theme-toggle");
+
+            // Dark Mode Toggle (persisted in localStorage)
+            function applyTheme(theme) {
+                if (theme === "dark") {
+                    document.documentElement.setAttribute("data-theme", "dark");
+                    themeToggle.textContent = "☀️ Light";
+                } else {
+                    document.documentElement.removeAttribute("data-theme");
+                    themeToggle.textContent = "🌙 Dark";
+                }
+            }
+            applyTheme(localStorage.getItem("exambit_result_theme") || "light");
+            themeToggle.addEventListener("click", () => {
+                const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+                localStorage.setItem("exambit_result_theme", next);
+                applyTheme(next);
+            });
 
             // Auto-format DD/MM/YYYY
             dobInput.addEventListener("input", function () {
@@ -315,7 +448,7 @@
 
                 if (results.length === 0) {
                     document.getElementById("exam-heading").textContent = "No Results Published Yet";
-                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#64748b;">No exam marks found for your roll number.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--muted);">No exam marks found for your roll number.</td></tr>`;
                     remarksBox.innerHTML = "";
                 } else {
                     document.getElementById("exam-heading").textContent = results[0].exam_name || "Official Result";
@@ -333,7 +466,7 @@
                                 : `<span class="badge fail">FAIL</span>`);
 
                         return `<tr>
-                            <td><strong>${escapeHtml(r.subject_name)}</strong> <small style="color:#64748b">(${escapeHtml(r.subject_code)})</small></td>
+                            <td><strong>${escapeHtml(r.subject_name)}</strong> <small style="color:var(--muted)">(${escapeHtml(r.subject_code)})</small></td>
                             <td>${marks}</td>
                             <td>${pct}</td>
                             <td>${badge}</td>
