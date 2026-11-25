@@ -781,6 +781,14 @@
                 }[c]));
             }
 
+            function formatDDMMYYYY(dateObj) {
+                const d = dateObj instanceof Date && !isNaN(dateObj) ? dateObj : new Date();
+                const day = String(d.getDate()).padStart(2, "0");
+                const month = String(d.getMonth() + 1).padStart(2, "0");
+                const year = d.getFullYear();
+                return `${day}/${month}/${year}`;
+            }
+
             function showError(msg) {
                 errorMsg.textContent = msg;
                 errorMsg.style.display = "block";
@@ -866,7 +874,6 @@
                         backgroundColor: "#ffffff",
                         windowWidth: 820,
                         onclone: (clonedDoc) => {
-                            // Force crisp official light theme inside the exported PNG without altering live screen
                             clonedDoc.documentElement.removeAttribute("data-theme");
                             clonedDoc.body.classList.remove("dark-mode");
 
@@ -1022,7 +1029,7 @@
                 document.getElementById("st-roll").textContent = student.roll_no || "-";
                 document.getElementById("st-branch").textContent = [student.course, student.branch].filter(Boolean).join(" - ") || "-";
                 document.getElementById("st-sec").textContent = [student.year ? `Year ${student.year}` : "", student.section ? `Sec ${student.section}` : ""].filter(Boolean).join(" / ") || "-";
-                document.getElementById("print-date").textContent = `Issued: ${new Date().toLocaleString()}`;
+                document.getElementById("print-date").textContent = `Issued: ${formatDDMMYYYY(new Date())}`;
 
                 const tbody = document.getElementById("marks-body");
                 const remarksBox = document.getElementById("remarks-box");
