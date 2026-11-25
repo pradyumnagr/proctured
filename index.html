@@ -173,11 +173,17 @@
         }
         input:focus { border-color: var(--primary); }
 
+        /* Clean reCAPTCHA Wrapper (No Scrollbar) */
         .captcha-box {
             display: flex;
             justify-content: center;
-            margin: 12px 0 18px;
-            overflow-x: auto;
+            align-items: center;
+            margin: 14px 0 18px;
+            min-height: 78px;
+            overflow: visible;
+        }
+        .g-recaptcha {
+            display: inline-block;
         }
 
         button {
@@ -404,6 +410,13 @@
             .meta, .kpi-grid { grid-template-columns: 1fr; }
             .scorecard-body { padding: 18px; }
         }
+        @media (max-width: 380px) {
+            .card { padding: 20px 16px; }
+            .g-recaptcha {
+                transform: scale(0.86);
+                transform-origin: center;
+            }
+        }
 
         /* Single-Page Colorful A4 Print Styling */
         @page {
@@ -539,10 +552,10 @@
 
             <form id="result-form" novalidate>
                 <label for="roll">Roll Number</label>
-                <input type="text" id="roll" placeholder="Enter 13-digit Roll Number" maxlength="15" autocomplete="off" required>
+                <input type="text" id="roll" placeholder="Enter 13-digit Roll Number" maxlength="13" inputmode="numeric" pattern="\d{13}" autocomplete="off" required>
 
                 <label for="dob">Date of Birth</label>
-                <input type="text" id="dob" placeholder="DD/MM/YYYY" maxlength="10" autocomplete="off" required>
+                <input type="text" id="dob" placeholder="DD/MM/YYYY" maxlength="10" inputmode="numeric" autocomplete="off" required>
 
                 <div class="captcha-box">
                     <div class="g-recaptcha" data-sitekey="6Leofe4tAAAAAID1p1Me1NtLrEjhMQJ9QUKYq1Bg"></div>
@@ -665,8 +678,9 @@
                 this.value = v;
             });
 
+            // Digits only, strictly capped at 13 digits
             rollInput.addEventListener("input", function () {
-                this.value = this.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+                this.value = this.value.replace(/\D/g, "").slice(0, 13);
             });
 
             function escapeHtml(text) {
@@ -709,7 +723,7 @@
                 const dob = dobInput.value.trim();
                 const captcha = typeof grecaptcha !== "undefined" ? grecaptcha.getResponse() : "";
 
-                if (roll.length < 5) return showError("Enter a valid Roll Number.");
+                if (!/^\d{13}$/.test(roll)) return showError("Roll Number must be exactly 13 digits.");
                 if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dob)) return showError("Enter DOB in DD/MM/YYYY format.");
                 if (!captcha) return showError("Please complete the CAPTCHA.");
 
@@ -747,7 +761,6 @@
             });
 
             function renderResult(student, results) {
-                // Re-assert active theme right before displaying scorecard
                 applyTheme(localStorage.getItem("exambit_result_theme") || "light");
 
                 document.getElementById("st-name").textContent = student.name || "-";
