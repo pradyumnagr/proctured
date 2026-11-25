@@ -7,6 +7,7 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2s8 2.5 8 7v6c0 5-5 9.5-8 11.5-3-2-8-6.5-8-11.5V9c0-4.5 8-7 8-7z' fill='%231a73e8'/%3E%3Cpath d='M16 10l-4.5 2 4.5 2 4.5-2-4.5-2z' fill='%23ffd700'/%3E%3C/svg%3E">
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <style>
         :root {
             color-scheme: light;
@@ -15,6 +16,8 @@
             --surface-soft: #f8fafc;
             --primary: #1d4ed8;
             --primary-hover: #1e40af;
+            --success-btn: #15803d;
+            --success-btn-hover: #166534;
             --accent-gold: #f59e0b;
             --text: #1f2937;
             --text-strong: #0f172a;
@@ -50,6 +53,8 @@
             --surface-soft: #111111;
             --primary: #3b82f6;
             --primary-hover: #2563eb;
+            --success-btn: #16a34a;
+            --success-btn-hover: #15803d;
             --accent-gold: #fbbf24;
             --text: #f3f4f6;
             --text-strong: #ffffff;
@@ -192,7 +197,7 @@
             border-radius: 8px;
             background: var(--primary);
             color: #ffffff;
-            font-size: 15px;
+            font-size: 14.5px;
             font-weight: 600;
             cursor: pointer;
         }
@@ -203,7 +208,12 @@
             color: var(--text-strong);
             border: 1px solid var(--border);
         }
-        .btn-outline:hover { border-color: var(--primary); background: var(--surface-soft); }
+        .btn-outline:hover:not(:disabled) { border-color: var(--primary); background: var(--surface-soft); }
+        .btn-success {
+            background: var(--success-btn);
+            color: #ffffff;
+        }
+        .btn-success:hover:not(:disabled) { background: var(--success-btn-hover); }
 
         .error {
             display: none;
@@ -436,10 +446,11 @@
             align-items: center;
             justify-content: center;
         }
-        .qr-frame svg {
+        .qr-frame img {
             width: 100%;
             height: 100%;
             display: block;
+            image-rendering: pixelated;
         }
         .verify-info {
             font-size: 12px;
@@ -476,8 +487,13 @@
 
         .actions {
             display: flex;
+            flex-wrap: wrap;
             gap: 10px;
             margin-top: 18px;
+        }
+        .actions button {
+            flex: 1;
+            min-width: 140px;
         }
         .hidden { display: none !important; }
 
@@ -686,7 +702,7 @@
 
                 <div id="remarks-box"></div>
 
-                <!-- QR Verification Strip (Screen + Print) -->
+                <!-- QR Verification Strip (Screen + Print + PNG) -->
                 <div id="verify-strip" class="verify-strip hidden">
                     <div class="verify-left">
                         <div id="qr-container" class="qr-frame" aria-label="Result Verification QR Code"></div>
@@ -703,6 +719,7 @@
 
                 <div class="actions">
                     <button type="button" class="btn-outline" id="back-btn">Check Another</button>
+                    <button type="button" class="btn-success" id="download-png-btn">🖼️ Save PNG</button>
                     <button type="button" onclick="window.print()">🖨️ Print / Save PDF</button>
                 </div>
             </div>
@@ -722,6 +739,9 @@
             const lookupView = document.getElementById("lookup-view");
             const resultView = document.getElementById("result-view");
             const themeToggle = document.getElementById("theme-toggle");
+            const downloadPngBtn = document.getElementById("download-png-btn");
+
+            let currentRollNo = "";
 
             // Pure Black Dark Mode Toggle (persisted across login & views)
             function applyTheme(theme) {
@@ -817,13 +837,96 @@
                     const qr = qrcode(0, "M");
                     qr.addData(verifyUrl);
                     qr.make();
-                    qrContainer.innerHTML = qr.createSvgTag({ cellSize: 3, margin: 1, scalable: true });
+                    const img = document.createElement("img");
+                    img.src = qr.createDataURL(6, 2);
+                    img.alt = "Verification QR Code";
+                    qrContainer.appendChild(img);
                 } else {
                     qrContainer.innerHTML = `<span style="font-size:10px;color:#000;text-align:center;">QR</span>`;
                 }
 
                 verifyStrip.classList.remove("hidden");
             }
+
+            // Export Clean High-DPI PNG Scorecard (Forces Official Light Layout in Clone)
+            async function downloadScorecardPng() {
+                if (typeof html2canvas !== "function") {
+                    alert("Image export library is still loading. Please try again in a moment.");
+                    return;
+                }
+
+                const originalLabel = downloadPngBtn.textContent;
+                downloadPngBtn.disabled = true;
+                downloadPngBtn.textContent = "⏳ Saving PNG...";
+
+                try {
+                    const canvas = await html2canvas(resultView, {
+                        scale: 2,
+                        useCORS: true,
+                        backgroundColor: "#ffffff",
+                        windowWidth: 820,
+                        onclone: (clonedDoc) => {
+                            // Force crisp official light theme inside the exported PNG without altering live screen
+                            clonedDoc.documentElement.removeAttribute("data-theme");
+                            clonedDoc.body.classList.remove("dark-mode");
+
+                            const clonedCard = clonedDoc.getElementById("result-view");
+                            if (!clonedCard) return;
+
+                            clonedCard.style.width = "720px";
+                            clonedCard.style.maxWidth = "720px";
+                            clonedCard.style.margin = "0";
+                            clonedCard.style.boxShadow = "none";
+                            clonedCard.style.border = "2px solid #1e3a8a";
+                            clonedCard.style.borderRadius = "12px";
+
+                            const actionsEl = clonedCard.querySelector(".actions");
+                            if (actionsEl) actionsEl.style.display = "none";
+
+                            const verifiedEl = clonedCard.querySelector("#verified-banner");
+                            if (verifiedEl) verifiedEl.style.display = "none";
+
+                            const sigEl = clonedCard.querySelector(".sig-block");
+                            if (sigEl) sigEl.style.display = "block";
+
+                            const metaEl = clonedCard.querySelector(".meta");
+                            if (metaEl) metaEl.style.gridTemplateColumns = "repeat(2, 1fr)";
+
+                            const kpiEl = clonedCard.querySelector(".kpi-grid");
+                            if (kpiEl) kpiEl.style.gridTemplateColumns = "repeat(3, 1fr)";
+                        }
+                    });
+
+                    const safeRoll = (currentRollNo || "Scorecard").replace(/[^a-zA-Z0-9_-]/g, "");
+                    const fileName = `ExamBit_Result_${safeRoll}.png`;
+
+                    if (canvas.toBlob) {
+                        canvas.toBlob((blob) => {
+                            if (!blob) return;
+                            const url = URL.createObjectURL(blob);
+                            const link = document.createElement("a");
+                            link.href = url;
+                            link.download = fileName;
+                            document.body.appendChild(link);
+                            link.click();
+                            link.remove();
+                            setTimeout(() => URL.revokeObjectURL(url), 1500);
+                        }, "image/png");
+                    } else {
+                        const link = document.createElement("a");
+                        link.href = canvas.toDataURL("image/png");
+                        link.download = fileName;
+                        link.click();
+                    }
+                } catch (err) {
+                    alert("Could not save PNG image. Please use Print / Save PDF instead.");
+                } finally {
+                    downloadPngBtn.disabled = false;
+                    downloadPngBtn.textContent = originalLabel;
+                }
+            }
+
+            downloadPngBtn.addEventListener("click", downloadScorecardPng);
 
             async function verifyByQrCode(code) {
                 errorMsg.style.display = "none";
@@ -906,6 +1009,8 @@
             function renderResult(student, results, verifyCode, isQrVerified) {
                 applyTheme(localStorage.getItem("exambit_result_theme") || "light");
 
+                currentRollNo = student.roll_no || "";
+
                 const verifiedBanner = document.getElementById("verified-banner");
                 if (isQrVerified) {
                     verifiedBanner.classList.remove("hidden");
@@ -931,9 +1036,11 @@
                     kpiStrip.classList.add("hidden");
                     progressWrap.classList.add("hidden");
                     document.getElementById("verify-strip").classList.add("hidden");
+                    downloadPngBtn.classList.add("hidden");
                     tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--muted);">No exam marks found for your roll number.</td></tr>`;
                     remarksBox.innerHTML = "";
                 } else {
+                    downloadPngBtn.classList.remove("hidden");
                     document.getElementById("exam-heading").textContent = results[0].exam_name || "Official Examination Result";
 
                     let totalObtained = 0;
